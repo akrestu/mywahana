@@ -27,7 +27,8 @@ type OKRecord = {
 type Paginated = { data: OKRecord[]; total: number; next_page_url: string | null; prev_page_url: string | null };
 type Summary = { total: number; menunggu_konfirmasi: number; dikonfirmasi: number };
 type Filters = { site?: string; status?: string; search?: string; periode?: string };
-type Props = { records: Paginated; filters: Filters; summary: Summary };
+type SiteOption = { value: string; label: string };
+type Props = { records: Paginated; filters: Filters; summary: Summary; sites: SiteOption[] };
 
 const PERIODE_OPTIONS = [
     { value: 'hari_ini',   label: 'Hari Ini' },
@@ -35,7 +36,7 @@ const PERIODE_OPTIONS = [
     { value: 'bulan_ini',  label: 'Bulan Ini' },
 ];
 
-export default function AdminObservasiKeselamatan({ records, filters, summary }: Props) {
+export default function AdminObservasiKeselamatan({ records, filters, summary, sites }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [toDelete, setToDelete] = useState<OKRecord | null>(null);
     const [deleting, setDeleting] = useState(false);
@@ -116,8 +117,9 @@ export default function AdminObservasiKeselamatan({ records, filters, summary }:
                             <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Semua site" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Semua Site</SelectItem>
-                                <SelectItem value="baratama">Baratama</SelectItem>
-                                <SelectItem value="bandhawa">Bandhawa</SelectItem>
+                                {sites.map((s) => (
+                                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                         <Select value={filters.status ?? 'all'} onValueChange={v => applyFilters({ status: v })}>

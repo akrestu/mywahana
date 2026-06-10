@@ -1,9 +1,12 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     AlertTriangle,
     ChevronRight,
     ClipboardCheck,
     Clock,
+    Eye,
+    Flame,
+    HardHat,
     Plus,
     ShieldCheck,
     X,
@@ -14,6 +17,12 @@ import { RiskBadge } from '@/components/risk-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { Auth } from '@/types';
 
 type RecentBugarSelamat = {
@@ -81,6 +90,21 @@ const defaultStats: Stats = {
     laporan_bahaya: { total: 0, bulan_ini: 0, pending: 0, selesai: 0 },
 };
 
+const motivasiList = [
+    'Datang sehat — kerja aman — pulang selamat.',
+    'Keselamatan bukan pilihan, tapi tanggung jawab kita bersama.',
+    'Satu detik kewaspadaan mencegah satu seumur hidup penyesalan.',
+    'Tidak ada pekerjaan yang begitu penting hingga tidak ada waktu untuk melakukannya dengan aman.',
+    'Keselamatan dimulai dari diri sendiri. Jadilah contoh untuk rekan kerja.',
+    'Laporkan bahaya sebelum bahaya melapor ke rumah sakit.',
+    'Zero accident bukan kebetulan — itu hasil dari kedisiplinan setiap hari.',
+    'Alat pelindung diri bukan hambatan, tapi perisai hidupmu.',
+    'Hari ini selamat, besok lebih berhati-hati.',
+    'K3 bukan biaya — K3 adalah investasi terbaik.',
+    'Ingat keluarga di rumah. Mereka menunggu kamu pulang dengan selamat.',
+    'Bahaya yang dilaporkan adalah bahaya yang bisa dicegah.',
+];
+
 type TimeOfDay = { greeting: string; emoji: string; gradientStyle: string; shimmer: string; clockColor: string };
 
 function getTimeOfDay(hour: number): TimeOfDay {
@@ -125,6 +149,32 @@ function fmtDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
 }
 
+const kelayakanAlertColors = {
+    layak: {
+        wrapper: 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950',
+        icon: 'text-green-600',
+        title: 'text-green-800 dark:text-green-200',
+        sub: 'text-green-600 dark:text-green-400',
+    },
+    catatan: {
+        wrapper: 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950',
+        icon: 'text-amber-500',
+        title: 'text-amber-800 dark:text-amber-200',
+        sub: 'text-amber-600 dark:text-amber-400',
+    },
+    dilarang: {
+        wrapper: 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950',
+        icon: 'text-red-600',
+        title: 'text-red-800 dark:text-red-200',
+        sub: 'text-red-600 dark:text-red-400',
+    },
+};
+
+const jenisTindakanColors = {
+    pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+    selesai: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+};
+
 export default function Dashboard({
     stats = defaultStats,
     recent_bugar_selamat = [],
@@ -132,6 +182,7 @@ export default function Dashboard({
     leaderboard = {},
     target,
     new_badges = [],
+    streak = 0,
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const user = auth.user;
@@ -141,6 +192,7 @@ export default function Dashboard({
 
     const sudahIsiBugarHariIni = recent_bugar_selamat.length > 0 && isToday(recent_bugar_selamat[0].tanggal);
     const pendingCount = stats.laporan_bahaya.pending;
+    const isSAPUser = user.participation_level === 'staff' || user.participation_level === 'srstaff';
 
     const [dismissedKeys, setDismissedKeys] = useState<string[]>([]);
     useEffect(() => {
@@ -154,7 +206,11 @@ export default function Dashboard({
         setDismissedKeys(updated);
     };
 
-    // Leaderboard: tampilkan site user sendiri, atau site pertama yang ada
+    const [motivasi, setMotivasi] = useState(motivasiList[0]);
+    useEffect(() => {
+        setMotivasi(motivasiList[Math.floor(Math.random() * motivasiList.length)]);
+    }, []);
+
     const userSite = user.site ?? '';
     const leaderSites = Object.keys(leaderboard);
     const activeLeaderEntries = leaderboard[userSite] ?? leaderboard[leaderSites[0]] ?? [];
@@ -166,7 +222,7 @@ export default function Dashboard({
 
             <div className="space-y-3 pb-8">
 
-                {/* ① HERO — compact */}
+                {/* ① HERO — compact, tidak diubah */}
                 <div className="relative overflow-hidden rounded-2xl border" style={{ background: tod.gradientStyle }}>
                     <div className={`pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full blur-3xl ${tod.shimmer} animate-pulse`} />
                     <div className="relative flex items-center justify-between p-4">
@@ -187,18 +243,49 @@ export default function Dashboard({
                     </div>
                 </div>
 
-                {/* ② STATUS HARI INI — paling penting */}
-                {sudahIsiBugarHariIni ? (
-                    <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800 dark:bg-green-950">
-                        <ShieldCheck className="h-7 w-7 shrink-0 text-green-600" />
+                {/* ② STREAK + STATS STRIP */}
+                <div className="flex gap-2">
+                    {streak > 0 && (
+                        <div className="flex flex-1 items-center gap-1.5 rounded-xl border bg-orange-50 px-3 py-2 dark:bg-orange-950">
+                            <Flame className="h-4 w-4 shrink-0 text-orange-500" />
+                            <div>
+                                <p className="text-[11px] text-muted-foreground">Streak</p>
+                                <p className="text-sm font-bold text-orange-700 dark:text-orange-300">{streak} hari</p>
+                            </div>
+                        </div>
+                    )}
+                    <div className="flex flex-1 items-center gap-1.5 rounded-xl border bg-green-50 px-3 py-2 dark:bg-green-950">
+                        <ClipboardCheck className="h-4 w-4 shrink-0 text-green-600" />
                         <div>
-                            <p className="font-semibold text-green-800 dark:text-green-200">✅ Bugar Selamat sudah diisi</p>
-                            <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
-                                Status hari ini: <KelayakanBadge status={recent_bugar_selamat[0].status_kelayakan} />
-                            </p>
+                            <p className="text-[11px] text-muted-foreground">Bugar</p>
+                            <p className="text-sm font-bold text-green-700 dark:text-green-300">{stats.bugar_selamat.bulan_ini}×</p>
                         </div>
                     </div>
-                ) : (
+                    <div className="flex flex-1 items-center gap-1.5 rounded-xl border bg-red-50 px-3 py-2 dark:bg-red-950">
+                        <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
+                        <div>
+                            <p className="text-[11px] text-muted-foreground">Laporan</p>
+                            <p className="text-sm font-bold text-red-700 dark:text-red-300">{stats.laporan_bahaya.bulan_ini}×</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ③ STATUS HARI INI */}
+                {sudahIsiBugarHariIni ? (() => {
+                    const kelayakan = recent_bugar_selamat[0].status_kelayakan;
+                    const colors = kelayakanAlertColors[kelayakan];
+                    return (
+                        <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${colors.wrapper}`}>
+                            <ShieldCheck className={`h-7 w-7 shrink-0 ${colors.icon}`} />
+                            <div>
+                                <p className={`font-semibold ${colors.title}`}>✅ Bugar Selamat sudah diisi</p>
+                                <p className={`text-xs mt-0.5 ${colors.sub}`}>
+                                    Status hari ini: <KelayakanBadge status={kelayakan} />
+                                </p>
+                            </div>
+                        </div>
+                    );
+                })() : (
                     <Link href="/bugar-selamat/create" className="block">
                         <div className="flex items-center gap-3 rounded-xl border-2 border-amber-400 bg-amber-50 px-4 py-3 active:scale-[0.99] transition-transform dark:border-amber-700 dark:bg-amber-950">
                             <AlertTriangle className="h-7 w-7 shrink-0 text-amber-500" />
@@ -210,7 +297,7 @@ export default function Dashboard({
                     </Link>
                 )}
 
-                {/* ③ BADGE BARU (kondisional) */}
+                {/* ④ BADGE BARU (kondisional) */}
                 {visibleBadges.length > 0 && (
                     <div className="relative rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-3 dark:border-yellow-700 dark:bg-yellow-950">
                         <button
@@ -231,143 +318,138 @@ export default function Dashboard({
                     </div>
                 )}
 
-                {/* ④ TOMBOL AKSI UTAMA */}
-                <div className="grid grid-cols-2 gap-3">
-                    <Link href="/bugar-selamat/create" className="block">
-                        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-green-300 bg-green-50 px-3 py-4 text-center active:scale-95 transition-transform dark:border-green-700 dark:bg-green-950">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-200 dark:bg-green-800">
-                                <ClipboardCheck className="h-6 w-6 text-green-700 dark:text-green-300" />
+                {/* ⑤ TOMBOL AKSI UTAMA */}
+                <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Link href="/bugar-selamat/create" className="block">
+                            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-green-300 bg-green-50 px-3 py-4 text-center active:scale-95 transition-transform dark:border-green-700 dark:bg-green-950">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-200 dark:bg-green-800">
+                                    <ClipboardCheck className="h-6 w-6 text-green-700 dark:text-green-300" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-green-900 dark:text-green-100">Bugar Selamat</p>
+                                    <p className="text-[11px] text-green-600 dark:text-green-400">Checklist layak kerja</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-sm font-bold text-green-900 dark:text-green-100">Bugar Selamat</p>
-                                <p className="text-[11px] text-green-600 dark:text-green-400">Checklist layak kerja</p>
+                        </Link>
+                        <Link href="/laporan-bahaya/create" className="block">
+                            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-red-300 bg-red-50 px-3 py-4 text-center active:scale-95 transition-transform dark:border-red-700 dark:bg-red-950">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-200 dark:bg-red-800">
+                                    <AlertTriangle className="h-6 w-6 text-red-700 dark:text-red-300" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-red-900 dark:text-red-100">Laporan Bahaya</p>
+                                    <p className="text-[11px] text-red-600 dark:text-red-400">Laporkan kondisi bahaya</p>
+                                </div>
                             </div>
+                        </Link>
+                    </div>
+
+                    {/* SAP shortcuts — staff & srstaff saja */}
+                    {isSAPUser && (
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => router.visit('/sap/observasi-keselamatan/create')}
+                                className="block w-full"
+                            >
+                                <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-violet-300 bg-violet-50 px-3 py-4 text-center active:scale-95 transition-transform dark:border-violet-700 dark:bg-violet-950">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-200 dark:bg-violet-800">
+                                        <Eye className="h-6 w-6 text-violet-700 dark:text-violet-300" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-violet-900 dark:text-violet-100">Observasi</p>
+                                        <p className="text-[11px] text-violet-600 dark:text-violet-400">Observasi keselamatan</p>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button type="button" className="w-full">
+                                        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-teal-300 bg-teal-50 px-3 py-4 text-center active:scale-95 transition-transform dark:border-teal-700 dark:bg-teal-950">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-200 dark:bg-teal-800">
+                                                <HardHat className="h-6 w-6 text-teal-700 dark:text-teal-300" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-teal-900 dark:text-teal-100">Inspeksi ▾</p>
+                                                <p className="text-[11px] text-teal-600 dark:text-teal-400">Pilih jenis inspeksi</p>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-52">
+                                    <DropdownMenuItem onClick={() => router.visit('/sap/inspeksi-kantor/create')}>
+                                        🏢 Inspeksi Kantor
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => router.visit('/sap/inspeksi-tambang/create')}>
+                                        ⛏️ Inspeksi Tambang
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => router.visit('/sap/inspeksi-workshop/create')}>
+                                        🔧 Inspeksi Workshop
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => router.visit('/sap/inspeksi-mess/create')}>
+                                        🏠 Inspeksi Mess
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
-                    </Link>
-                    <Link href="/laporan-bahaya/create" className="block">
-                        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-red-300 bg-red-50 px-3 py-4 text-center active:scale-95 transition-transform dark:border-red-700 dark:bg-red-950">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-200 dark:bg-red-800">
-                                <AlertTriangle className="h-6 w-6 text-red-700 dark:text-red-300" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-bold text-red-900 dark:text-red-100">Laporan Bahaya</p>
-                                <p className="text-[11px] text-red-600 dark:text-red-400">Laporkan kondisi bahaya</p>
-                            </div>
-                        </div>
-                    </Link>
+                    )}
                 </div>
 
-                {/* ⑤ TARGET — motivasi partisipasi */}
+                {/* ⑥ TARGET PARTISIPASI */}
                 <div className="flex flex-col gap-3">
-                    {/* Target Partisipasi */}
                     {target ? (
-                        <div className="flex flex-col rounded-2xl border bg-blue-50 dark:bg-blue-950 py-4 px-4 gap-3">
-                            <p className="text-xs font-bold text-blue-800 dark:text-blue-200">Target Partisipasi</p>
+                        <Card>
+                            <div className="px-4 pt-4 pb-2">
+                                <p className="text-xs font-bold">Target Partisipasi Bulan Ini</p>
+                            </div>
+                            <CardContent className="pt-0 space-y-3">
+                                {/* Bugar Selamat — hijau */}
+                                <TargetMetricRow
+                                    label="Bugar Selamat"
+                                    value={`${target.bugar.hari_terpenuhi}/${target.bugar.hari_berlalu} hari`}
+                                    persen={target.bugar.persen}
+                                    barColor="bg-green-500 dark:bg-green-400"
+                                    trackColor="bg-green-100 dark:bg-green-900"
+                                    textColor="text-green-700 dark:text-green-300"
+                                />
 
-                            {/* Bugar selamat per hari */}
-                            <div className="flex flex-col gap-1">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[11px] text-muted-foreground">Bugar Selamat</span>
-                                    <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300">
-                                        {target.bugar.hari_terpenuhi}/{target.bugar.hari_berlalu} hari
-                                    </span>
-                                </div>
-                                <div className="h-2 w-full rounded-full bg-blue-200 dark:bg-blue-800 overflow-hidden">
-                                    <div
-                                        className="h-full rounded-full bg-blue-500 dark:bg-blue-400 transition-all"
-                                        style={{ width: `${target.bugar.persen}%` }}
+                                {/* Laporan Bahaya — merah, bar per minggu */}
+                                <WeeklyMetricRow
+                                    label="Laporan Bahaya"
+                                    metric={target.laporan}
+                                    activeColor="bg-red-500 dark:bg-red-400"
+                                    inactiveColor="bg-red-100 dark:bg-red-900"
+                                    textColor="text-red-700 dark:text-red-300"
+                                    dotColor="text-red-600 dark:text-red-300"
+                                />
+
+                                {/* Inspeksi — biru */}
+                                {target.inspeksi && (
+                                    <WeeklyMetricRow
+                                        label="Inspeksi"
+                                        metric={target.inspeksi}
+                                        activeColor="bg-blue-500 dark:bg-blue-400"
+                                        inactiveColor="bg-blue-100 dark:bg-blue-900"
+                                        textColor="text-blue-700 dark:text-blue-300"
+                                        dotColor="text-blue-600 dark:text-blue-300"
                                     />
-                                </div>
-                            </div>
+                                )}
 
-                            {/* Laporan bahaya per minggu */}
-                            <div className="flex flex-col gap-1">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[11px] text-muted-foreground">Laporan Bahaya</span>
-                                    <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300">
-                                        {target.laporan.minggu_terpenuhi}/{target.laporan.minggu_berlalu} minggu
-                                    </span>
-                                </div>
-                                <div className="flex gap-1">
-                                    {target.laporan.weeks.map((w, i) => (
-                                        <div
-                                            key={i}
-                                            title={`Minggu ${i + 1}: ${w.count} laporan`}
-                                            className={`h-2.5 flex-1 rounded-full transition-all ${
-                                                w.terpenuhi ? 'bg-blue-500 dark:bg-blue-400' : 'bg-blue-200 dark:bg-blue-800'
-                                            }`}
-                                        />
-                                    ))}
-                                </div>
-                                <div className="flex gap-x-1">
-                                    {target.laporan.weeks.map((w, i) => (
-                                        <span key={i} className={`text-[10px] flex-1 text-center ${w.terpenuhi ? 'text-blue-600 dark:text-blue-300 font-semibold' : 'text-muted-foreground'}`}>
-                                            M{i + 1}: {w.count}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Inspeksi per minggu (staff/srstaff) */}
-                            {target.inspeksi && (
-                                <div className="flex flex-col gap-1">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[11px] text-muted-foreground">Inspeksi</span>
-                                        <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300">
-                                            {target.inspeksi.minggu_terpenuhi}/{target.inspeksi.minggu_berlalu} minggu
-                                        </span>
-                                    </div>
-                                    <div className="flex gap-1">
-                                        {target.inspeksi.weeks.map((w, i) => (
-                                            <div
-                                                key={i}
-                                                title={`Minggu ${i + 1}: ${w.count} inspeksi`}
-                                                className={`h-2.5 flex-1 rounded-full transition-all ${
-                                                    w.terpenuhi ? 'bg-blue-500 dark:bg-blue-400' : 'bg-blue-200 dark:bg-blue-800'
-                                                }`}
-                                            />
-                                        ))}
-                                    </div>
-                                    <div className="flex gap-x-1">
-                                        {target.inspeksi.weeks.map((w, i) => (
-                                            <span key={i} className={`text-[10px] flex-1 text-center ${w.terpenuhi ? 'text-blue-600 dark:text-blue-300 font-semibold' : 'text-muted-foreground'}`}>
-                                                M{i + 1}: {w.count}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Observasi keselamatan per minggu (staff/srstaff) */}
-                            {target.observasi && (
-                                <div className="flex flex-col gap-1">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[11px] text-muted-foreground">Observasi Keselamatan</span>
-                                        <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300">
-                                            {target.observasi.minggu_terpenuhi}/{target.observasi.minggu_berlalu} minggu
-                                        </span>
-                                    </div>
-                                    <div className="flex gap-1">
-                                        {target.observasi.weeks.map((w, i) => (
-                                            <div
-                                                key={i}
-                                                title={`Minggu ${i + 1}: ${w.count} observasi`}
-                                                className={`h-2.5 flex-1 rounded-full transition-all ${
-                                                    w.terpenuhi ? 'bg-blue-500 dark:bg-blue-400' : 'bg-blue-200 dark:bg-blue-800'
-                                                }`}
-                                            />
-                                        ))}
-                                    </div>
-                                    <div className="flex gap-x-1">
-                                        {target.observasi.weeks.map((w, i) => (
-                                            <span key={i} className={`text-[10px] flex-1 text-center ${w.terpenuhi ? 'text-blue-600 dark:text-blue-300 font-semibold' : 'text-muted-foreground'}`}>
-                                                M{i + 1}: {w.count}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                                {/* Observasi — ungu */}
+                                {target.observasi && (
+                                    <WeeklyMetricRow
+                                        label="Observasi Keselamatan"
+                                        metric={target.observasi}
+                                        activeColor="bg-violet-500 dark:bg-violet-400"
+                                        inactiveColor="bg-violet-100 dark:bg-violet-900"
+                                        textColor="text-violet-700 dark:text-violet-300"
+                                        dotColor="text-violet-600 dark:text-violet-300"
+                                    />
+                                )}
+                            </CardContent>
+                        </Card>
                     ) : (
                         <div className="flex flex-col items-center justify-center rounded-2xl border bg-muted/30 py-4 px-3 text-center">
                             <p className="text-xs text-muted-foreground">Target belum diatur</p>
@@ -375,7 +457,7 @@ export default function Dashboard({
                     )}
                 </div>
 
-                {/* ⑥ PERINGATAN LAPORAN PENDING */}
+                {/* ⑦ PERINGATAN LAPORAN PENDING */}
                 {pendingCount > 0 && (
                     <Link href="/laporan-bahaya" className="block">
                         <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
@@ -388,7 +470,7 @@ export default function Dashboard({
                     </Link>
                 )}
 
-                {/* ⑦ LEADERBOARD — ringkas, site user sendiri, top 3 */}
+                {/* ⑧ LEADERBOARD */}
                 {activeLeaderEntries.length > 0 && (
                     <Card>
                         <div className="flex items-center justify-between px-4 pt-4 pb-2">
@@ -397,7 +479,10 @@ export default function Dashboard({
                         </div>
                         <CardContent className="pt-0 space-y-1.5">
                             {activeLeaderEntries.slice(0, 3).map((entry, idx) => (
-                                <div key={entry.id} className="flex items-center gap-3 rounded-xl bg-muted/40 px-3 py-2">
+                                <div
+                                    key={entry.id}
+                                    className={`flex items-center gap-3 rounded-xl px-3 py-2 ${entry.id === user.id ? 'bg-primary/10 ring-1 ring-primary/20' : 'bg-muted/40'}`}
+                                >
                                     <span className="text-lg leading-none w-7 shrink-0 text-center">
                                         {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
                                     </span>
@@ -408,7 +493,10 @@ export default function Dashboard({
                                             {entry.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
                                         </div>
                                     )}
-                                    <p className="flex-1 text-sm font-medium truncate">{entry.name}</p>
+                                    <p className="flex-1 text-sm font-medium truncate">
+                                        {entry.name}
+                                        {entry.id === user.id && <span className="ml-1 text-[10px] text-primary font-semibold">(kamu)</span>}
+                                    </p>
                                     <span className="text-sm font-bold text-primary">{entry.skor} <span className="text-[11px] font-normal text-muted-foreground">poin</span></span>
                                 </div>
                             ))}
@@ -419,7 +507,7 @@ export default function Dashboard({
                     </Card>
                 )}
 
-                {/* ⑧ RIWAYAT — 2 tab dalam 1 card, max 3 entri */}
+                {/* ⑨ RIWAYAT */}
                 <Card>
                     <div className="flex items-center gap-1 px-4 pt-4 pb-2">
                         <button
@@ -474,8 +562,11 @@ export default function Dashboard({
                                                     <p className="text-sm font-medium">{fmtDate(r.tanggal)}</p>
                                                     <p className="truncate text-xs text-muted-foreground">{r.lokasi}</p>
                                                 </div>
-                                                <div className="ml-2 flex items-center gap-1">
+                                                <div className="ml-2 flex items-center gap-1.5 shrink-0">
                                                     <RiskBadge level={r.tingkat_risiko} />
+                                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${jenisTindakanColors[r.status_tindakan]}`}>
+                                                        {r.status_tindakan === 'pending' ? 'Pending' : 'Selesai'}
+                                                    </span>
                                                     <ChevronRight size={12} className="text-muted-foreground" />
                                                 </div>
                                             </div>
@@ -489,11 +580,88 @@ export default function Dashboard({
                     </CardContent>
                 </Card>
 
-                <p className="text-center text-xs text-muted-foreground pt-1">
-                    Datang sehat — kerja aman — pulang selamat
+                <p className="text-center text-xs text-muted-foreground pt-1 italic">
+                    💬 {motivasi}
                 </p>
             </div>
         </>
+    );
+}
+
+function TargetMetricRow({
+    label,
+    value,
+    persen,
+    barColor,
+    trackColor,
+    textColor,
+}: {
+    label: string;
+    value: string;
+    persen: number;
+    barColor: string;
+    trackColor: string;
+    textColor: string;
+}) {
+    return (
+        <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground">{label}</span>
+                <div className="flex items-center gap-2">
+                    <span className={`text-[11px] font-semibold ${textColor}`}>{value}</span>
+                    <span className={`text-[11px] font-bold ${textColor}`}>{persen}%</span>
+                </div>
+            </div>
+            <div className={`h-2 w-full rounded-full overflow-hidden ${trackColor}`}>
+                <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${persen}%` }} />
+            </div>
+        </div>
+    );
+}
+
+function WeeklyMetricRow({
+    label,
+    metric,
+    activeColor,
+    inactiveColor,
+    textColor,
+    dotColor,
+}: {
+    label: string;
+    metric: { weeks: { count: number; terpenuhi: boolean }[]; minggu_berlalu: number; minggu_terpenuhi: number; persen: number };
+    activeColor: string;
+    inactiveColor: string;
+    textColor: string;
+    dotColor: string;
+}) {
+    return (
+        <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground">{label}</span>
+                <div className="flex items-center gap-2">
+                    <span className={`text-[11px] font-semibold ${textColor}`}>
+                        {metric.minggu_terpenuhi}/{metric.minggu_berlalu} minggu
+                    </span>
+                    <span className={`text-[11px] font-bold ${textColor}`}>{metric.persen}%</span>
+                </div>
+            </div>
+            <div className="flex gap-1">
+                {metric.weeks.map((w, i) => (
+                    <div
+                        key={i}
+                        title={`Minggu ${i + 1}: ${w.count}`}
+                        className={`h-2.5 flex-1 rounded-full transition-all ${w.terpenuhi ? activeColor : inactiveColor}`}
+                    />
+                ))}
+            </div>
+            <div className="flex gap-x-1">
+                {metric.weeks.map((w, i) => (
+                    <span key={i} className={`text-[10px] flex-1 text-center ${w.terpenuhi ? `${dotColor} font-semibold` : 'text-muted-foreground'}`}>
+                        M{i + 1}: {w.count}
+                    </span>
+                ))}
+            </div>
+        </div>
     );
 }
 

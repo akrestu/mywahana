@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Exports;
 
@@ -59,4 +59,3 @@ class InspeksiTambangExport implements FromQuery, WithHeadings, WithMapping, Sho
         ];
     }
 }
-

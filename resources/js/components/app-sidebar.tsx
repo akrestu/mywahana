@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BedDouble, Building2, ClipboardCheck, HeartPulse, LayoutGrid, MapPin, Mountain, ShieldCheck, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BedDouble, Building2, ClipboardCheck, HeartPulse, LayoutGrid, MapPin, Mountain, ShieldCheck, Target, Users, Wrench } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
 import { NavMain } from '@/components/nav-main';
@@ -44,21 +44,27 @@ export function AppSidebar() {
             {
                 label: 'Monitoring',
                 items: [
-                    { title: 'Bugar Selamat', href: '/admin/bugar-selamat', icon: HeartPulse },
-                    { title: 'Laporan Bahaya', href: '/admin/laporan-bahaya', icon: AlertTriangle },
-                    { title: 'Observasi Keselamatan', href: '/admin/observasi-keselamatan', icon: ClipboardCheck },
+                    { title: 'Bugar Selamat',          href: '/admin/bugar-selamat',          icon: HeartPulse },
+                    { title: 'Laporan Bahaya',          href: '/admin/laporan-bahaya',          icon: AlertTriangle },
+                    { title: 'Observasi Keselamatan',   href: '/admin/observasi-keselamatan',   icon: ClipboardCheck },
+                    { title: 'Inspeksi Kantor',         href: '/admin/inspeksi-kantor',         icon: Building2 },
+                    { title: 'Inspeksi Tambang',        href: '/admin/inspeksi-tambang',        icon: Mountain },
+                    { title: 'Inspeksi Workshop',       href: '/admin/inspeksi-workshop',       icon: Wrench },
+                    { title: 'Inspeksi Mess',           href: '/admin/inspeksi-mess',           icon: BedDouble },
                 ],
             },
             {
                 label: 'Manajemen',
                 items: [
-                    { title: 'Kelola Pengguna', href: '/admin/users', icon: Users },
-                    { title: 'Kelola Site', href: '/admin/sites', icon: MapPin },
+                    { title: 'Kelola Pengguna', href: '/admin/users',    icon: Users },
+                    { title: 'Kelola Site',     href: '/admin/sites',    icon: MapPin },
+                    { title: 'Target Kinerja',  href: '/admin/targets',  icon: Target },
                 ],
             },
           ]
         : [
             {
+                label: 'Menu Utama',
                 items: [
                     { title: 'Dashboard', href: dashboardUrl, icon: LayoutGrid },
                     { title: 'Bugar Selamat', href: bugarSelamatIndex.url(), icon: HeartPulse },

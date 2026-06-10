@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Exports;
 
@@ -59,4 +59,3 @@ class InspeksiMessExport implements FromQuery, WithHeadings, WithMapping, Should
         ];
     }
 }
-

@@ -63,8 +63,18 @@ class BugarSelamatController extends Controller
 
         $bugarSelamat->load('user');
 
+        $backUrl = '/bugar-selamat';
+        if ($request->user()->is_admin) {
+            if ($request->query('ref') === 'kalender') {
+                $backUrl = '/admin/bugar-selamat?view=kalender';
+            } elseif ($request->query('ref') === 'monitoring') {
+                $backUrl = '/admin/bugar-selamat';
+            }
+        }
+
         return Inertia::render('bugar-selamat/show', [
-            'record' => $bugarSelamat,
+            'record'   => $bugarSelamat,
+            'back_url' => $backUrl,
         ]);
     }
 

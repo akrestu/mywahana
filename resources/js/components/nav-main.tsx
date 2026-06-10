@@ -23,7 +23,7 @@ export function NavMain({ groups, items }: { groups?: NavGroup[]; items?: NavIte
     return (
         <>
             {resolvedGroups.map((group, i) => (
-                <SidebarGroup key={i} className="px-2 py-0">
+                <SidebarGroup key={i} className="px-2 py-1">
                     {group.label && (
                         <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40">
                             {group.label}

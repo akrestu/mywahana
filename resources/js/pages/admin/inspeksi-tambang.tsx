@@ -28,7 +28,8 @@ type InspeksiRecord = {
 type Paginated = { data: InspeksiRecord[]; total: number; next_page_url: string | null; prev_page_url: string | null };
 type Summary = { total: number; menunggu_re_inspeksi: number; selesai: number; ditolak: number };
 type Filters = { site?: string; status?: string; search?: string; periode?: string };
-type Props = { records: Paginated; filters: Filters; summary: Summary };
+type SiteOption = { value: string; label: string };
+type Props = { records: Paginated; filters: Filters; summary: Summary; sites: SiteOption[] };
 
 const PERIODE_OPTIONS = [
     { value: 'hari_ini',   label: 'Hari Ini' },
@@ -54,7 +55,7 @@ function StatusBadge({ status }: { status: InspeksiRecord['status'] }) {
     return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-100">Menunggu Re-Inspeksi</Badge>;
 }
 
-export default function AdminInspeksiTambang({ records, filters, summary }: Props) {
+export default function AdminInspeksiTambang({ records, filters, summary, sites }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [toDelete, setToDelete] = useState<InspeksiRecord | null>(null);
     const [deleting, setDeleting] = useState(false);
@@ -133,8 +134,9 @@ export default function AdminInspeksiTambang({ records, filters, summary }: Prop
                             <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Semua site" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Semua Site</SelectItem>
-                                <SelectItem value="baratama">Baratama</SelectItem>
-                                <SelectItem value="bandhawa">Bandhawa</SelectItem>
+                                {sites.map((s) => (
+                                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                         <Select value={filters.status ?? 'all'} onValueChange={v => applyFilters({ status: v })}>

@@ -31,7 +31,8 @@ type PaginatedRecords = {
 
 type Summary = { pending: number; aa: number; a: number; b: number; c: number; total: number };
 type Filters = { site?: string; tingkat_risiko?: string; status_tindakan?: string; search?: string; periode?: string };
-type Props = { records: PaginatedRecords; filters: Filters; summary: Summary };
+type SiteOption = { value: string; label: string };
+type Props = { records: PaginatedRecords; filters: Filters; summary: Summary; sites: SiteOption[] };
 
 const PERIODE_OPTIONS = [
     { value: 'hari_ini',   label: 'Hari Ini' },
@@ -46,7 +47,7 @@ const cardBorder: Record<string, string> = {
     C:  'border-l-4 border-l-green-500',
 };
 
-export default function AdminLaporanBahaya({ records, filters, summary }: Props) {
+export default function AdminLaporanBahaya({ records, filters, summary, sites }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [toDelete, setToDelete] = useState<LaporanRecord | null>(null);
     const [deleting, setDeleting] = useState(false);
@@ -173,8 +174,9 @@ export default function AdminLaporanBahaya({ records, filters, summary }: Props)
                             <SelectTrigger className="text-sm"><SelectValue placeholder="Semua Site" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Semua Site</SelectItem>
-                                <SelectItem value="baratama">Baratama</SelectItem>
-                                <SelectItem value="bandhawa">Bandhawa</SelectItem>
+                                {sites.map((s) => (
+                                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                         <Select value={filters.tingkat_risiko ?? 'all'} onValueChange={(v) => applyFilters({ tingkat_risiko: v === 'all' ? undefined : v })}>

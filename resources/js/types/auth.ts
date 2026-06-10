@@ -4,7 +4,8 @@ export type User = {
     email: string;
     nik?: string | null;
     jabatan?: string | null;
-    site?: 'baratama' | 'bandhawa' | null;
+    departemen?: string | null;
+    site?: string | null;
     is_admin?: boolean;
     avatar?: string;
     email_verified_at: string | null;

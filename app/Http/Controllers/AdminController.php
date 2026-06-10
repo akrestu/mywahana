@@ -33,7 +33,36 @@ class AdminController extends Controller
 {
     public function index()
     {
-        $now = Carbon::now();
+        $now        = Carbon::now();
+        $todayDate  = $now->toDateString();
+
+        $inspeksiTotal    = InspeksiKantor::count() + InspeksiTambang::count() + InspeksiWorkshop::count() + InspeksiMess::count();
+        $inspeksiBulanIni = InspeksiKantor::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count()
+            + InspeksiTambang::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count()
+            + InspeksiWorkshop::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count()
+            + InspeksiMess::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count();
+
+        $totalKaryawan = User::where('is_admin', false)->count();
+        $sudahSubmitBs = BugarSelamat::whereDate('tanggal', $todayDate)->distinct()->count('user_id');
+
+        $dilarangHariIni = BugarSelamat::whereDate('tanggal', $todayDate)
+            ->whereIn('id', function ($q) use ($todayDate) {
+                $q->selectRaw('MAX(id)')
+                    ->from('bugar_selamat')
+                    ->whereDate('tanggal', $todayDate)
+                    ->groupBy('user_id');
+            })
+            ->where('status_kelayakan', 'dilarang')
+            ->with('user:id,name,jabatan,site,avatar')
+            ->get()
+            ->map(fn ($bs) => [
+                'id'      => $bs->user->id ?? null,
+                'name'    => $bs->user->name ?? '-',
+                'jabatan' => $bs->user->jabatan ?? null,
+                'site'    => $bs->user->site ?? null,
+                'avatar'  => $bs->user->avatar ? asset('storage/' . $bs->user->avatar) : null,
+            ])
+            ->values();
 
         $stats = [
             'bugar_selamat' => [
@@ -53,32 +82,160 @@ class AdminController extends Controller
                 'pending'  => LaporanBahaya::where('status_tindakan', 'pending')->count(),
                 'selesai'  => LaporanBahaya::where('status_tindakan', 'selesai')->count(),
             ],
+            'observasi_keselamatan' => [
+                'total'               => ObservasiKeselamatan::count(),
+                'bulan_ini'           => ObservasiKeselamatan::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
+                'menunggu_konfirmasi' => ObservasiKeselamatan::where('status', 'menunggu_konfirmasi')->count(),
+            ],
+            'inspeksi' => [
+                'total'    => $inspeksiTotal,
+                'bulan_ini'=> $inspeksiBulanIni,
+                'kantor'   => InspeksiKantor::count(),
+                'tambang'  => InspeksiTambang::count(),
+                'workshop' => InspeksiWorkshop::count(),
+                'mess'     => InspeksiMess::count(),
+            ],
             'users' => [
-                'total'    => User::where('is_admin', false)->count(),
+                'total'    => $totalKaryawan,
                 'baratama' => User::where('is_admin', false)->where('site', 'baratama')->count(),
                 'bandhawa' => User::where('is_admin', false)->where('site', 'bandhawa')->count(),
             ],
         ];
 
+        $leaderboard           = $this->buildLeaderboard($now);
+        $participation_targets = ParticipationTarget::all(['level', 'laporan_per_minggu', 'inspeksi_per_minggu', 'observasi_per_minggu', 'bugar_per_hari']);
+
         return Inertia::render('admin/index', [
-            'stats'          => $stats,
-            'trend'          => $this->buildMonthlyTrend($now),
-            'site_breakdown' => $this->buildSiteBreakdown(),
+            'stats'                 => $stats,
+            'trend'                 => $this->buildMonthlyTrend($now),
+            'site_breakdown'        => $this->buildSiteBreakdown(),
+            'leaderboard'           => $leaderboard,
+            'participation_targets' => $participation_targets,
+            'compliance'            => [
+                'total_karyawan'  => $totalKaryawan,
+                'sudah_submit_bs' => $sudahSubmitBs,
+                'dilarang_list'   => $dilarangHariIni,
+            ],
         ]);
     }
 
     public function bugarSelamat(Request $request)
     {
-        $query = BugarSelamat::with('user')->latest('tanggal');
+        $viewMode = $request->get('view', 'harian');
+        $site     = $request->filled('site')   ? $request->site   : null;
+        $search   = $request->filled('search') ? $request->search : null;
+        $sites    = Site::orderBy('label')->get(['value', 'label']);
 
-        if ($request->filled('site')) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        // ── Harian view: semua karyawan + status hari tertentu ───────────────
+        if ($viewMode === 'harian') {
+            $tanggal = $request->filled('tanggal') ? $request->tanggal : today()->toDateString();
+
+            $users = User::where('is_admin', false)
+                ->when($site,   fn ($q) => $q->where('site', $site))
+                ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%$search%")
+                      ->orWhere('nik',  'like', "%$search%");
+                }))
+                ->orderBy('site')->orderBy('name')
+                ->get(['id', 'name', 'nik', 'site']);
+
+            $userIds = $users->pluck('id');
+
+            $entries = BugarSelamat::whereDate('tanggal', $tanggal)
+                ->whereIn('user_id', $userIds)
+                ->get(['id', 'user_id', 'status_kelayakan', 'shift', 'siap_bekerja', 'hari_ke'])
+                ->keyBy('user_id')
+                ->map(fn ($r) => [
+                    'id'           => $r->id,
+                    'status'       => $r->status_kelayakan,
+                    'shift'        => $r->shift,
+                    'siap_bekerja' => (bool) $r->siap_bekerja,
+                    'hari_ke'      => $r->hari_ke,
+                ]);
+
+            $filled   = $entries->count();
+            $total    = $users->count();
+
+            return Inertia::render('admin/bugar-selamat', [
+                'view'    => 'harian',
+                'tanggal' => $tanggal,
+                'users'   => $users,
+                'entries' => $entries,
+                'sites'   => $sites,
+                'summary' => [
+                    'filled'     => $filled,
+                    'not_filled' => $total - $filled,
+                    'layak'      => $entries->where('status', 'layak')->count(),
+                    'catatan'    => $entries->where('status', 'catatan')->count(),
+                    'dilarang'   => $entries->where('status', 'dilarang')->count(),
+                    'total'      => $total,
+                ],
+                'filters' => $request->only('site', 'search', 'tanggal', 'view'),
+            ]);
         }
 
-        if ($request->filled('search')) {
-            $query->whereHas('user', function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                    ->orWhere('nik', 'like', "%{$request->search}%");
+        // ── Kalender view: matriks karyawan × tanggal dalam satu bulan ───────
+        if ($viewMode === 'kalender') {
+            $tanggal   = $request->filled('tanggal') ? $request->tanggal : today()->toDateString();
+            $carbon    = Carbon::parse($tanggal);
+            $startDate = $carbon->copy()->startOfMonth();
+            $endDate   = $carbon->copy()->endOfMonth()->min(today());
+
+            $users = User::where('is_admin', false)
+                ->when($site,   fn ($q) => $q->where('site', $site))
+                ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%$search%")
+                      ->orWhere('nik',  'like', "%$search%");
+                }))
+                ->orderBy('site')->orderBy('name')
+                ->get(['id', 'name', 'nik', 'site']);
+
+            $userIds = $users->pluck('id');
+
+            $entries = BugarSelamat::whereBetween('tanggal', [$startDate, $endDate])
+                ->whereIn('user_id', $userIds)
+                ->get(['id', 'user_id', 'tanggal', 'status_kelayakan', 'shift', 'siap_bekerja'])
+                ->keyBy(fn ($r) => $r->user_id . '_' . Carbon::parse($r->tanggal)->toDateString())
+                ->map(fn ($r) => [
+                    'id'           => $r->id,
+                    'status'       => $r->status_kelayakan,
+                    'shift'        => $r->shift,
+                    'siap_bekerja' => (bool) $r->siap_bekerja,
+                ]);
+
+            $dates   = [];
+            $current = $startDate->copy();
+            while ($current->lte($endDate)) {
+                $dates[] = $current->toDateString();
+                $current->addDay();
+            }
+
+            return Inertia::render('admin/bugar-selamat', [
+                'view'    => 'kalender',
+                'tanggal' => $tanggal,
+                'users'   => $users,
+                'dates'   => $dates,
+                'entries' => $entries,
+                'sites'   => $sites,
+                'summary' => [
+                    'total' => $users->count(),
+                    'bulan' => $carbon->locale('id')->isoFormat('MMMM YYYY'),
+                ],
+                'filters' => $request->only('site', 'search', 'tanggal', 'view'),
+            ]);
+        }
+
+        // ── Riwayat/Daftar view: paginated list (existing behaviour) ─────────
+        $query = BugarSelamat::with('user')->latest('tanggal');
+
+        if ($site) {
+            $query->whereHas('user', fn ($q) => $q->where('site', $site));
+        }
+
+        if ($search) {
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('nik', 'like', "%$search%");
             });
         }
 
@@ -91,15 +248,14 @@ class AdminController extends Controller
             };
         }
 
-        // Summary dihitung sebelum filter status agar selalu mencerminkan gambaran menyeluruh
         $summaryQuery = clone $query;
         $summaryData  = $summaryQuery->selectRaw('status_kelayakan, count(*) as total')
             ->groupBy('status_kelayakan')
             ->pluck('total', 'status_kelayakan');
 
         $summary = [
-            'layak'    => (int) ($summaryData['layak'] ?? 0),
-            'catatan'  => (int) ($summaryData['catatan'] ?? 0),
+            'layak'    => (int) ($summaryData['layak']    ?? 0),
+            'catatan'  => (int) ($summaryData['catatan']  ?? 0),
             'dilarang' => (int) ($summaryData['dilarang'] ?? 0),
             'total'    => (int) $summaryData->sum(),
         ];
@@ -109,8 +265,10 @@ class AdminController extends Controller
         }
 
         return Inertia::render('admin/bugar-selamat', [
+            'view'    => 'daftar',
             'records' => $query->paginate(20)->withQueryString(),
-            'filters' => $request->only('site', 'status', 'search', 'periode'),
+            'sites'   => $sites,
+            'filters' => $request->only('site', 'status', 'search', 'periode', 'view'),
             'summary' => $summary,
         ]);
     }
@@ -168,6 +326,7 @@ class AdminController extends Controller
             'records' => $query->paginate(20)->withQueryString(),
             'filters' => $request->only('site', 'tingkat_risiko', 'status_tindakan', 'search', 'periode'),
             'summary' => $summary,
+            'sites'   => Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -227,6 +386,7 @@ class AdminController extends Controller
             'records' => $query->paginate(20)->withQueryString(),
             'filters' => $request->only('site', 'status', 'search', 'periode'),
             'summary' => $summary,
+            'sites'   => Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -250,6 +410,7 @@ class AdminController extends Controller
             'records' => $query->paginate(20)->withQueryString(),
             'filters' => $request->only('site', 'status', 'search', 'periode'),
             'summary' => $summary,
+            'sites'   => Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -271,6 +432,7 @@ class AdminController extends Controller
             'records' => $query->paginate(20)->withQueryString(),
             'filters' => $request->only('site', 'status', 'search', 'periode'),
             'summary' => $summary,
+            'sites'   => Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -292,6 +454,7 @@ class AdminController extends Controller
             'records' => $query->paginate(20)->withQueryString(),
             'filters' => $request->only('site', 'status', 'search', 'periode'),
             'summary' => $summary,
+            'sites'   => Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -313,6 +476,7 @@ class AdminController extends Controller
             'records' => $query->paginate(20)->withQueryString(),
             'filters' => $request->only('site', 'status', 'search', 'periode'),
             'summary' => $summary,
+            'sites'   => Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -535,6 +699,7 @@ class AdminController extends Controller
         return Inertia::render('admin/users', [
             'users'   => $query->paginate(20)->withQueryString(),
             'filters' => $request->only('search', 'site', 'is_admin', 'participation_level'),
+            'sites'   => Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -677,46 +842,95 @@ class AdminController extends Controller
         return back();
     }
 
+    private function buildLeaderboard(Carbon $now): array
+    {
+        $sites  = Site::pluck('value')->all();
+        $result = [];
+
+        foreach ($sites as $site) {
+            $users = User::where('is_admin', false)
+                ->where('site', $site)
+                ->withCount([
+                    'bugarSelamats as bs_count'   => fn ($q) => $q->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year),
+                    'laporanBahayas as lb_count'  => fn ($q) => $q->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year),
+                ])
+                ->get(['id', 'name', 'jabatan', 'avatar'])
+                ->map(fn ($u) => [
+                    'id'      => $u->id,
+                    'name'    => $u->name,
+                    'jabatan' => $u->jabatan,
+                    'avatar'  => $u->avatar ? asset('storage/' . $u->avatar) : null,
+                    'bs'      => $u->bs_count,
+                    'lb'      => $u->lb_count,
+                    'skor'    => $u->bs_count + ($u->lb_count * 2),
+                ])
+                ->filter(fn ($u) => $u['skor'] > 0)
+                ->sortByDesc('skor')
+                ->values()
+                ->take(5);
+
+            $result[$site] = $users;
+        }
+
+        return $result;
+    }
+
     private function buildMonthlyTrend(Carbon $now): array
     {
+        $since  = $now->copy()->subMonths(5)->startOfMonth();
         $months = collect(range(5, 0))->map(fn ($i) => $now->copy()->subMonths($i));
 
-        $bugarData = BugarSelamat::where('tanggal', '>=', $now->copy()->subMonths(5)->startOfMonth())
-            ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as month, status_kelayakan, COUNT(*) as total")
-            ->groupBy('month', 'status_kelayakan')
-            ->get();
+        $bugarData = BugarSelamat::where('tanggal', '>=', $since)
+            ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as month, COUNT(*) as total")
+            ->groupBy('month')->get()->keyBy('month');
 
-        $laporanData = LaporanBahaya::where('tanggal', '>=', $now->copy()->subMonths(5)->startOfMonth())
-            ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as month, tingkat_risiko, COUNT(*) as total")
-            ->groupBy('month', 'tingkat_risiko')
-            ->get();
+        $laporanData = LaporanBahaya::where('tanggal', '>=', $since)
+            ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as month, COUNT(*) as total")
+            ->groupBy('month')->get()->keyBy('month');
 
-        return $months->map(function (Carbon $month) use ($bugarData, $laporanData) {
+        $observasiData = ObservasiKeselamatan::where('tanggal', '>=', $since)
+            ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as month, COUNT(*) as total")
+            ->groupBy('month')->get()->keyBy('month');
+
+        $inspeksiData = collect();
+        foreach ([InspeksiKantor::class, InspeksiTambang::class, InspeksiWorkshop::class, InspeksiMess::class] as $model) {
+            $model::where('tanggal', '>=', $since)
+                ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as month, COUNT(*) as total")
+                ->groupBy('month')->get()
+                ->each(function ($row) use (&$inspeksiData) {
+                    $existing = $inspeksiData->get($row->month, ['month' => $row->month, 'total' => 0]);
+                    $existing['total'] += $row->total;
+                    $inspeksiData->put($row->month, $existing);
+                });
+        }
+
+        return $months->map(function (Carbon $month) use ($bugarData, $laporanData, $observasiData, $inspeksiData) {
             $key   = $month->format('Y-m');
             $label = $month->locale('id')->isoFormat('MMM YY');
 
-            $bugar   = $bugarData->where('month', $key);
-            $laporan = $laporanData->where('month', $key);
-
             return [
-                'label'    => $label,
-                'layak'    => (int) $bugar->where('status_kelayakan', 'layak')->sum('total'),
-                'catatan'  => (int) $bugar->where('status_kelayakan', 'catatan')->sum('total'),
-                'dilarang' => (int) $bugar->where('status_kelayakan', 'dilarang')->sum('total'),
-                'AA'       => (int) $laporan->where('tingkat_risiko', 'AA')->sum('total'),
-                'A'        => (int) $laporan->where('tingkat_risiko', 'A')->sum('total'),
-                'B'        => (int) $laporan->where('tingkat_risiko', 'B')->sum('total'),
-                'C'        => (int) $laporan->where('tingkat_risiko', 'C')->sum('total'),
+                'label'     => $label,
+                'bugar'     => (int) ($bugarData[$key]->total ?? 0),
+                'laporan'   => (int) ($laporanData[$key]->total ?? 0),
+                'observasi' => (int) ($observasiData[$key]->total ?? 0),
+                'inspeksi'  => (int) ($inspeksiData->get($key, ['total' => 0])['total'] ?? 0),
             ];
         })->values()->toArray();
     }
 
     private function buildSiteBreakdown(): array
     {
-        return collect(['baratama', 'bandhawa'])->map(fn ($site) => [
-            'site'    => ucfirst($site),
-            'bugar'   => BugarSelamat::whereHas('user', fn ($q) => $q->where('site', $site))->count(),
-            'laporan' => LaporanBahaya::whereHas('user', fn ($q) => $q->where('site', $site))->count(),
+        $sites = Site::pluck('value')->all();
+
+        return collect($sites)->map(fn ($site) => [
+            'site'      => $site,
+            'bugar'     => BugarSelamat::whereHas('user', fn ($q) => $q->where('site', $site))->count(),
+            'laporan'   => LaporanBahaya::whereHas('user', fn ($q) => $q->where('site', $site))->count(),
+            'observasi' => ObservasiKeselamatan::whereHas('user', fn ($q) => $q->where('site', $site))->count(),
+            'inspeksi'  => InspeksiKantor::whereHas('user', fn ($q) => $q->where('site', $site))->count()
+                + InspeksiTambang::whereHas('user', fn ($q) => $q->where('site', $site))->count()
+                + InspeksiWorkshop::whereHas('user', fn ($q) => $q->where('site', $site))->count()
+                + InspeksiMess::whereHas('user', fn ($q) => $q->where('site', $site))->count(),
         ])->toArray();
     }
 }

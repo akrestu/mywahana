@@ -1,10 +1,11 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 
 type Target = {
     level: string;
@@ -49,10 +50,11 @@ export default function AdminTargets({ targets, users }: Props) {
     );
 
     const saveTarget = (level: string) => {
+        const isNonStaff = level === 'nonstaff';
         router.patch(`/admin/targets/${level}`, {
             laporan_per_minggu: Number(editTarget[level].laporan),
-            inspeksi_per_minggu: Number(editTarget[level].inspeksi),
-            observasi_per_minggu: Number(editTarget[level].observasi),
+            inspeksi_per_minggu: isNonStaff ? 0 : Number(editTarget[level].inspeksi),
+            observasi_per_minggu: isNonStaff ? 0 : Number(editTarget[level].observasi),
             bugar_per_hari: Number(editTarget[level].bugar),
         });
     };
@@ -64,26 +66,33 @@ export default function AdminTargets({ targets, users }: Props) {
     };
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Admin', href: '/admin' }, { title: 'Target Partisipasi', href: '/admin/targets' }]}>
+        <>
             <Head title="Target Partisipasi" />
 
-            <div className="space-y-6 p-4 md:p-6">
+            <div className="space-y-6">
                 {/* Target per Level */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base">Target Pelaporan per Level</CardTitle>
                         <p className="text-sm text-muted-foreground">
-                            Atur jumlah minimum laporan bahaya per minggu untuk setiap level karyawan.
+                            Atur target minimum per level: Laporan Bahaya, Form Inspeksi (Kantor/Tambang/Workshop/Mess), Form OK (Observasi Keselamatan), dan Bugar Selamat. Form Inspeksi &amp; OK hanya berlaku untuk Staff dan Sr. Staff.
                         </p>
                     </CardHeader>
                     <CardContent>
                         <div className="divide-y">
-                            {targets.map((t) => (
+                            {targets.map((t) => {
+                                const isNonStaff = t.level === 'nonstaff';
+                                return (
                                 <div key={t.level} className="flex flex-col gap-3 py-4">
-                                    <div className="font-semibold">{LEVEL_LABELS[t.level] ?? t.level}</div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-semibold">{LEVEL_LABELS[t.level] ?? t.level}</span>
+                                        {isNonStaff && (
+                                            <span className="text-xs text-muted-foreground">(Form Inspeksi &amp; OK tidak berlaku)</span>
+                                        )}
+                                    </div>
                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                                         <div className="flex items-center gap-2">
-                                            <label className="text-sm text-muted-foreground whitespace-nowrap">Laporan/minggu:</label>
+                                            <label className="text-sm text-muted-foreground whitespace-nowrap">Laporan Bahaya/minggu:</label>
                                             <Input
                                                 type="number"
                                                 min={0}
@@ -99,15 +108,27 @@ export default function AdminTargets({ targets, users }: Props) {
                                             />
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <label className="text-sm text-muted-foreground whitespace-nowrap">Inspeksi/minggu:</label>
+                                            <label className="flex items-center gap-1 text-sm text-muted-foreground whitespace-nowrap">
+                                                Form Inspeksi/minggu
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Info size={13} className="cursor-help text-muted-foreground/60" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top" className="max-w-48">
+                                                        Gabungan: Inspeksi Kantor, Tambang, Workshop, Mess
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                                :
+                                            </label>
                                             <Input
                                                 type="number"
                                                 min={0}
                                                 max={20}
                                                 className="w-20"
-                                                value={editTarget[t.level]?.inspeksi ?? ''}
+                                                disabled={isNonStaff}
+                                                value={isNonStaff ? '0' : (editTarget[t.level]?.inspeksi ?? '')}
                                                 onChange={(e) =>
-                                                    setEditTarget((prev) => ({
+                                                    !isNonStaff && setEditTarget((prev) => ({
                                                         ...prev,
                                                         [t.level]: { ...prev[t.level], inspeksi: e.target.value },
                                                     }))
@@ -115,15 +136,27 @@ export default function AdminTargets({ targets, users }: Props) {
                                             />
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <label className="text-sm text-muted-foreground whitespace-nowrap">Observasi/minggu:</label>
+                                            <label className="flex items-center gap-1 text-sm text-muted-foreground whitespace-nowrap">
+                                                Form OK/minggu
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Info size={13} className="cursor-help text-muted-foreground/60" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top" className="max-w-48">
+                                                        Form OK = Observasi Keselamatan (WBK-HSE-FO-037)
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                                :
+                                            </label>
                                             <Input
                                                 type="number"
                                                 min={0}
                                                 max={20}
                                                 className="w-20"
-                                                value={editTarget[t.level]?.observasi ?? ''}
+                                                disabled={isNonStaff}
+                                                value={isNonStaff ? '0' : (editTarget[t.level]?.observasi ?? '')}
                                                 onChange={(e) =>
-                                                    setEditTarget((prev) => ({
+                                                    !isNonStaff && setEditTarget((prev) => ({
                                                         ...prev,
                                                         [t.level]: { ...prev[t.level], observasi: e.target.value },
                                                     }))
@@ -131,7 +164,7 @@ export default function AdminTargets({ targets, users }: Props) {
                                             />
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <label className="text-sm text-muted-foreground whitespace-nowrap">Bugar/hari:</label>
+                                            <label className="text-sm text-muted-foreground whitespace-nowrap">Bugar Selamat/hari:</label>
                                             <Input
                                                 type="number"
                                                 min={0}
@@ -151,7 +184,8 @@ export default function AdminTargets({ targets, users }: Props) {
                                         </Button>
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </CardContent>
                 </Card>
@@ -218,6 +252,6 @@ export default function AdminTargets({ targets, users }: Props) {
                     </CardContent>
                 </Card>
             </div>
-        </AppLayout>
+        </>
     );
 }

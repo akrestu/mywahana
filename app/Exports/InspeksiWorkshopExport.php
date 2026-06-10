@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Exports;
 
@@ -59,4 +59,3 @@ class InspeksiWorkshopExport implements FromQuery, WithHeadings, WithMapping, Sh
         ];
     }
 }
-

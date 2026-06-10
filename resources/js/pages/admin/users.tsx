@@ -36,7 +36,8 @@ type Filters = {
     participation_level?: string;
 };
 
-type Props = { users: PaginatedUsers; filters: Filters };
+type SiteOption = { value: string; label: string };
+type Props = { users: PaginatedUsers; filters: Filters; sites: SiteOption[] };
 
 function levelLabel(level: string | null): string {
     if (level === 'staff') return 'Staff';
@@ -48,13 +49,10 @@ function getInitials(name: string): string {
     return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 }
 
-function siteLabel(site: string | null): string {
-    if (site === 'baratama') return 'Baratama';
-    if (site === 'bandhawa') return 'Bandhawa';
-    return '—';
-}
 
-export default function AdminUsers({ users, filters }: Props) {
+export default function AdminUsers({ users, filters, sites }: Props) {
+    const siteLabel = (value: string | null) =>
+        sites.find((s) => s.value === value)?.label ?? '—';
     const [search, setSearch] = useState(filters.search ?? '');
     const [toDelete, setToDelete] = useState<UserRecord | null>(null);
     const [deleting, setDeleting] = useState(false);
@@ -151,8 +149,9 @@ export default function AdminUsers({ users, filters }: Props) {
                             <SelectTrigger className="text-sm"><SelectValue placeholder="Semua Site" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Semua Site</SelectItem>
-                                <SelectItem value="baratama">Baratama</SelectItem>
-                                <SelectItem value="bandhawa">Bandhawa</SelectItem>
+                                {sites.map((s) => (
+                                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                         <Select value={filters.participation_level ?? 'all'} onValueChange={(v) => applyFilters({ participation_level: v })}>

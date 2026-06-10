@@ -27,7 +27,7 @@ type BugarRecord = {
     };
 };
 
-type Props = { record: BugarRecord };
+type Props = { record: BugarRecord; back_url?: string };
 
 const statusConfig = {
     layak: {
@@ -92,7 +92,7 @@ function AnswerRow({
     );
 }
 
-export default function BugarSelamatShow({ record }: Props) {
+export default function BugarSelamatShow({ record, back_url = '/bugar-selamat' }: Props) {
     const cfg = statusConfig[record.status_kelayakan];
     const StatusIcon = cfg.icon;
 
@@ -105,11 +105,11 @@ export default function BugarSelamatShow({ record }: Props) {
             <div className="flex flex-col gap-6">
                 {/* Back */}
                 <Link
-                    href="/bugar-selamat"
+                    href={back_url}
                     className="flex w-fit items-center gap-2 text-base text-muted-foreground hover:text-foreground transition-colors py-1"
                 >
                     <ArrowLeft size={18} />
-                    Kembali ke Riwayat
+                    {back_url.includes('kalender') ? 'Kembali ke Kalender' : back_url.includes('admin') ? 'Kembali ke Monitoring Harian' : 'Kembali ke Riwayat'}
                 </Link>
 
                 {/* Status hero */}

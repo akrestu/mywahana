@@ -37,6 +37,7 @@ class ProfileController extends Controller
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status'  => $request->session()->get('status'),
             'badges'  => $badges,
+            'sites'   => \App\Models\Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -45,7 +46,13 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $data = $request->validated();
+
+        if (! $request->user()->is_admin) {
+            unset($data['site'], $data['departemen']);
+        }
+
+        $request->user()->fill($data);
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;

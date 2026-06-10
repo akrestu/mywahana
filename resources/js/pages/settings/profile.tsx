@@ -68,17 +68,32 @@ type BadgeItem = {
     earned_at: string;
 };
 
+type SiteOption = { value: string; label: string };
+
+const DEPARTEMEN_OPTIONS = [
+    'Production',
+    'Maintenance',
+    'Supply Chain',
+    'Engineering',
+    'HSE',
+    'HRGA',
+    'Management',
+];
+
 export default function Profile({
     mustVerifyEmail,
     status,
     badges = [],
+    sites = [],
 }: {
     mustVerifyEmail: boolean;
     status?: string;
     badges?: BadgeItem[];
+    sites?: SiteOption[];
 }) {
     const { auth } = usePage<PageProps>().props;
     const user = auth.user;
+    const isAdmin = user.is_admin === true;
     const [showDelete, setShowDelete] = useState(false);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(user.avatar ? `/storage/${user.avatar}` : null);
     const [uploading, setUploading] = useState(false);
@@ -182,7 +197,6 @@ export default function Profile({
                                             defaultValue={user.email}
                                             placeholder="Contoh: budi@wahana.com"
                                             autoComplete="username"
-                                            required
                                             className="h-11 text-base"
                                         />
                                     </FieldRow>
@@ -220,6 +234,7 @@ export default function Profile({
                                             name="nik"
                                             defaultValue={user.nik ?? ''}
                                             placeholder="Contoh: 12345678"
+                                            maxLength={16}
                                             className="h-11 text-base"
                                         />
                                     </FieldRow>
@@ -241,19 +256,56 @@ export default function Profile({
 
                                     <FieldRow
                                         icon={<Building2 size={16} />}
+                                        label="Departemen"
+                                        hint={isAdmin ? 'Pilih departemen tempat user bekerja' : 'Departemen hanya dapat diubah oleh admin'}
+                                        error={errors.departemen}
+                                    >
+                                        {isAdmin ? (
+                                            <Select name="departemen" defaultValue={user.departemen ?? ''}>
+                                                <SelectTrigger id="departemen" className="h-11 w-full text-base">
+                                                    <SelectValue placeholder="— Pilih Departemen —" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {DEPARTEMEN_OPTIONS.map((d) => (
+                                                        <SelectItem key={d} value={d}>{d}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        ) : (
+                                            <Input
+                                                value={user.departemen ?? '—'}
+                                                readOnly
+                                                disabled
+                                                className="h-11 text-base bg-muted cursor-not-allowed"
+                                            />
+                                        )}
+                                    </FieldRow>
+
+                                    <FieldRow
+                                        icon={<Building2 size={16} />}
                                         label="Lokasi Site"
-                                        hint="Pilih lokasi tempat Anda bekerja"
+                                        hint={isAdmin ? 'Pilih lokasi tempat user bekerja' : 'Site hanya dapat diubah oleh admin'}
                                         error={errors.site}
                                     >
-                                        <Select name="site" defaultValue={user.site ?? ''}>
-                                            <SelectTrigger id="site" className="h-11 w-full text-base">
-                                                <SelectValue placeholder="— Pilih Site —" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="baratama">Baratama</SelectItem>
-                                                <SelectItem value="bandhawa">Bandhawa</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        {isAdmin ? (
+                                            <Select name="site" defaultValue={user.site ?? ''}>
+                                                <SelectTrigger id="site" className="h-11 w-full text-base">
+                                                    <SelectValue placeholder="— Pilih Site —" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {sites.map((s) => (
+                                                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        ) : (
+                                            <Input
+                                                value={sites.find((s) => s.value === user.site)?.label ?? user.site ?? '—'}
+                                                readOnly
+                                                disabled
+                                                className="h-11 text-base bg-muted cursor-not-allowed"
+                                            />
+                                        )}
                                     </FieldRow>
 
                                     <Button
