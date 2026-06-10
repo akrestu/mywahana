@@ -145,11 +145,12 @@ class DashboardController extends Controller
                     'bugarSelamats as bs_count' => fn ($q) => $q->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year),
                     'laporanBahayas as lb_count' => fn ($q) => $q->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year),
                 ])
-                ->get(['id', 'name', 'jabatan'])
+                ->get(['id', 'name', 'jabatan', 'avatar'])
                 ->map(fn ($u) => [
                     'id'      => $u->id,
                     'name'    => $u->name,
                     'jabatan' => $u->jabatan,
+                    'avatar'  => $u->avatar ? asset('storage/' . $u->avatar) : null,
                     'bs'      => $u->bs_count,
                     'lb'      => $u->lb_count,
                     'skor'    => $u->bs_count + ($u->lb_count * 2),

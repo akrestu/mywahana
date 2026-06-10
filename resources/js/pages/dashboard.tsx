@@ -6,6 +6,7 @@ import {
     Clock,
     Plus,
     ShieldCheck,
+    X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { KelayakanBadge } from '@/components/status-badge';
@@ -39,6 +40,7 @@ type LeaderboardEntry = {
     id: number;
     name: string;
     jabatan: string | null;
+    avatar: string | null;
     bs: number;
     lb: number;
     skor: number;
@@ -73,76 +75,20 @@ const defaultStats: Stats = {
     laporan_bahaya: { total: 0, bulan_ini: 0, pending: 0, selesai: 0 },
 };
 
-type TimeOfDay = {
-    greeting: string;
-    emoji: string;
-    /** CSS linear-gradient value applied via style prop */
-    gradientStyle: string;
-    /** Tailwind class for the animated shimmer orb */
-    shimmer: string;
-    clockColor: string;
-};
+type TimeOfDay = { greeting: string; emoji: string; gradientStyle: string; shimmer: string; clockColor: string };
 
 function getTimeOfDay(hour: number): TimeOfDay {
-    // 04:00–05:59 Fajar — deep navy fading into warm amber horizon
     if (hour >= 4 && hour < 6)
-        return {
-            greeting: 'Selamat Subuh',
-            emoji: '🌄',
-            gradientStyle: 'linear-gradient(135deg, rgba(26,14,60,0.55) 0%, rgba(90,40,120,0.40) 35%, rgba(220,90,40,0.35) 70%, rgba(255,160,60,0.25) 100%)',
-            shimmer: 'bg-[#E85D04]/20',
-            // light: deep burnt-orange on purple-tinted card; dark: warm peach on deep navy
-            clockColor: 'text-[#C2410C] dark:text-[#FED7AA]',
-        };
-    // 06:00–10:59 Pagi — golden sunrise transitioning to clear sky blue
+        return { greeting: 'Selamat Subuh', emoji: '🌄', gradientStyle: 'linear-gradient(135deg, rgba(26,14,60,0.55) 0%, rgba(90,40,120,0.40) 35%, rgba(220,90,40,0.35) 70%, rgba(255,160,60,0.25) 100%)', shimmer: 'bg-[#E85D04]/20', clockColor: 'text-[#C2410C] dark:text-[#FED7AA]' };
     if (hour >= 6 && hour < 11)
-        return {
-            greeting: 'Selamat Pagi',
-            emoji: '🌅',
-            gradientStyle: 'linear-gradient(135deg, rgba(255,183,77,0.45) 0%, rgba(255,213,120,0.30) 35%, rgba(100,195,230,0.30) 70%, rgba(56,189,248,0.20) 100%)',
-            shimmer: 'bg-[#FFB74D]/25',
-            // light: deep amber-brown on cream/gold card; dark: warm yellow on dark amber
-            clockColor: 'text-[#92400E] dark:text-[#FDE68A]',
-        };
-    // 11:00–14:59 Siang — bright midday azure sky
+        return { greeting: 'Selamat Pagi', emoji: '🌅', gradientStyle: 'linear-gradient(135deg, rgba(255,183,77,0.45) 0%, rgba(255,213,120,0.30) 35%, rgba(100,195,230,0.30) 70%, rgba(56,189,248,0.20) 100%)', shimmer: 'bg-[#FFB74D]/25', clockColor: 'text-[#92400E] dark:text-[#FDE68A]' };
     if (hour >= 11 && hour < 15)
-        return {
-            greeting: 'Selamat Siang',
-            emoji: '☀️',
-            gradientStyle: 'linear-gradient(135deg, rgba(30,136,229,0.35) 0%, rgba(79,195,247,0.28) 45%, rgba(224,247,254,0.25) 100%)',
-            shimmer: 'bg-[#29B6F6]/20',
-            // light: deep ocean blue on sky-blue card; dark: light sky on dark blue
-            clockColor: 'text-[#075985] dark:text-[#7DD3FC]',
-        };
-    // 15:00–17:59 Sore — warm golden hour, sun low in sky
+        return { greeting: 'Selamat Siang', emoji: '☀️', gradientStyle: 'linear-gradient(135deg, rgba(30,136,229,0.35) 0%, rgba(79,195,247,0.28) 45%, rgba(224,247,254,0.25) 100%)', shimmer: 'bg-[#29B6F6]/20', clockColor: 'text-[#075985] dark:text-[#7DD3FC]' };
     if (hour >= 15 && hour < 18)
-        return {
-            greeting: 'Selamat Sore',
-            emoji: '🌇',
-            gradientStyle: 'linear-gradient(135deg, rgba(255,111,0,0.45) 0%, rgba(255,160,0,0.35) 35%, rgba(255,213,79,0.25) 65%, rgba(251,140,0,0.15) 100%)',
-            shimmer: 'bg-[#FF6F00]/25',
-            // light: deep red-orange on warm golden card; dark: light peach on dark orange
-            clockColor: 'text-[#9A3412] dark:text-[#FED7AA]',
-        };
-    // 18:00–19:59 Senja — dramatic sunset: crimson → magenta → deep violet
+        return { greeting: 'Selamat Sore', emoji: '🌇', gradientStyle: 'linear-gradient(135deg, rgba(255,111,0,0.45) 0%, rgba(255,160,0,0.35) 35%, rgba(255,213,79,0.25) 65%, rgba(251,140,0,0.15) 100%)', shimmer: 'bg-[#FF6F00]/25', clockColor: 'text-[#9A3412] dark:text-[#FED7AA]' };
     if (hour >= 18 && hour < 20)
-        return {
-            greeting: 'Selamat Senja',
-            emoji: '🌆',
-            gradientStyle: 'linear-gradient(135deg, rgba(211,47,47,0.45) 0%, rgba(194,24,91,0.35) 35%, rgba(123,31,162,0.35) 65%, rgba(49,27,146,0.25) 100%)',
-            shimmer: 'bg-[#C2185B]/20',
-            // light: deep crimson on pinkish card; dark: soft rose on deep violet
-            clockColor: 'text-[#881337] dark:text-[#FECDD3]',
-        };
-    // 20:00–03:59 Malam — deep night: midnight blue → dark indigo
-    return {
-        greeting: 'Selamat Malam',
-        emoji: '🌙',
-        gradientStyle: 'linear-gradient(135deg, rgba(10,14,50,0.60) 0%, rgba(26,35,126,0.45) 45%, rgba(49,27,146,0.35) 75%, rgba(13,20,80,0.40) 100%)',
-        shimmer: 'bg-[#3949AB]/20',
-        // light: deep navy on gray-blue card; dark: light sky-blue on midnight card
-        clockColor: 'text-[#1E3A8A] dark:text-[#BAE6FD]',
-    };
+        return { greeting: 'Selamat Senja', emoji: '🌆', gradientStyle: 'linear-gradient(135deg, rgba(211,47,47,0.45) 0%, rgba(194,24,91,0.35) 35%, rgba(123,31,162,0.35) 65%, rgba(49,27,146,0.25) 100%)', shimmer: 'bg-[#C2185B]/20', clockColor: 'text-[#881337] dark:text-[#FECDD3]' };
+    return { greeting: 'Selamat Malam', emoji: '🌙', gradientStyle: 'linear-gradient(135deg, rgba(10,14,50,0.60) 0%, rgba(26,35,126,0.45) 45%, rgba(49,27,146,0.35) 75%, rgba(13,20,80,0.40) 100%)', shimmer: 'bg-[#3949AB]/20', clockColor: 'text-[#1E3A8A] dark:text-[#BAE6FD]' };
 }
 
 function useTimeOfDay() {
@@ -190,6 +136,17 @@ export default function Dashboard({
 
     const sudahIsiBugarHariIni = recent_bugar_selamat.length > 0 && isToday(recent_bugar_selamat[0].tanggal);
     const pendingCount = stats.laporan_bahaya.pending;
+
+    const [dismissedKeys, setDismissedKeys] = useState<string[]>(() => {
+        try { return JSON.parse(localStorage.getItem('dismissed_badges') ?? '[]'); }
+        catch { return []; }
+    });
+    const visibleBadges = new_badges.filter((b) => !dismissedKeys.includes(b.key));
+    const dismissBadges = () => {
+        const updated = [...new Set([...dismissedKeys, ...visibleBadges.map((b) => b.key)])];
+        localStorage.setItem('dismissed_badges', JSON.stringify(updated));
+        setDismissedKeys(updated);
+    };
 
     // Leaderboard: tampilkan site user sendiri, atau site pertama yang ada
     const userSite = user.site ?? '';
@@ -248,11 +205,18 @@ export default function Dashboard({
                 )}
 
                 {/* ③ BADGE BARU (kondisional) */}
-                {new_badges.length > 0 && (
-                    <div className="rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-3 dark:border-yellow-700 dark:bg-yellow-950">
-                        <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-200 mb-2">🎉 Selamat! Pencapaian baru diraih:</p>
+                {visibleBadges.length > 0 && (
+                    <div className="relative rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-3 dark:border-yellow-700 dark:bg-yellow-950">
+                        <button
+                            onClick={dismissBadges}
+                            className="absolute right-2 top-2 rounded-md p-1 text-yellow-600 hover:bg-yellow-200 dark:text-yellow-400 dark:hover:bg-yellow-800 transition-colors"
+                            aria-label="Tutup notifikasi badge"
+                        >
+                            <X size={14} />
+                        </button>
+                        <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-200 mb-2 pr-6">🎉 Selamat! Pencapaian baru diraih:</p>
                         <div className="flex flex-wrap gap-2">
-                            {new_badges.map((b) => (
+                            {visibleBadges.map((b) => (
                                 <span key={b.key} className="flex items-center gap-1 rounded-full bg-yellow-200 dark:bg-yellow-800 px-3 py-1 text-xs font-semibold text-yellow-900 dark:text-yellow-100">
                                     {b.icon} {b.nama}
                                 </span>
@@ -360,9 +324,16 @@ export default function Dashboard({
                         <CardContent className="pt-0 space-y-1.5">
                             {activeLeaderEntries.slice(0, 3).map((entry, idx) => (
                                 <div key={entry.id} className="flex items-center gap-3 rounded-xl bg-muted/40 px-3 py-2">
-                                    <span className="text-lg leading-none w-7 text-center">
+                                    <span className="text-lg leading-none w-7 shrink-0 text-center">
                                         {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
                                     </span>
+                                    {entry.avatar ? (
+                                        <img src={entry.avatar} alt={entry.name} className="h-8 w-8 shrink-0 rounded-full object-cover" />
+                                    ) : (
+                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                                            {entry.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
+                                        </div>
+                                    )}
                                     <p className="flex-1 text-sm font-medium truncate">{entry.name}</p>
                                     <span className="text-sm font-bold text-primary">{entry.skor} <span className="text-[11px] font-normal text-muted-foreground">poin</span></span>
                                 </div>

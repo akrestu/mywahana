@@ -20,7 +20,7 @@ type Stats = {
 
 type SiteItem = { site: string; bugar: number; laporan: number };
 
-type LeaderboardEntry = { id: number; name: string; jabatan: string | null; bs: number; lb: number; skor: number };
+type LeaderboardEntry = { id: number; name: string; jabatan: string | null; avatar: string | null; bs: number; lb: number; skor: number };
 
 type Props = {
     stats: Stats;
@@ -30,16 +30,20 @@ type Props = {
     participation_targets?: { level: string; laporan_per_minggu: number }[];
 };
 
-type TimeOfDay = { greeting: string; emoji: string; gradient: string; shimmer: string; clockColor: string };
+type TimeOfDay = { greeting: string; emoji: string; gradientStyle: string; shimmer: string; clockColor: string };
 
 function getTimeOfDay(hour: number): TimeOfDay {
-    if (hour >= 5 && hour < 12)
-        return { greeting: 'Selamat Pagi', emoji: '🌅', gradient: 'from-green-400/30 via-emerald-300/20 to-teal-500/10', shimmer: 'bg-green-400/10', clockColor: 'text-emerald-700 dark:text-emerald-300' };
-    if (hour >= 12 && hour < 15)
-        return { greeting: 'Selamat Siang', emoji: '☀️', gradient: 'from-yellow-400/30 via-amber-300/20 to-orange-400/10', shimmer: 'bg-yellow-400/10', clockColor: 'text-amber-700 dark:text-amber-300' };
-    if (hour >= 15 && hour < 19)
-        return { greeting: 'Selamat Sore', emoji: '🌇', gradient: 'from-orange-400/30 via-rose-400/20 to-pink-500/10', shimmer: 'bg-orange-400/10', clockColor: 'text-orange-700 dark:text-orange-300' };
-    return { greeting: 'Selamat Malam', emoji: '🌙', gradient: 'from-blue-600/30 via-indigo-500/20 to-violet-600/10', shimmer: 'bg-indigo-400/10', clockColor: 'text-indigo-300 dark:text-indigo-200' };
+    if (hour >= 4 && hour < 6)
+        return { greeting: 'Selamat Subuh', emoji: '🌄', gradientStyle: 'linear-gradient(135deg, rgba(26,14,60,0.55) 0%, rgba(90,40,120,0.40) 35%, rgba(220,90,40,0.35) 70%, rgba(255,160,60,0.25) 100%)', shimmer: 'bg-[#E85D04]/20', clockColor: 'text-[#C2410C] dark:text-[#FED7AA]' };
+    if (hour >= 6 && hour < 11)
+        return { greeting: 'Selamat Pagi', emoji: '🌅', gradientStyle: 'linear-gradient(135deg, rgba(255,183,77,0.45) 0%, rgba(255,213,120,0.30) 35%, rgba(100,195,230,0.30) 70%, rgba(56,189,248,0.20) 100%)', shimmer: 'bg-[#FFB74D]/25', clockColor: 'text-[#92400E] dark:text-[#FDE68A]' };
+    if (hour >= 11 && hour < 15)
+        return { greeting: 'Selamat Siang', emoji: '☀️', gradientStyle: 'linear-gradient(135deg, rgba(30,136,229,0.35) 0%, rgba(79,195,247,0.28) 45%, rgba(224,247,254,0.25) 100%)', shimmer: 'bg-[#29B6F6]/20', clockColor: 'text-[#075985] dark:text-[#7DD3FC]' };
+    if (hour >= 15 && hour < 18)
+        return { greeting: 'Selamat Sore', emoji: '🌇', gradientStyle: 'linear-gradient(135deg, rgba(255,111,0,0.45) 0%, rgba(255,160,0,0.35) 35%, rgba(255,213,79,0.25) 65%, rgba(251,140,0,0.15) 100%)', shimmer: 'bg-[#FF6F00]/25', clockColor: 'text-[#9A3412] dark:text-[#FED7AA]' };
+    if (hour >= 18 && hour < 20)
+        return { greeting: 'Selamat Senja', emoji: '🌆', gradientStyle: 'linear-gradient(135deg, rgba(211,47,47,0.45) 0%, rgba(194,24,91,0.35) 35%, rgba(123,31,162,0.35) 65%, rgba(49,27,146,0.25) 100%)', shimmer: 'bg-[#C2185B]/20', clockColor: 'text-[#881337] dark:text-[#FECDD3]' };
+    return { greeting: 'Selamat Malam', emoji: '🌙', gradientStyle: 'linear-gradient(135deg, rgba(10,14,50,0.60) 0%, rgba(26,35,126,0.45) 45%, rgba(49,27,146,0.35) 75%, rgba(13,20,80,0.40) 100%)', shimmer: 'bg-[#3949AB]/20', clockColor: 'text-[#1E3A8A] dark:text-[#BAE6FD]' };
 }
 
 function useTimeOfDay() {
@@ -91,7 +95,7 @@ export default function AdminIndex({ stats, site_breakdown = [], leaderboard = {
                 )}
 
                 {/* ② HEADER — compact */}
-                <div className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br ${tod.gradient}`}>
+                <div className="relative overflow-hidden rounded-2xl border" style={{ background: tod.gradientStyle }}>
                     <div className={`pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full blur-3xl ${tod.shimmer} animate-pulse`} />
                     <div className="relative flex items-center justify-between p-4">
                         <div>
@@ -283,7 +287,14 @@ export default function AdminIndex({ stats, site_breakdown = [], leaderboard = {
                             <CardContent className="pt-0 space-y-1.5">
                                 {(leaderboard[activeLeaderSite] ?? []).filter((e) => e.skor > 0).slice(0, 3).map((entry, idx) => (
                                     <div key={entry.id} className="flex items-center gap-2 rounded-xl bg-muted/40 px-3 py-2">
-                                        <span className="text-base w-6 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>
+                                        <span className="text-base w-6 shrink-0 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>
+                                        {entry.avatar ? (
+                                            <img src={entry.avatar} alt={entry.name} className="h-8 w-8 shrink-0 rounded-full object-cover" />
+                                        ) : (
+                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                                                {entry.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
+                                            </div>
+                                        )}
                                         <p className="flex-1 text-sm font-medium truncate">{entry.name}</p>
                                         <span className="text-sm font-bold text-primary">{entry.skor}</span>
                                     </div>

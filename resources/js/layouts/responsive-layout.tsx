@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { AlertTriangle, ClipboardList, HeartPulse, Home, LayoutGrid, LogOut, ShieldCheck, User, Users } from 'lucide-react';
 import { type ReactNode } from 'react';
 import AppLogo from '@/components/app-logo';
+import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { TeamSwitcher } from '@/components/team-switcher';
@@ -129,6 +130,7 @@ function MobileHeader({ title, showBack, backHref, isAdmin }: { title?: string; 
                         Admin
                     </Link>
                 )}
+                <AppearanceToggleButton />
                 <Link
                     href="/logout"
                     method="post"
@@ -245,6 +247,9 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                     <span className="text-sm font-medium text-muted-foreground">
                         {title ?? 'MyWahana'}
                     </span>
+                    <div className="ml-auto">
+                        <AppearanceToggleButton />
+                    </div>
                 </header>
 
                 {/* Mobile header */}

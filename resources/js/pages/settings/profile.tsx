@@ -1,15 +1,16 @@
-import { Form, Head, usePage } from '@inertiajs/react';
+import { Form, Head, router, usePage } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import {
     Briefcase,
     Building2,
+    Camera,
     ChevronDown,
     IdCard,
     Mail,
     Save,
     User,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import InputError from '@/components/input-error';
@@ -79,6 +80,22 @@ export default function Profile({
     const { auth } = usePage<PageProps>().props;
     const user = auth.user;
     const [showDelete, setShowDelete] = useState(false);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(user.avatar ? `/storage/${user.avatar}` : null);
+    const [uploading, setUploading] = useState(false);
+    const fileRef = useRef<HTMLInputElement>(null);
+
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setAvatarPreview(URL.createObjectURL(file));
+        setUploading(true);
+        const data = new FormData();
+        data.append('avatar', file);
+        router.post('/settings/profile/avatar', data, {
+            forceFormData: true,
+            onFinish: () => setUploading(false),
+        });
+    };
 
     return (
         <>
@@ -87,9 +104,38 @@ export default function Profile({
             <div className="space-y-6">
                 {/* Avatar + Nama Header */}
                 <div className="flex flex-col items-center gap-3 py-4">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground shadow-md">
-                        {getInitials(user.name)}
-                    </div>
+                    <button
+                        type="button"
+                        onClick={() => fileRef.current?.click()}
+                        className="group relative h-20 w-20 overflow-hidden rounded-full shadow-md focus:outline-none"
+                        disabled={uploading}
+                        aria-label="Ganti foto profil"
+                    >
+                        {avatarPreview ? (
+                            <img src={avatarPreview} alt={user.name} className="h-full w-full object-cover" />
+                        ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-primary text-2xl font-bold text-primary-foreground">
+                                {getInitials(user.name)}
+                            </div>
+                        )}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                            {uploading ? (
+                                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            ) : (
+                                <>
+                                    <Camera className="h-5 w-5 text-white" />
+                                    <span className="text-[10px] font-medium text-white">Ganti</span>
+                                </>
+                            )}
+                        </div>
+                    </button>
+                    <input
+                        ref={fileRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarChange}
+                    />
                     <div className="text-center">
                         <p className="text-lg font-bold">{user.name}</p>
                         <p className="text-sm text-muted-foreground">{user.email}</p>

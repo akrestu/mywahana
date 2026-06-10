@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { AlertTriangle, HeartPulse, LayoutGrid, ShieldCheck, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
+import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {

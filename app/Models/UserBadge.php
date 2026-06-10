@@ -18,11 +18,11 @@ class UserBadge extends Model
     }
 
     public static array $definitions = [
-        'first_bugar'  => ['nama' => 'Langkah Pertama',    'icon' => '👟', 'desc' => 'Mengisi Bugar Selamat untuk pertama kalinya'],
-        'streak_7'     => ['nama' => 'Seminggu Konsisten',  'icon' => '🔥', 'desc' => '7 hari berturut-turut mengisi Bugar Selamat'],
-        'streak_30'    => ['nama' => 'Pejuang Selamat',     'icon' => '🏆', 'desc' => '30 hari berturut-turut mengisi Bugar Selamat'],
-        'first_laporan'=> ['nama' => 'Mata Elang',          'icon' => '🦅', 'desc' => 'Melaporkan bahaya untuk pertama kalinya'],
-        'laporan_10'   => ['nama' => 'Pengamat Aktif',      'icon' => '⭐', 'desc' => 'Telah mengirim 10 Laporan Bahaya'],
-        'laporan_50'   => ['nama' => 'Pahlawan K3',         'icon' => '🛡️', 'desc' => 'Telah mengirim 50 Laporan Bahaya'],
+        'first_bugar'  => ['nama' => 'Siap Bertugas',        'icon' => '🦺', 'desc' => 'Pertama kali lapor kondisi fisik sebelum bekerja'],
+        'streak_7'     => ['nama' => 'Disiplin Sepekan',     'icon' => '📋', 'desc' => '7 hari berturut-turut lapor kondisi fisik'],
+        'streak_30'    => ['nama' => 'Pejuang Zero Incident','icon' => '🏅', 'desc' => '30 hari berturut-turut lapor kondisi fisik'],
+        'first_laporan'=> ['nama' => 'Mata Pengawas',        'icon' => '🔍', 'desc' => 'Pertama kali melaporkan potensi bahaya di lapangan'],
+        'laporan_10'   => ['nama' => 'Agen K3',              'icon' => '⛑️', 'desc' => 'Telah melaporkan 10 potensi bahaya'],
+        'laporan_50'   => ['nama' => 'Safety Champion',      'icon' => '🏆', 'desc' => 'Telah melaporkan 50 potensi bahaya'],
     ];
 }

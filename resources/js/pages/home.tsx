@@ -12,16 +12,26 @@ type Props = {
     };
 };
 
+type TimeOfDay = { greeting: string; emoji: string; gradientStyle: string; shimmer: string; clockColor: string };
+
+function getTimeOfDay(hour: number): TimeOfDay {
+    if (hour >= 4 && hour < 6)
+        return { greeting: 'Selamat Subuh', emoji: '🌄', gradientStyle: 'linear-gradient(135deg, rgba(26,14,60,0.55) 0%, rgba(90,40,120,0.40) 35%, rgba(220,90,40,0.35) 70%, rgba(255,160,60,0.25) 100%)', shimmer: 'bg-[#E85D04]/20', clockColor: 'text-[#C2410C] dark:text-[#FED7AA]' };
+    if (hour >= 6 && hour < 11)
+        return { greeting: 'Selamat Pagi', emoji: '🌅', gradientStyle: 'linear-gradient(135deg, rgba(255,183,77,0.45) 0%, rgba(255,213,120,0.30) 35%, rgba(100,195,230,0.30) 70%, rgba(56,189,248,0.20) 100%)', shimmer: 'bg-[#FFB74D]/25', clockColor: 'text-[#92400E] dark:text-[#FDE68A]' };
+    if (hour >= 11 && hour < 15)
+        return { greeting: 'Selamat Siang', emoji: '☀️', gradientStyle: 'linear-gradient(135deg, rgba(30,136,229,0.35) 0%, rgba(79,195,247,0.28) 45%, rgba(224,247,254,0.25) 100%)', shimmer: 'bg-[#29B6F6]/20', clockColor: 'text-[#075985] dark:text-[#7DD3FC]' };
+    if (hour >= 15 && hour < 18)
+        return { greeting: 'Selamat Sore', emoji: '🌇', gradientStyle: 'linear-gradient(135deg, rgba(255,111,0,0.45) 0%, rgba(255,160,0,0.35) 35%, rgba(255,213,79,0.25) 65%, rgba(251,140,0,0.15) 100%)', shimmer: 'bg-[#FF6F00]/25', clockColor: 'text-[#9A3412] dark:text-[#FED7AA]' };
+    if (hour >= 18 && hour < 20)
+        return { greeting: 'Selamat Senja', emoji: '🌆', gradientStyle: 'linear-gradient(135deg, rgba(211,47,47,0.45) 0%, rgba(194,24,91,0.35) 35%, rgba(123,31,162,0.35) 65%, rgba(49,27,146,0.25) 100%)', shimmer: 'bg-[#C2185B]/20', clockColor: 'text-[#881337] dark:text-[#FECDD3]' };
+    return { greeting: 'Selamat Malam', emoji: '🌙', gradientStyle: 'linear-gradient(135deg, rgba(10,14,50,0.60) 0%, rgba(26,35,126,0.45) 45%, rgba(49,27,146,0.35) 75%, rgba(13,20,80,0.40) 100%)', shimmer: 'bg-[#3949AB]/20', clockColor: 'text-[#1E3A8A] dark:text-[#BAE6FD]' };
+}
+
 export default function Home({ stats }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const user = auth.user;
-
-    const greeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return 'Selamat Pagi';
-        if (hour < 17) return 'Selamat Siang';
-        return 'Selamat Malam';
-    };
+    const tod = getTimeOfDay(new Date().getHours());
 
     return (
         <>
@@ -29,31 +39,34 @@ export default function Home({ stats }: Props) {
 
             <div className="space-y-5">
                 {/* Greeting */}
-                <div>
-                    <p className="text-sm text-muted-foreground">{greeting()},</p>
-                    <h2 className="text-xl font-bold">{user.name}</h2>
-                    {(user.jabatan || user.site) && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                            {user.jabatan && (
-                                <Badge variant="secondary" className="text-xs">
-                                    {user.jabatan}
-                                </Badge>
-                            )}
-                            {user.site && (
-                                <Badge variant="outline" className="text-xs capitalize">
-                                    Site {user.site}
-                                </Badge>
-                            )}
-                        </div>
-                    )}
-                    {(!user.nik || !user.jabatan || !user.site) && (
-                        <p className="mt-2 text-xs text-muted-foreground">
-                            <Link href="/settings/profile" className="text-primary underline">
-                                Lengkapi profil
-                            </Link>{' '}
-                            untuk mengisi form dengan cepat.
-                        </p>
-                    )}
+                <div className="relative overflow-hidden rounded-2xl border" style={{ background: tod.gradientStyle }}>
+                    <div className={`pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full blur-3xl ${tod.shimmer} animate-pulse`} />
+                    <div className="relative p-4">
+                        <p className="flex items-center gap-1.5 text-xs text-foreground/60"><span>{tod.emoji}</span>{tod.greeting},</p>
+                        <h2 className="text-xl font-bold">{user.name}</h2>
+                        {(user.jabatan || user.site) && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                                {user.jabatan && (
+                                    <Badge variant="secondary" className="text-xs">
+                                        {user.jabatan}
+                                    </Badge>
+                                )}
+                                {user.site && (
+                                    <Badge variant="outline" className="text-xs capitalize">
+                                        Site {user.site}
+                                    </Badge>
+                                )}
+                            </div>
+                        )}
+                        {(!user.nik || !user.jabatan || !user.site) && (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                                <Link href="/settings/profile" className="text-primary underline">
+                                    Lengkapi profil
+                                </Link>{' '}
+                                untuk mengisi form dengan cepat.
+                            </p>
+                        )}
+                    </div>
                 </div>
 
                 {/* Main Actions */}
