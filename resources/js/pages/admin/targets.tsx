@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 type Target = {
     level: string;
     laporan_per_minggu: number;
+    inspeksi_per_minggu: number;
+    observasi_per_minggu: number;
     bugar_per_hari: number;
 };
 
@@ -34,8 +36,13 @@ const LEVEL_LABELS: Record<string, string> = {
 
 export default function AdminTargets({ targets, users }: Props) {
     const { props } = usePage<{ flash?: { success?: string } }>();
-    const [editTarget, setEditTarget] = useState<Record<string, { laporan: string; bugar: string }>>(() =>
-        Object.fromEntries(targets.map((t) => [t.level, { laporan: String(t.laporan_per_minggu), bugar: String(t.bugar_per_hari) }]))
+    const [editTarget, setEditTarget] = useState<Record<string, { laporan: string; inspeksi: string; observasi: string; bugar: string }>>(() =>
+        Object.fromEntries(targets.map((t) => [t.level, {
+            laporan: String(t.laporan_per_minggu),
+            inspeksi: String(t.inspeksi_per_minggu),
+            observasi: String(t.observasi_per_minggu),
+            bugar: String(t.bugar_per_hari),
+        }]))
     );
     const [userLevelEdit, setUserLevelEdit] = useState<Record<number, string>>(() =>
         Object.fromEntries(users.map((u) => [u.id, u.participation_level]))
@@ -44,6 +51,8 @@ export default function AdminTargets({ targets, users }: Props) {
     const saveTarget = (level: string) => {
         router.patch(`/admin/targets/${level}`, {
             laporan_per_minggu: Number(editTarget[level].laporan),
+            inspeksi_per_minggu: Number(editTarget[level].inspeksi),
+            observasi_per_minggu: Number(editTarget[level].observasi),
             bugar_per_hari: Number(editTarget[level].bugar),
         });
     };
@@ -70,37 +79,73 @@ export default function AdminTargets({ targets, users }: Props) {
                     <CardContent>
                         <div className="divide-y">
                             {targets.map((t) => (
-                                <div key={t.level} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:gap-6">
-                                    <div className="w-28 font-semibold">{LEVEL_LABELS[t.level] ?? t.level}</div>
-                                    <div className="flex flex-1 items-center gap-3">
-                                        <label className="text-sm text-muted-foreground w-36">Laporan/minggu:</label>
-                                        <Input
-                                            type="number"
-                                            min={0}
-                                            max={20}
-                                            className="w-20"
-                                            value={editTarget[t.level]?.laporan ?? ''}
-                                            onChange={(e) =>
-                                                setEditTarget((prev) => ({
-                                                    ...prev,
-                                                    [t.level]: { ...prev[t.level], laporan: e.target.value },
-                                                }))
-                                            }
-                                        />
-                                        <label className="text-sm text-muted-foreground w-28 ml-4">Bugar/hari:</label>
-                                        <Input
-                                            type="number"
-                                            min={0}
-                                            max={3}
-                                            className="w-20"
-                                            value={editTarget[t.level]?.bugar ?? ''}
-                                            onChange={(e) =>
-                                                setEditTarget((prev) => ({
-                                                    ...prev,
-                                                    [t.level]: { ...prev[t.level], bugar: e.target.value },
-                                                }))
-                                            }
-                                        />
+                                <div key={t.level} className="flex flex-col gap-3 py-4">
+                                    <div className="font-semibold">{LEVEL_LABELS[t.level] ?? t.level}</div>
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-sm text-muted-foreground whitespace-nowrap">Laporan/minggu:</label>
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                max={20}
+                                                className="w-20"
+                                                value={editTarget[t.level]?.laporan ?? ''}
+                                                onChange={(e) =>
+                                                    setEditTarget((prev) => ({
+                                                        ...prev,
+                                                        [t.level]: { ...prev[t.level], laporan: e.target.value },
+                                                    }))
+                                                }
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-sm text-muted-foreground whitespace-nowrap">Inspeksi/minggu:</label>
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                max={20}
+                                                className="w-20"
+                                                value={editTarget[t.level]?.inspeksi ?? ''}
+                                                onChange={(e) =>
+                                                    setEditTarget((prev) => ({
+                                                        ...prev,
+                                                        [t.level]: { ...prev[t.level], inspeksi: e.target.value },
+                                                    }))
+                                                }
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-sm text-muted-foreground whitespace-nowrap">Observasi/minggu:</label>
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                max={20}
+                                                className="w-20"
+                                                value={editTarget[t.level]?.observasi ?? ''}
+                                                onChange={(e) =>
+                                                    setEditTarget((prev) => ({
+                                                        ...prev,
+                                                        [t.level]: { ...prev[t.level], observasi: e.target.value },
+                                                    }))
+                                                }
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-sm text-muted-foreground whitespace-nowrap">Bugar/hari:</label>
+                                            <Input
+                                                type="number"
+                                                min={0}
+                                                max={3}
+                                                className="w-20"
+                                                value={editTarget[t.level]?.bugar ?? ''}
+                                                onChange={(e) =>
+                                                    setEditTarget((prev) => ({
+                                                        ...prev,
+                                                        [t.level]: { ...prev[t.level], bugar: e.target.value },
+                                                    }))
+                                                }
+                                            />
+                                        </div>
                                         <Button size="sm" onClick={() => saveTarget(t.level)}>
                                             Simpan
                                         </Button>

@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Bell, ClipboardList, Home, LogOut, TriangleAlert, User } from 'lucide-react';
+import { Bell, ClipboardCheck, ClipboardList, Home, LogOut, TriangleAlert, User } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { Separator } from '@/components/ui/separator';
 import type { Auth } from '@/types';
@@ -17,7 +17,7 @@ type Props = {
     backHref?: string;
 };
 
-const navItems = [
+const baseNavItems = [
     {
         href: '/home',
         label: 'Beranda',
@@ -55,6 +55,21 @@ const navItems = [
 export default function MobileLayout({ children, title, showBack, backHref }: Props) {
     const { url } = usePage();
     const { auth, notifications } = usePage<{ auth: Auth; notifications: AppNotification[] }>().props;
+
+    const participationLevel = (auth?.user as { participation_level?: string })?.participation_level ?? '';
+    const isStaff = !auth?.user?.is_admin && ['staff', 'srstaff'].includes(participationLevel);
+    const navItems = [
+        ...baseNavItems.slice(0, 3),
+        ...(isStaff ? [{
+            href: '/sap/observasi-keselamatan',
+            label: 'OK',
+            icon: ClipboardCheck,
+            activeColor: 'text-teal-600 dark:text-teal-400',
+            activeBg: 'bg-teal-100 dark:bg-teal-950',
+            inactiveColor: 'text-slate-400 dark:text-slate-500',
+        }] : []),
+        baseNavItems[3],
+    ];
     const [showNotif, setShowNotif] = useState(false);
 
     const isActive = (href: string) => {

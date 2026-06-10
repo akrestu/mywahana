@@ -2,6 +2,7 @@
 
 namespace App\Concerns;
 
+use App\Models\Site;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
@@ -20,7 +21,7 @@ trait ProfileValidationRules
             'email'   => $this->emailRules($userId),
             'nik'     => $this->nikRules($userId),
             'jabatan' => ['nullable', 'string', 'max:100'],
-            'site'    => ['nullable', 'in:baratama,bandhawa'],
+            'site'    => ['nullable', 'string', Rule::exists(Site::class, 'value')],
         ];
     }
 

@@ -8,20 +8,28 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
+const DEPARTEMEN_OPTIONS = [
+    'Production', 'Maintenance', 'Supply Chain', 'Engineering', 'HSE', 'HRGA', 'Management',
+] as const;
+
 type UserData = {
     id: number;
     name: string;
     nik: string;
     email: string | null;
     jabatan: string | null;
+    departemen: string | null;
     site: string | null;
     is_admin: boolean;
     participation_level: string;
 };
 
+type SiteOption = { value: string; label: string };
+
 type Props = {
     mode: 'create' | 'edit';
     user?: UserData;
+    sites: SiteOption[];
 };
 
 type FormFields = {
@@ -31,12 +39,13 @@ type FormFields = {
     password: string;
     password_confirmation: string;
     jabatan: string;
+    departemen: string;
     site: string;
     is_admin: boolean;
     participation_level: string;
 };
 
-export default function UserForm({ mode, user }: Props) {
+export default function UserForm({ mode, user, sites }: Props) {
     const isEdit = mode === 'edit';
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
@@ -48,6 +57,7 @@ export default function UserForm({ mode, user }: Props) {
         password: '',
         password_confirmation: '',
         jabatan: user?.jabatan ?? '',
+        departemen: user?.departemen ?? '',
         site: user?.site ?? '',
         is_admin: user?.is_admin ?? false,
         participation_level: user?.participation_level ?? 'nonstaff',
@@ -131,6 +141,22 @@ export default function UserForm({ mode, user }: Props) {
                                 {errors.jabatan && <p className="text-sm text-destructive">{errors.jabatan}</p>}
                             </div>
 
+                            <div className="space-y-1.5">
+                                <Label className="text-sm font-medium">Departemen</Label>
+                                <Select value={data.departemen || 'none'} onValueChange={(v) => setData('departemen', v === 'none' ? '' : v)}>
+                                    <SelectTrigger className="h-10">
+                                        <SelectValue placeholder="Pilih departemen" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">— Belum dipilih —</SelectItem>
+                                        {DEPARTEMEN_OPTIONS.map(d => (
+                                            <SelectItem key={d} value={d}>{d}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {errors.departemen && <p className="text-sm text-destructive">{errors.departemen}</p>}
+                            </div>
+
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Site Kerja</Label>
@@ -140,8 +166,9 @@ export default function UserForm({ mode, user }: Props) {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">— Belum dipilih —</SelectItem>
-                                            <SelectItem value="baratama">Baratama</SelectItem>
-                                            <SelectItem value="bandhawa">Bandhawa</SelectItem>
+                                            {sites.map(s => (
+                                                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     {errors.site && <p className="text-sm text-destructive">{errors.site}</p>}

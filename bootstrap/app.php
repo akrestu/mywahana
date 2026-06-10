@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin'            => \App\Http\Middleware\EnsureAdmin::class,
             'redirect-if-admin'=> \App\Http\Middleware\RedirectIfAdmin::class,
+            'staff'            => \App\Http\Middleware\EnsureStaff::class,
         ]);
 
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);

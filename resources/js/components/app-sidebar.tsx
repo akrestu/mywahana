@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, HeartPulse, LayoutGrid, ShieldCheck, Users } from 'lucide-react';
+import { AlertTriangle, BedDouble, Building2, ClipboardCheck, HeartPulse, LayoutGrid, MapPin, Mountain, ShieldCheck, Users, Wrench } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
 import { NavMain } from '@/components/nav-main';
@@ -18,6 +18,11 @@ import { home as dashboardRoute } from '@/routes/app';
 import { index as bugarSelamatIndex } from '@/routes/bugar-selamat';
 import { index as laporanBahayaIndex } from '@/routes/laporan-bahaya';
 import { index as adminIndex } from '@/routes/admin';
+import { index as okIndex } from '@/routes/sap/observasi-keselamatan';
+import { index as inspeksiKantorIndex } from '@/routes/sap/inspeksi-kantor';
+import { index as inspeksiTambangIndex } from '@/routes/sap/inspeksi-tambang';
+import { index as inspeksiWorkshopIndex } from '@/routes/sap/inspeksi-workshop';
+import { index as inspeksiMessIndex } from '@/routes/sap/inspeksi-mess';
 import type { Auth } from '@/types/auth';
 import type { NavGroup } from '@/components/nav-main';
 
@@ -26,6 +31,7 @@ export function AppSidebar() {
     const dashboardUrl = dashboardRoute.url();
 
     const isAdmin = auth?.user?.is_admin === true;
+    const isStaff = !isAdmin && ['staff', 'srstaff'].includes((auth?.user as { participation_level?: string })?.participation_level ?? '');
 
     const navGroups: NavGroup[] = isAdmin
         ? [
@@ -40,12 +46,14 @@ export function AppSidebar() {
                 items: [
                     { title: 'Bugar Selamat', href: '/admin/bugar-selamat', icon: HeartPulse },
                     { title: 'Laporan Bahaya', href: '/admin/laporan-bahaya', icon: AlertTriangle },
+                    { title: 'Observasi Keselamatan', href: '/admin/observasi-keselamatan', icon: ClipboardCheck },
                 ],
             },
             {
                 label: 'Manajemen',
                 items: [
                     { title: 'Kelola Pengguna', href: '/admin/users', icon: Users },
+                    { title: 'Kelola Site', href: '/admin/sites', icon: MapPin },
                 ],
             },
           ]
@@ -57,6 +65,16 @@ export function AppSidebar() {
                     { title: 'Laporan Bahaya', href: laporanBahayaIndex.url(), icon: AlertTriangle },
                 ],
             },
+            ...(isStaff ? [{
+                label: 'SAP',
+                items: [
+                    { title: 'Observasi Keselamatan', href: okIndex.url(), icon: ClipboardCheck },
+                    { title: 'Inspeksi Kantor',       href: inspeksiKantorIndex.url(),   icon: Building2 },
+                    { title: 'Inspeksi Tambang',      href: inspeksiTambangIndex.url(),  icon: Mountain },
+                    { title: 'Inspeksi Workshop',     href: inspeksiWorkshopIndex.url(), icon: Wrench },
+                    { title: 'Inspeksi Mess',         href: inspeksiMessIndex.url(),     icon: BedDouble },
+                ],
+            }] : []),
           ];
 
     return (

@@ -3,16 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Exports\BugarSelamatExport;
+use App\Exports\InspeksiKantorExport;
+use App\Exports\InspeksiMessExport;
+use App\Exports\InspeksiTambangExport;
+use App\Exports\InspeksiWorkshopExport;
 use App\Exports\LaporanBahayaExport;
+use App\Exports\ObservasiKeselamatanExport;
 use App\Exports\UsersExport;
 use App\Exports\UsersImportTemplate;
 use App\Imports\UsersImport;
 use App\Models\BugarSelamat;
+use App\Models\InspeksiKantor;
+use App\Models\InspeksiMess;
+use App\Models\InspeksiTambang;
+use App\Models\InspeksiWorkshop;
 use App\Models\LaporanBahaya;
+use App\Models\ObservasiKeselamatan;
 use App\Models\ParticipationTarget;
+use App\Models\Site;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
@@ -177,6 +189,218 @@ class AdminController extends Controller
         return back();
     }
 
+    public function observasiKeselamatan(Request $request)
+    {
+        $query = ObservasiKeselamatan::with(['user', 'penanggungJawab'])->latest('tanggal');
+
+        if ($request->filled('site')) {
+            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        }
+
+        if ($request->filled('search')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('name', 'like', "%{$request->search}%")
+                    ->orWhere('nik', 'like', "%{$request->search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('periode')) {
+            match ($request->periode) {
+                'hari_ini'   => $query->whereDate('tanggal', today()),
+                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
+                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
+                default      => null,
+            };
+        }
+
+        $summary = [
+            'total'              => ObservasiKeselamatan::count(),
+            'menunggu_konfirmasi'=> ObservasiKeselamatan::where('status', 'menunggu_konfirmasi')->count(),
+            'dikonfirmasi'       => ObservasiKeselamatan::where('status', 'dikonfirmasi')->count(),
+        ];
+
+        return Inertia::render('admin/observasi-keselamatan', [
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('site', 'status', 'search', 'periode'),
+            'summary' => $summary,
+        ]);
+    }
+
+    public function destroyObservasiKeselamatan(ObservasiKeselamatan $observasiKeselamatan)
+    {
+        $observasiKeselamatan->delete();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
+
+        return back();
+    }
+
+    public function inspeksiKantor(Request $request)
+    {
+        $query = InspeksiKantor::with(['user', 'reInspektor'])->latest('tanggal');
+        $this->applyInspeksiFilters($query, $request);
+
+        $summary = $this->inspeksiSummary(InspeksiKantor::class);
+
+        return Inertia::render('admin/inspeksi-kantor', [
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('site', 'status', 'search', 'periode'),
+            'summary' => $summary,
+        ]);
+    }
+
+    public function destroyInspeksiKantor(InspeksiKantor $inspeksiKantor)
+    {
+        $inspeksiKantor->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
+        return back();
+    }
+
+    public function inspeksiTambang(Request $request)
+    {
+        $query = InspeksiTambang::with(['user', 'reInspektor'])->latest('tanggal');
+        $this->applyInspeksiFilters($query, $request);
+
+        $summary = $this->inspeksiSummary(InspeksiTambang::class);
+
+        return Inertia::render('admin/inspeksi-tambang', [
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('site', 'status', 'search', 'periode'),
+            'summary' => $summary,
+        ]);
+    }
+
+    public function destroyInspeksiTambang(InspeksiTambang $inspeksiTambang)
+    {
+        $inspeksiTambang->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
+        return back();
+    }
+
+    public function inspeksiWorkshop(Request $request)
+    {
+        $query = InspeksiWorkshop::with(['user', 'reInspektor'])->latest('tanggal');
+        $this->applyInspeksiFilters($query, $request);
+
+        $summary = $this->inspeksiSummary(InspeksiWorkshop::class);
+
+        return Inertia::render('admin/inspeksi-workshop', [
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('site', 'status', 'search', 'periode'),
+            'summary' => $summary,
+        ]);
+    }
+
+    public function destroyInspeksiWorkshop(InspeksiWorkshop $inspeksiWorkshop)
+    {
+        $inspeksiWorkshop->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
+        return back();
+    }
+
+    public function inspeksiMess(Request $request)
+    {
+        $query = InspeksiMess::with(['user', 'reInspektor'])->latest('tanggal');
+        $this->applyInspeksiFilters($query, $request);
+
+        $summary = $this->inspeksiSummary(InspeksiMess::class);
+
+        return Inertia::render('admin/inspeksi-mess', [
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('site', 'status', 'search', 'periode'),
+            'summary' => $summary,
+        ]);
+    }
+
+    public function destroyInspeksiMess(InspeksiMess $inspeksiMess)
+    {
+        $inspeksiMess->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
+        return back();
+    }
+
+    public function exportInspeksiKantor(Request $request)
+    {
+        $query = InspeksiKantor::with(['user', 'reInspektor'])->latest('tanggal');
+        $this->applyInspeksiFilters($query, $request);
+        return Excel::download(new InspeksiKantorExport($query), 'inspeksi-kantor-' . now()->format('Ymd') . '.xlsx');
+    }
+
+    public function exportInspeksiTambang(Request $request)
+    {
+        $query = InspeksiTambang::with(['user', 'reInspektor'])->latest('tanggal');
+        $this->applyInspeksiFilters($query, $request);
+        return Excel::download(new InspeksiTambangExport($query), 'inspeksi-tambang-' . now()->format('Ymd') . '.xlsx');
+    }
+
+    public function exportInspeksiWorkshop(Request $request)
+    {
+        $query = InspeksiWorkshop::with(['user', 'reInspektor'])->latest('tanggal');
+        $this->applyInspeksiFilters($query, $request);
+        return Excel::download(new InspeksiWorkshopExport($query), 'inspeksi-workshop-' . now()->format('Ymd') . '.xlsx');
+    }
+
+    public function exportInspeksiMess(Request $request)
+    {
+        $query = InspeksiMess::with(['user', 'reInspektor'])->latest('tanggal');
+        $this->applyInspeksiFilters($query, $request);
+        return Excel::download(new InspeksiMessExport($query), 'inspeksi-mess-' . now()->format('Ymd') . '.xlsx');
+    }
+
+    private function applyInspeksiFilters($query, Request $request): void
+    {
+        if ($request->filled('site')) {
+            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        }
+        if ($request->filled('search')) {
+            $query->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$request->search}%")
+                ->orWhere('nik', 'like', "%{$request->search}%"));
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('periode')) {
+            match ($request->periode) {
+                'hari_ini'   => $query->whereDate('tanggal', today()),
+                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
+                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
+                default      => null,
+            };
+        }
+    }
+
+    private function inspeksiSummary(string $model): array
+    {
+        return [
+            'total'                  => $model::count(),
+            'menunggu_re_inspeksi'   => $model::where('status', 'menunggu_re_inspeksi')->count(),
+            'selesai'                => $model::where('status', 'selesai')->count(),
+            'ditolak'                => $model::where('status', 'ditolak')->count(),
+        ];
+    }
+
+    public function exportObservasiKeselamatan(Request $request)
+    {
+        $query = ObservasiKeselamatan::with(['user', 'penanggungJawab'])->latest('tanggal');
+
+        if ($request->filled('site')) {
+            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        return Excel::download(
+            new ObservasiKeselamatanExport($query),
+            'observasi-keselamatan-' . now()->format('Ymd') . '.xlsx'
+        );
+    }
+
     public function updateStatus(Request $request, LaporanBahaya $laporanBahaya)
     {
         $request->validate([
@@ -192,7 +416,7 @@ class AdminController extends Controller
 
     public function targets()
     {
-        $targets = ParticipationTarget::all(['level', 'laporan_per_minggu', 'bugar_per_hari']);
+        $targets = ParticipationTarget::all(['level', 'laporan_per_minggu', 'inspeksi_per_minggu', 'observasi_per_minggu', 'bugar_per_hari']);
 
         $users = User::where('is_admin', false)
             ->get(['id', 'name', 'nik', 'jabatan', 'site', 'participation_level']);
@@ -206,16 +430,20 @@ class AdminController extends Controller
     public function updateTarget(Request $request, string $level)
     {
         $request->validate([
-            'laporan_per_minggu' => ['required', 'integer', 'min:0', 'max:20'],
-            'bugar_per_hari'     => ['required', 'integer', 'min:0', 'max:3'],
+            'laporan_per_minggu'  => ['required', 'integer', 'min:0', 'max:20'],
+            'inspeksi_per_minggu' => ['required', 'integer', 'min:0', 'max:20'],
+            'observasi_per_minggu'=> ['required', 'integer', 'min:0', 'max:20'],
+            'bugar_per_hari'      => ['required', 'integer', 'min:0', 'max:3'],
         ]);
 
         ParticipationTarget::updateOrCreate(
             ['level' => $level],
             [
-                'laporan_per_minggu' => $request->laporan_per_minggu,
-                'bugar_per_hari'     => $request->bugar_per_hari,
-                'updated_by'         => auth()->id(),
+                'laporan_per_minggu'  => $request->laporan_per_minggu,
+                'inspeksi_per_minggu' => $request->inspeksi_per_minggu,
+                'observasi_per_minggu'=> $request->observasi_per_minggu,
+                'bugar_per_hari'      => $request->bugar_per_hari,
+                'updated_by'          => auth()->id(),
             ]
         );
 
@@ -312,7 +540,10 @@ class AdminController extends Controller
 
     public function createUser()
     {
-        return Inertia::render('admin/user-form', ['mode' => 'create']);
+        return Inertia::render('admin/user-form', [
+            'mode'  => 'create',
+            'sites' => Site::orderBy('label')->get(['value', 'label']),
+        ]);
     }
 
     public function storeUser(Request $request)
@@ -323,7 +554,8 @@ class AdminController extends Controller
             'email'               => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'password'            => ['required', 'string', 'min:8', 'confirmed'],
             'jabatan'             => ['nullable', 'string', 'max:255'],
-            'site'                => ['nullable', 'in:baratama,bandhawa'],
+            'departemen'          => ['nullable', 'in:Production,Maintenance,Supply Chain,Engineering,HSE,HRGA,Management'],
+            'site'                => ['nullable', 'string', Rule::exists('sites', 'value')],
             'is_admin'            => ['boolean'],
             'participation_level' => ['required', 'in:nonstaff,staff,srstaff'],
         ]);
@@ -334,6 +566,7 @@ class AdminController extends Controller
             'email'               => $request->email,
             'password'            => Hash::make($request->password),
             'jabatan'             => $request->jabatan,
+            'departemen'          => $request->departemen,
             'site'                => $request->site,
             'is_admin'            => $request->boolean('is_admin'),
             'participation_level' => $request->participation_level,
@@ -347,8 +580,9 @@ class AdminController extends Controller
     public function editUser(User $user)
     {
         return Inertia::render('admin/user-form', [
-            'mode' => 'edit',
-            'user' => $user->only('id', 'name', 'nik', 'email', 'jabatan', 'site', 'is_admin', 'participation_level'),
+            'mode'  => 'edit',
+            'user'  => $user->only('id', 'name', 'nik', 'email', 'jabatan', 'departemen', 'site', 'is_admin', 'participation_level'),
+            'sites' => Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -360,7 +594,8 @@ class AdminController extends Controller
             'email'               => ['nullable', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'password'            => ['nullable', 'string', 'min:8', 'confirmed'],
             'jabatan'             => ['nullable', 'string', 'max:255'],
-            'site'                => ['nullable', 'in:baratama,bandhawa'],
+            'departemen'          => ['nullable', 'in:Production,Maintenance,Supply Chain,Engineering,HSE,HRGA,Management'],
+            'site'                => ['nullable', 'string', Rule::exists('sites', 'value')],
             'is_admin'            => ['boolean'],
             'participation_level' => ['required', 'in:nonstaff,staff,srstaff'],
         ]);
@@ -370,6 +605,7 @@ class AdminController extends Controller
             'nik'                 => $request->nik,
             'email'               => $request->email,
             'jabatan'             => $request->jabatan,
+            'departemen'          => $request->departemen,
             'site'                => $request->site,
             'is_admin'            => $request->boolean('is_admin'),
             'participation_level' => $request->participation_level,

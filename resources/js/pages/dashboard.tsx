@@ -47,13 +47,19 @@ type LeaderboardEntry = {
 };
 
 type WeekInfo = { start: string; end: string; count: number; terpenuhi: boolean };
-type TargetInfo = {
-    level: string;
-    laporan_per_minggu: number;
+type MetricWeekly = {
+    target_per_minggu: number;
+    weeks: WeekInfo[];
     minggu_berlalu: number;
     minggu_terpenuhi: number;
     persen: number;
-    weeks: WeekInfo[];
+};
+type TargetInfo = {
+    level: string;
+    bugar: { target_per_hari: number; hari_berlalu: number; hari_terpenuhi: number; persen: number };
+    laporan: MetricWeekly;
+    inspeksi: MetricWeekly | null;
+    observasi: MetricWeekly | null;
 };
 
 type NewBadge = { key: string; nama: string; icon: string; earned_at: string };
@@ -123,7 +129,6 @@ export default function Dashboard({
     stats = defaultStats,
     recent_bugar_selamat = [],
     recent_laporan_bahaya = [],
-    streak = 0,
     leaderboard = {},
     target,
     new_badges = [],
@@ -137,10 +142,11 @@ export default function Dashboard({
     const sudahIsiBugarHariIni = recent_bugar_selamat.length > 0 && isToday(recent_bugar_selamat[0].tanggal);
     const pendingCount = stats.laporan_bahaya.pending;
 
-    const [dismissedKeys, setDismissedKeys] = useState<string[]>(() => {
-        try { return JSON.parse(localStorage.getItem('dismissed_badges') ?? '[]'); }
-        catch { return []; }
-    });
+    const [dismissedKeys, setDismissedKeys] = useState<string[]>([]);
+    useEffect(() => {
+        try { setDismissedKeys(JSON.parse(localStorage.getItem('dismissed_badges') ?? '[]')); }
+        catch { /* ignore */ }
+    }, []);
     const visibleBadges = new_badges.filter((b) => !dismissedKeys.includes(b.key));
     const dismissBadges = () => {
         const updated = [...new Set([...dismissedKeys, ...visibleBadges.map((b) => b.key)])];
@@ -251,48 +257,116 @@ export default function Dashboard({
                     </Link>
                 </div>
 
-                {/* ⑤ STREAK + TARGET — motivasi partisipasi */}
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col items-center justify-center rounded-2xl border bg-orange-50 dark:bg-orange-950 py-4 px-3 text-center">
-                        <span className="text-3xl leading-none">🔥</span>
-                        <p className="mt-1 text-3xl font-bold text-orange-600 dark:text-orange-400">{streak}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">hari berturut-turut</p>
-                        <p className="text-[11px] font-semibold text-orange-700 dark:text-orange-300">Bugar Selamat</p>
-                    </div>
-
+                {/* ⑤ TARGET — motivasi partisipasi */}
+                <div className="flex flex-col gap-3">
+                    {/* Target Partisipasi */}
                     {target ? (
-                        <div className="flex flex-col justify-center rounded-2xl border bg-blue-50 dark:bg-blue-950 py-4 px-3 gap-2">
-                            <div>
-                                <p className="text-xs font-bold text-blue-800 dark:text-blue-200">Target Laporan</p>
-                                <p className="text-[11px] text-muted-foreground">{target.laporan_per_minggu}× laporan/minggu</p>
-                            </div>
-                            {/* Indikator per-minggu */}
-                            <div className="flex gap-1">
-                                {target.weeks.map((w, i) => (
-                                    <div
-                                        key={i}
-                                        title={`Minggu ${i + 1}: ${w.count} laporan`}
-                                        className={`h-2.5 flex-1 rounded-full transition-all ${
-                                            w.terpenuhi
-                                                ? 'bg-blue-500 dark:bg-blue-400'
-                                                : 'bg-blue-200 dark:bg-blue-800'
-                                        }`}
-                                    />
-                                ))}
-                            </div>
-                            <div className="flex flex-wrap gap-x-1 gap-y-0.5">
-                                {target.weeks.map((w, i) => (
-                                    <span key={i} className={`text-[10px] flex-1 text-center ${w.terpenuhi ? 'text-blue-600 dark:text-blue-300 font-semibold' : 'text-muted-foreground'}`}>
-                                        M{i + 1}: {w.count}✓
+                        <div className="flex flex-col rounded-2xl border bg-blue-50 dark:bg-blue-950 py-4 px-4 gap-3">
+                            <p className="text-xs font-bold text-blue-800 dark:text-blue-200">Target Partisipasi</p>
+
+                            {/* Bugar selamat per hari */}
+                            <div className="flex flex-col gap-1">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[11px] text-muted-foreground">Bugar Selamat</span>
+                                    <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+                                        {target.bugar.hari_terpenuhi}/{target.bugar.hari_berlalu} hari
                                     </span>
-                                ))}
+                                </div>
+                                <div className="h-2 w-full rounded-full bg-blue-200 dark:bg-blue-800 overflow-hidden">
+                                    <div
+                                        className="h-full rounded-full bg-blue-500 dark:bg-blue-400 transition-all"
+                                        style={{ width: `${target.bugar.persen}%` }}
+                                    />
+                                </div>
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                                <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{target.minggu_terpenuhi}</span>
-                                {' '}dari{' '}
-                                <span className="font-semibold text-foreground">{target.minggu_berlalu} minggu</span>
-                                {' '}bulan ini terpenuhi
-                            </p>
+
+                            {/* Laporan bahaya per minggu */}
+                            <div className="flex flex-col gap-1">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[11px] text-muted-foreground">Laporan Bahaya</span>
+                                    <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+                                        {target.laporan.minggu_terpenuhi}/{target.laporan.minggu_berlalu} minggu
+                                    </span>
+                                </div>
+                                <div className="flex gap-1">
+                                    {target.laporan.weeks.map((w, i) => (
+                                        <div
+                                            key={i}
+                                            title={`Minggu ${i + 1}: ${w.count} laporan`}
+                                            className={`h-2.5 flex-1 rounded-full transition-all ${
+                                                w.terpenuhi ? 'bg-blue-500 dark:bg-blue-400' : 'bg-blue-200 dark:bg-blue-800'
+                                            }`}
+                                        />
+                                    ))}
+                                </div>
+                                <div className="flex gap-x-1">
+                                    {target.laporan.weeks.map((w, i) => (
+                                        <span key={i} className={`text-[10px] flex-1 text-center ${w.terpenuhi ? 'text-blue-600 dark:text-blue-300 font-semibold' : 'text-muted-foreground'}`}>
+                                            M{i + 1}: {w.count}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Inspeksi per minggu (staff/srstaff) */}
+                            {target.inspeksi && (
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[11px] text-muted-foreground">Inspeksi</span>
+                                        <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+                                            {target.inspeksi.minggu_terpenuhi}/{target.inspeksi.minggu_berlalu} minggu
+                                        </span>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        {target.inspeksi.weeks.map((w, i) => (
+                                            <div
+                                                key={i}
+                                                title={`Minggu ${i + 1}: ${w.count} inspeksi`}
+                                                className={`h-2.5 flex-1 rounded-full transition-all ${
+                                                    w.terpenuhi ? 'bg-blue-500 dark:bg-blue-400' : 'bg-blue-200 dark:bg-blue-800'
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-x-1">
+                                        {target.inspeksi.weeks.map((w, i) => (
+                                            <span key={i} className={`text-[10px] flex-1 text-center ${w.terpenuhi ? 'text-blue-600 dark:text-blue-300 font-semibold' : 'text-muted-foreground'}`}>
+                                                M{i + 1}: {w.count}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Observasi keselamatan per minggu (staff/srstaff) */}
+                            {target.observasi && (
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[11px] text-muted-foreground">Observasi Keselamatan</span>
+                                        <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+                                            {target.observasi.minggu_terpenuhi}/{target.observasi.minggu_berlalu} minggu
+                                        </span>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        {target.observasi.weeks.map((w, i) => (
+                                            <div
+                                                key={i}
+                                                title={`Minggu ${i + 1}: ${w.count} observasi`}
+                                                className={`h-2.5 flex-1 rounded-full transition-all ${
+                                                    w.terpenuhi ? 'bg-blue-500 dark:bg-blue-400' : 'bg-blue-200 dark:bg-blue-800'
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-x-1">
+                                        {target.observasi.weeks.map((w, i) => (
+                                            <span key={i} className={`text-[10px] flex-1 text-center ${w.terpenuhi ? 'text-blue-600 dark:text-blue-300 font-semibold' : 'text-muted-foreground'}`}>
+                                                M{i + 1}: {w.count}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center rounded-2xl border bg-muted/30 py-4 px-3 text-center">
