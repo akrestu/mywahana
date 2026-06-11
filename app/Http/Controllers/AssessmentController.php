@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AssessmentQuestion;
 use App\Models\AssessmentSession;
 use App\Models\AssessmentSessionQuestion;
+use App\Models\InductionAttendance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -164,6 +165,17 @@ class AssessmentController extends Controller
                 'passed' => $percentage >= self::PASSING_PERCENTAGE,
                 'completed_at' => now(),
             ]);
+
+            if ($percentage >= self::PASSING_PERCENTAGE) {
+                InductionAttendance::firstOrCreate(
+                    ['user_id' => $session->user_id, 'type' => 'safety'],
+                    [
+                        'assessment_session_id' => $session->id,
+                        'assessment_session_type' => 'safety',
+                        'attended_at' => now(),
+                    ]
+                );
+            }
         });
 
         return redirect()->route('assessment.result', $session);
@@ -189,6 +201,10 @@ class AssessmentController extends Controller
             'is_correct' => $sq->is_correct,
         ]);
 
+        $attendance = InductionAttendance::where('user_id', $user->id)
+            ->where('type', 'safety')
+            ->first();
+
         return Inertia::render('assessment/result', [
             'session' => [
                 'id' => $session->id,
@@ -201,6 +217,11 @@ class AssessmentController extends Controller
                 'completed_at' => $session->completed_at,
             ],
             'review' => $review,
+            'attendance' => $attendance ? [
+                'recorded' => true,
+                'attended_at' => $attendance->attended_at->toIso8601String(),
+                'is_new' => $attendance->assessment_session_id === $session->id,
+            ] : null,
         ]);
     }
 

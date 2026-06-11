@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { CheckCircle2, ChevronDown, ChevronUp, RotateCcw, Trophy, XCircle } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronUp, ClipboardCheck, RotateCcw, Trophy, XCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -26,9 +26,16 @@ type SessionResult = {
     completed_at: string;
 };
 
+type AttendanceInfo = {
+    recorded: boolean;
+    attended_at: string;
+    is_new: boolean;
+} | null;
+
 type Props = {
     session: SessionResult;
     review: ReviewItem[];
+    attendance: AttendanceInfo;
 };
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
@@ -165,7 +172,7 @@ function ReviewCard({ item, index }: { item: ReviewItem; index: number }) {
     );
 }
 
-export default function HrAssessmentResult({ session, review }: Props) {
+export default function HrAssessmentResult({ session, review, attendance }: Props) {
     const correctCount = review.filter(r => r.is_correct).length;
     const incorrectCount = review.length - correctCount;
     const [retrying, setRetrying] = useState(false);
@@ -178,22 +185,8 @@ export default function HrAssessmentResult({ session, review }: Props) {
     return (
         <>
             <Head title="Hasil HR Assessment" />
-            <style>{`
-                @keyframes fadeSlideUp {
-                    from { opacity: 0; transform: translateY(24px); }
-                    to   { opacity: 1; transform: translateY(0); }
-                }
-                @keyframes popIn {
-                    0%   { opacity: 0; transform: scale(0.7); }
-                    70%  { transform: scale(1.08); }
-                    100% { opacity: 1; transform: scale(1); }
-                }
-                .result-enter { animation: fadeSlideUp 0.5s ease both; }
-                .badge-pop    { animation: popIn 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.8s both; }
-                .section-enter{ animation: fadeSlideUp 0.5s ease both; }
-            `}</style>
 
-            <div className="mx-auto max-w-2xl px-4 py-6 space-y-5">
+<div className="mx-auto max-w-2xl px-4 py-6 space-y-5">
 
                 {/* ── Hero score card ── */}
                 <div ref={scoreCardRef} className="result-enter">
@@ -244,6 +237,32 @@ export default function HrAssessmentResult({ session, review }: Props) {
                         </div>
                     </Card>
                 </div>
+
+                {/* ── Absensi Induksi badge ── */}
+                {session.passed && attendance && (
+                    <div
+                        className={cn('section-enter', attendance.is_new && 'badge-pop')}
+                        style={{ animationDelay: '0.15s' }}
+                    >
+                        <Card className="border-teal-200 bg-teal-50 dark:bg-teal-950/20 dark:border-teal-800">
+                            <div className="flex items-center gap-3 px-4 py-3">
+                                <ClipboardCheck className="h-5 w-5 text-teal-600 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-teal-800 dark:text-teal-200">
+                                        Absensi Induksi HR tercatat ✓
+                                    </p>
+                                    <p className="text-xs text-teal-600 dark:text-teal-400">
+                                        {attendance.is_new ? 'Absensi baru saja dicatat pada' : 'Absensi sebelumnya tercatat pada'}{' '}
+                                        {new Date(attendance.attended_at).toLocaleString('id-ID', {
+                                            day: 'numeric', month: 'long', year: 'numeric',
+                                            hour: '2-digit', minute: '2-digit',
+                                        })}
+                                    </p>
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+                )}
 
                 {/* ── Action buttons ── */}
                 <div className="section-enter flex gap-3" style={{ animationDelay: '0.2s' }}>

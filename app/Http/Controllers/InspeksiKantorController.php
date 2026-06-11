@@ -144,9 +144,7 @@ class InspeksiKantorController extends Controller
         }
 
         // Kirim notifikasi ke peserta
-        foreach ($pesertaIds as $id) {
-            User::find($id)?->notify(new InspeksiKantorDibuat($record, 'peserta'));
-        }
+        User::whereIn('id', $pesertaIds)->get()->each->notify(new InspeksiKantorDibuat($record, 'peserta'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Form Inspeksi Kantor berhasil disimpan.']);
 

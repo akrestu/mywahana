@@ -132,9 +132,7 @@ class InspeksiMessController extends Controller
             $record->reInspektor->notify(new InspeksiMessDibuat($record, 're_inspektor'));
         }
 
-        foreach ($pesertaIds as $id) {
-            User::find($id)?->notify(new InspeksiMessDibuat($record, 'peserta'));
-        }
+        User::whereIn('id', $pesertaIds)->get()->each->notify(new InspeksiMessDibuat($record, 'peserta'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Form Inspeksi Mess berhasil disimpan.']);
 

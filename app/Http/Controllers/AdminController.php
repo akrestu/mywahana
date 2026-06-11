@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\BugarSelamatExport;
+use App\Exports\InductionAttendanceExport;
 use App\Exports\InspeksiKantorExport;
 use App\Exports\InspeksiMessExport;
 use App\Exports\InspeksiTambangExport;
@@ -21,6 +22,7 @@ use App\Models\AssessmentSession;
 use App\Models\AssessmentSessionQuestion;
 use App\Models\HrAssessmentSession;
 use App\Models\HrAssessmentSessionQuestion;
+use App\Models\InductionAttendance;
 use App\Models\KomunikasiJsa;
 use App\Models\LaporanBahaya;
 use App\Models\ObservasiKeselamatan;
@@ -30,6 +32,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
@@ -644,14 +647,39 @@ class AdminController extends Controller
             ->orderBy('name')
             ->get();
 
+        $totalNonAdminUsers = User::where('is_admin', false)->count();
+        $safetyAttendanceRecords = InductionAttendance::where('type', 'safety')
+            ->with('user:id,name,nik,departemen,site')
+            ->latest('attended_at')
+            ->limit(50)
+            ->get()
+            ->map(fn ($a) => [
+                'user'       => $a->user,
+                'attended_at'=> $a->attended_at->toIso8601String(),
+                'session_id' => $a->assessment_session_id,
+            ]);
+
+        $attendanceSummary = [
+            'total_tercatat' => InductionAttendance::where('type', 'safety')->count(),
+            'belum_tercatat' => $totalNonAdminUsers - InductionAttendance::where('type', 'safety')->count(),
+            'records'        => $safetyAttendanceRecords,
+            'belum_users'    => User::where('is_admin', false)
+                ->whereNotIn('id', InductionAttendance::where('type', 'safety')->select('user_id'))
+                ->select('id', 'name', 'nik', 'departemen', 'site')
+                ->orderBy('departemen')
+                ->orderBy('name')
+                ->get(),
+        ];
+
         return Inertia::render('admin/assessment', [
-            'records'        => $query->paginate(20)->withQueryString(),
-            'filters'        => $request->only('search', 'departemen', 'passed'),
-            'summary'        => $summary,
-            'dept_stats'     => $deptStats,
-            'monthly_trend'  => $monthlyTrend,
-            'weak_questions' => $weakQuestions,
-            'uncovered_users'=> $uncoveredUsers,
+            'records'           => $query->paginate(20)->withQueryString(),
+            'filters'           => $request->only('search', 'departemen', 'passed'),
+            'summary'           => $summary,
+            'dept_stats'        => $deptStats,
+            'monthly_trend'     => $monthlyTrend,
+            'weak_questions'    => $weakQuestions,
+            'uncovered_users'   => $uncoveredUsers,
+            'attendance_summary'=> $attendanceSummary,
         ]);
     }
 
@@ -719,13 +747,37 @@ class AdminController extends Controller
             ->orderBy('name')
             ->get();
 
+        $totalNonAdminUsersHr = User::where('is_admin', false)->count();
+        $hrAttendanceRecords = InductionAttendance::where('type', 'hr')
+            ->with('user:id,name,nik,jabatan,site')
+            ->latest('attended_at')
+            ->limit(50)
+            ->get()
+            ->map(fn ($a) => [
+                'user'       => $a->user,
+                'attended_at'=> $a->attended_at->toIso8601String(),
+                'session_id' => $a->assessment_session_id,
+            ]);
+
+        $hrAttendanceSummary = [
+            'total_tercatat' => InductionAttendance::where('type', 'hr')->count(),
+            'belum_tercatat' => $totalNonAdminUsersHr - InductionAttendance::where('type', 'hr')->count(),
+            'records'        => $hrAttendanceRecords,
+            'belum_users'    => User::where('is_admin', false)
+                ->whereNotIn('id', InductionAttendance::where('type', 'hr')->select('user_id'))
+                ->select('id', 'name', 'nik', 'jabatan', 'site')
+                ->orderBy('name')
+                ->get(),
+        ];
+
         return Inertia::render('admin/hr-assessment', [
-            'records'         => $query->paginate(20)->withQueryString(),
-            'filters'         => $request->only('search', 'passed'),
-            'summary'         => $summary,
-            'monthly_trend'   => $monthlyTrend,
-            'weak_questions'  => $weakQuestions,
-            'uncovered_users' => $uncoveredUsers,
+            'records'           => $query->paginate(20)->withQueryString(),
+            'filters'           => $request->only('search', 'passed'),
+            'summary'           => $summary,
+            'monthly_trend'     => $monthlyTrend,
+            'weak_questions'    => $weakQuestions,
+            'uncovered_users'   => $uncoveredUsers,
+            'attendance_summary'=> $hrAttendanceSummary,
         ]);
     }
 
@@ -790,6 +842,23 @@ class AdminController extends Controller
         return response()->streamDownload($callback, $filename, [
             'Content-Type' => 'text/csv',
         ]);
+    }
+
+    public function exportInductionAttendance(string $type)
+    {
+        abort_unless(in_array($type, ['safety', 'hr']), 404);
+
+        $query = InductionAttendance::where('type', $type)
+            ->with('user:id,name,nik,departemen,site')
+            ->latest('attended_at');
+
+        $label    = $type === 'safety' ? 'safety' : 'hr';
+        $filename = "absensi-induksi-{$label}-" . now()->format('Ymd') . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new InductionAttendanceExport($query),
+            $filename
+        );
     }
 
     public function exportInspeksiKantor(Request $request)
@@ -1227,15 +1296,29 @@ class AdminController extends Controller
     {
         $sites = Site::pluck('value')->all();
 
+        $aggregate = fn (string $table) => \DB::table($table)
+            ->join('users', 'users.id', '=', $table . '.user_id')
+            ->selectRaw('users.site, COUNT(*) as total')
+            ->groupBy('users.site')
+            ->pluck('total', 'users.site');
+
+        $bugar     = $aggregate('bugar_selamat');
+        $laporan   = $aggregate('laporan_bahaya');
+        $observasi = $aggregate('observasi_keselamatan');
+
+        $inspeksiTables = ['inspeksi_kantor', 'inspeksi_tambang', 'inspeksi_workshop', 'inspeksi_mess'];
+        $inspeksi = collect($inspeksiTables)
+            ->reduce(function ($carry, $table) use ($aggregate) {
+                return $carry->mergeRecursive($aggregate($table)->toArray());
+            }, collect())
+            ->map(fn ($v) => is_array($v) ? array_sum($v) : $v);
+
         return collect($sites)->map(fn ($site) => [
             'site'      => $site,
-            'bugar'     => BugarSelamat::whereHas('user', fn ($q) => $q->where('site', $site))->count(),
-            'laporan'   => LaporanBahaya::whereHas('user', fn ($q) => $q->where('site', $site))->count(),
-            'observasi' => ObservasiKeselamatan::whereHas('user', fn ($q) => $q->where('site', $site))->count(),
-            'inspeksi'  => InspeksiKantor::whereHas('user', fn ($q) => $q->where('site', $site))->count()
-                + InspeksiTambang::whereHas('user', fn ($q) => $q->where('site', $site))->count()
-                + InspeksiWorkshop::whereHas('user', fn ($q) => $q->where('site', $site))->count()
-                + InspeksiMess::whereHas('user', fn ($q) => $q->where('site', $site))->count(),
+            'bugar'     => (int) ($bugar[$site] ?? 0),
+            'laporan'   => (int) ($laporan[$site] ?? 0),
+            'observasi' => (int) ($observasi[$site] ?? 0),
+            'inspeksi'  => (int) ($inspeksi[$site] ?? 0),
         ])->toArray();
     }
 }

@@ -127,9 +127,7 @@ class InspeksiTambangController extends Controller
             $record->reInspektor->notify(new InspeksiTambangDibuat($record, 're_inspektor'));
         }
 
-        foreach ($pesertaIds as $id) {
-            User::find($id)?->notify(new InspeksiTambangDibuat($record, 'peserta'));
-        }
+        User::whereIn('id', $pesertaIds)->get()->each->notify(new InspeksiTambangDibuat($record, 'peserta'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Form Inspeksi Tambang berhasil disimpan.']);
 

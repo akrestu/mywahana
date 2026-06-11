@@ -145,9 +145,7 @@ class InspeksiWorkshopController extends Controller
             $record->reInspektor->notify(new InspeksiWorkshopDibuat($record, 're_inspektor'));
         }
 
-        foreach ($pesertaIds as $id) {
-            User::find($id)?->notify(new InspeksiWorkshopDibuat($record, 'peserta'));
-        }
+        User::whereIn('id', $pesertaIds)->get()->each->notify(new InspeksiWorkshopDibuat($record, 'peserta'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Form Inspeksi Workshop berhasil disimpan.']);
 

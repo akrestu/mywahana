@@ -155,6 +155,9 @@ Route::middleware(['auth'])->group(function () {
         // Assessment monitoring
         Route::get('/assessment', [AdminController::class, 'assessment'])->name('assessment');
         Route::get('/hr-assessment', [AdminController::class, 'hrAssessment'])->name('hr-assessment');
+        Route::get('/induction-attendance/export/{type}', [AdminController::class, 'exportInductionAttendance'])
+            ->name('induction-attendance.export')
+            ->where('type', 'safety|hr');
 
         // Targets
         Route::get('/targets', [AdminController::class, 'targets'])->name('targets');
