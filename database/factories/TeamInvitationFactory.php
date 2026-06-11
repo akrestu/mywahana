@@ -22,7 +22,7 @@ class TeamInvitationFactory extends Factory
     {
         return [
             'team_id' => Team::factory(),
-            'email' => fake()->unique()->safeEmail(),
+            'email' => $this->faker->unique()->safeEmail(),
             'role' => TeamRole::Member,
             'invited_by' => User::factory(),
             'expires_at' => null,
