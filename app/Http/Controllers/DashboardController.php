@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BugarSelamat;
+use App\Models\KomunikasiJsa;
 use App\Models\InspeksiKantor;
 use App\Models\InspeksiMess;
 use App\Models\InspeksiTambang;
@@ -308,6 +309,47 @@ class DashboardController extends Controller
             );
         }
 
+        // --- JSA per 2 minggu (dua periode per bulan: 1–15 dan 16–akhir) ---
+        $jsa = null;
+        if ($target->jsa_per_2minggu > 0) {
+            $mid        = $startOfMonth->copy()->addDays(14); // hari ke-15
+            $endOfMonth = $now->copy()->endOfMonth();
+
+            $periods = [
+                ['start' => $startOfMonth->toDateString(), 'end' => $mid->copy()->min($endOfMonth)->toDateString()],
+                ['start' => $mid->copy()->addDay()->toDateString(), 'end' => $endOfMonth->toDateString()],
+            ];
+
+            $jsaWeeks          = [];
+            $periodeBerlalu    = 0;
+            $periodeTerpenuhi  = 0;
+
+            foreach ($periods as $p) {
+                if (Carbon::parse($p['start'])->lte($now)) {
+                    $count = KomunikasiJsa::where('user_id', $user->id)
+                        ->whereBetween('tanggal', [$p['start'], $p['end']])
+                        ->count();
+                    $terpenuhi = $count >= $target->jsa_per_2minggu;
+                    $jsaWeeks[] = [
+                        'start'     => $p['start'],
+                        'end'       => $p['end'],
+                        'count'     => $count,
+                        'terpenuhi' => $terpenuhi,
+                    ];
+                    $periodeBerlalu++;
+                    if ($terpenuhi) $periodeTerpenuhi++;
+                }
+            }
+
+            $jsa = [
+                'target_per_periode' => $target->jsa_per_2minggu,
+                'weeks'              => $jsaWeeks,
+                'minggu_berlalu'     => $periodeBerlalu,
+                'minggu_terpenuhi'   => $periodeTerpenuhi,
+                'persen'             => $periodeBerlalu > 0 ? round($periodeTerpenuhi / $periodeBerlalu * 100) : 0,
+            ];
+        }
+
         return [
             'level'    => $user->participation_level ?? 'nonstaff',
             'bugar'    => [
@@ -319,6 +361,7 @@ class DashboardController extends Controller
             'laporan'  => $laporan,
             'inspeksi' => $inspeksi,
             'observasi'=> $observasi,
+            'jsa'      => $jsa,
         ];
     }
 

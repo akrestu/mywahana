@@ -9,6 +9,7 @@ use App\Http\Controllers\InspeksiKantorController;
 use App\Http\Controllers\InspeksiMessController;
 use App\Http\Controllers\InspeksiTambangController;
 use App\Http\Controllers\InspeksiWorkshopController;
+use App\Http\Controllers\KomunikasiJsaController;
 use App\Http\Controllers\ObservasiKeselamatanController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use Illuminate\Support\Facades\Route;
@@ -68,6 +69,14 @@ Route::middleware(['auth'])->group(function () {
         Route::post('inspeksi-workshop/{inspeksiWorkshop}/re-inspeksi', [InspeksiWorkshopController::class, 'storeReInspeksi'])->name('inspeksi-workshop.re-inspeksi.store');
         Route::post('inspeksi-workshop/{inspeksiWorkshop}/tolak', [InspeksiWorkshopController::class, 'tolak'])->name('inspeksi-workshop.tolak');
 
+        // Komunikasi JSA
+        Route::resource('komunikasi-jsa', KomunikasiJsaController::class)
+            ->only(['index', 'create', 'store', 'show'])
+            ->parameters(['komunikasi-jsa' => 'komunikasiJsa']);
+        Route::get('komunikasi-jsa/{komunikasiJsa}/konfirmasi',  [KomunikasiJsaController::class, 'konfirmasi'])       ->name('komunikasi-jsa.konfirmasi');
+        Route::post('komunikasi-jsa/{komunikasiJsa}/konfirmasi', [KomunikasiJsaController::class, 'storeKonfirmasi'])  ->name('komunikasi-jsa.konfirmasi.store');
+        Route::post('komunikasi-jsa/{komunikasiJsa}/tolak',      [KomunikasiJsaController::class, 'tolakKonfirmasi'])  ->name('komunikasi-jsa.tolak');
+
         // Inspeksi Mess
         Route::resource('inspeksi-mess', InspeksiMessController::class)
             ->only(['index', 'create', 'store', 'show'])
@@ -103,6 +112,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/observasi-keselamatan/export', [AdminController::class, 'exportObservasiKeselamatan'])->name('ok.export');
         Route::get('/observasi-keselamatan', [AdminController::class, 'observasiKeselamatan'])->name('ok');
         Route::delete('/observasi-keselamatan/{observasiKeselamatan}', [AdminController::class, 'destroyObservasiKeselamatan'])->name('ok.destroy');
+
+        // Komunikasi JSA monitoring
+        Route::get('/komunikasi-jsa/export', [AdminController::class, 'exportKomunikasiJsa'])->name('komunikasi-jsa.export');
+        Route::get('/komunikasi-jsa', [AdminController::class, 'komunikasiJsa'])->name('komunikasi-jsa');
+        Route::delete('/komunikasi-jsa/{komunikasiJsa}', [AdminController::class, 'destroyKomunikasiJsa'])->name('komunikasi-jsa.destroy');
 
         // Inspeksi monitoring
         Route::get('/inspeksi-kantor/export', [AdminController::class, 'exportInspeksiKantor'])->name('inspeksi-kantor.export');

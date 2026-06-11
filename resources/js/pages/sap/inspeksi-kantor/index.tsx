@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { Building2, CalendarDays, ChevronRight, Plus, ShieldAlert } from 'lucide-react';
+import { Building2, CalendarDays, ChevronRight, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -124,6 +125,9 @@ function RecordList({ records, asRI = false }: { records: Paginated; asRI?: bool
 }
 
 export default function InspeksiKantorIndex({ myRecords, pendingReInspeksi, selesaiAsRI }: Props) {
+    const [tab, setTab] = useState<'my' | 'pending' | 'confirmed'>('my');
+    const pendingCount = pendingReInspeksi.data.length;
+
     return (
         <>
             <Head title="Inspeksi Kantor" />
@@ -140,31 +144,36 @@ export default function InspeksiKantorIndex({ myRecords, pendingReInspeksi, sele
                     </Link>
                 </div>
 
-                {pendingReInspeksi.data.length > 0 && (
-                    <div className="rounded-2xl border-2 border-yellow-300 bg-yellow-50/50 dark:bg-yellow-950/10 p-4 flex flex-col gap-3">
-                        <div className="flex items-center gap-2">
-                            <ShieldAlert size={18} className="text-yellow-600" />
-                            <p className="font-bold text-yellow-800 dark:text-yellow-300">
-                                Perlu Re-Inspeksi Anda ({pendingReInspeksi.data.length})
-                            </p>
-                        </div>
-                        <RecordList records={pendingReInspeksi} asRI />
-                    </div>
-                )}
-
-                <div className="flex flex-col gap-3">
-                    <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Inspeksi Saya</p>
-                    <RecordList records={myRecords} />
+                <div className="flex gap-1 rounded-xl bg-muted p-1">
+                    {([
+                        { key: 'my',        label: 'Inspeksi Saya' },
+                        { key: 'pending',   label: 'Perlu Re-Inspeksi', count: pendingCount },
+                        { key: 'confirmed', label: 'Riwayat Re-Inspeksi' },
+                    ] as const).map(t => (
+                        <button
+                            key={t.key}
+                            type="button"
+                            onClick={() => setTab(t.key)}
+                            className={cn(
+                                'flex-1 rounded-lg py-2 text-xs font-semibold transition-all flex items-center justify-center gap-1.5',
+                                tab === t.key
+                                    ? 'bg-background shadow text-foreground'
+                                    : 'text-muted-foreground hover:text-foreground',
+                            )}
+                        >
+                            {t.label}
+                            {'count' in t && t.count > 0 && (
+                                <span className="flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] text-white font-bold">
+                                    {t.count}
+                                </span>
+                            )}
+                        </button>
+                    ))}
                 </div>
 
-                {selesaiAsRI.data.length > 0 && (
-                    <div className="flex flex-col gap-3">
-                        <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                            Riwayat Re-Inspeksi Saya
-                        </p>
-                        <RecordList records={selesaiAsRI} asRI />
-                    </div>
-                )}
+                {tab === 'my'        && <RecordList records={myRecords} />}
+                {tab === 'pending'   && <RecordList records={pendingReInspeksi} asRI />}
+                {tab === 'confirmed' && <RecordList records={selesaiAsRI} asRI />}
             </div>
         </>
     );

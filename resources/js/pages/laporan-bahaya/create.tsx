@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import { compressImage } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
 type UserInfo = {
@@ -121,11 +122,12 @@ export default function LaporanBahayaCreate({ user }: Props) {
     const step2Valid = !!(data.probabilitas && data.frekuensi && data.severity);
     const step3Valid = !!data.tindakan_perbaikan;
 
-    const handleFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setData('foto', file);
-            setPreview(URL.createObjectURL(file));
+            const compressed = await compressImage(file);
+            setData('foto', compressed);
+            setPreview(URL.createObjectURL(compressed));
         }
     };
 

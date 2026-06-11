@@ -17,6 +17,7 @@ use App\Models\InspeksiKantor;
 use App\Models\InspeksiMess;
 use App\Models\InspeksiTambang;
 use App\Models\InspeksiWorkshop;
+use App\Models\KomunikasiJsa;
 use App\Models\LaporanBahaya;
 use App\Models\ObservasiKeselamatan;
 use App\Models\ParticipationTarget;
@@ -99,6 +100,11 @@ class AdminController extends Controller
                 'total'    => $totalKaryawan,
                 'baratama' => User::where('is_admin', false)->where('site', 'baratama')->count(),
                 'bandhawa' => User::where('is_admin', false)->where('site', 'bandhawa')->count(),
+            ],
+            'komunikasi_jsa' => [
+                'total'               => KomunikasiJsa::count(),
+                'bulan_ini'           => KomunikasiJsa::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
+                'menunggu_konfirmasi' => KomunikasiJsa::where('status', 'menunggu_konfirmasi')->count(),
             ],
         ];
 
@@ -485,6 +491,133 @@ class AdminController extends Controller
         $inspeksiMess->delete();
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
         return back();
+    }
+
+    public function komunikasiJsa(Request $request)
+    {
+        $query = KomunikasiJsa::with(['user:id,name,nik,jabatan,site', 'teamLeader:id,name,jabatan'])
+            ->latest('tanggal')
+            ->latest('created_at');
+
+        if ($request->filled('site')) {
+            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('shift')) {
+            $query->where('shift', $request->shift);
+        }
+
+        if ($request->filled('periode')) {
+            match ($request->periode) {
+                'hari_ini'   => $query->whereDate('tanggal', today()),
+                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
+                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
+                default      => null,
+            };
+        }
+
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('judul_dokumen', 'like', "%{$request->search}%")
+                    ->orWhere('lokasi', 'like', "%{$request->search}%")
+                    ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$request->search}%")
+                        ->orWhere('nik', 'like', "%{$request->search}%"));
+            });
+        }
+
+        $summaryQuery = KomunikasiJsa::query();
+        if ($request->filled('site')) {
+            $summaryQuery->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        }
+
+        $summary = [
+            'total'               => $summaryQuery->count(),
+            'selesai'             => (clone $summaryQuery)->where('status', 'selesai')->count(),
+            'dikonfirmasi'        => (clone $summaryQuery)->where('status', 'dikonfirmasi')->count(),
+            'menunggu_konfirmasi' => (clone $summaryQuery)->where('status', 'menunggu_konfirmasi')->count(),
+            'ditolak'             => (clone $summaryQuery)->where('status', 'ditolak')->count(),
+        ];
+
+        return Inertia::render('admin/komunikasi-jsa', [
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('site', 'status', 'shift', 'search', 'periode'),
+            'summary' => $summary,
+            'sites'   => Site::orderBy('label')->get(['value', 'label']),
+        ]);
+    }
+
+    public function destroyKomunikasiJsa(KomunikasiJsa $komunikasiJsa)
+    {
+        $komunikasiJsa->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
+        return back();
+    }
+
+    public function exportKomunikasiJsa(Request $request)
+    {
+        $query = KomunikasiJsa::with(['user:id,name,nik,jabatan,site', 'teamLeader:id,name,jabatan'])
+            ->latest('tanggal');
+
+        if ($request->filled('site')) {
+            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('shift')) {
+            $query->where('shift', $request->shift);
+        }
+        if ($request->filled('periode')) {
+            match ($request->periode) {
+                'hari_ini'   => $query->whereDate('tanggal', today()),
+                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
+                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
+                default      => null,
+            };
+        }
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('judul_dokumen', 'like', "%{$request->search}%")
+                    ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$request->search}%"));
+            });
+        }
+
+        $records = $query->get();
+        $csvHeaders = ['Tanggal', 'Nama', 'NIK', 'Jabatan', 'Site', 'Lokasi', 'Shift', 'Durasi (mnt)', 'Kegiatan', 'Judul JSA/SOP/IK', 'Jml Peserta', 'Team Leader', 'Status', 'Catatan'];
+        $rows = $records->map(fn ($r) => [
+            $r->tanggal,
+            $r->user?->name ?? '-',
+            $r->user?->nik ?? '-',
+            $r->user?->jabatan ?? '-',
+            $r->user?->site ?? '-',
+            $r->lokasi,
+            $r->shift,
+            $r->durasi,
+            $r->kegiatan,
+            $r->judul_dokumen,
+            count($r->peserta ?? []),
+            $r->teamLeader?->name ?? '-',
+            $r->status,
+            $r->catatan ?? '-',
+        ]);
+
+        $filename = 'komunikasi-jsa-' . now()->format('Ymd') . '.csv';
+        $callback = function () use ($csvHeaders, $rows) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $csvHeaders);
+            foreach ($rows as $row) {
+                fputcsv($handle, $row);
+            }
+            fclose($handle);
+        };
+
+        return response()->streamDownload($callback, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
     }
 
     public function exportInspeksiKantor(Request $request)

@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { CalendarDays, ChevronRight, ClipboardCheck, Plus, ShieldAlert } from 'lucide-react';
+import { CalendarDays, ChevronRight, ClipboardCheck, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -178,11 +179,13 @@ function PendingKonfirmasiList({ records }: { records: Paginated }) {
 }
 
 export default function ObservasiKeselamatanIndex({ myRecords, pendingKonfirmasi, confirmedAsPJ }: Props) {
+    const [tab, setTab] = useState<'my' | 'pending' | 'confirmed'>('my');
+    const pendingCount = pendingKonfirmasi.data.length;
+
     return (
         <>
             <Head title="Observasi Keselamatan" />
             <div className="flex flex-col gap-6">
-                {/* Header */}
                 <div className="flex items-start justify-between gap-3">
                     <div>
                         <h2 className="text-xl font-bold">Observasi Keselamatan</h2>
@@ -196,34 +199,36 @@ export default function ObservasiKeselamatanIndex({ myRecords, pendingKonfirmasi
                     </Link>
                 </div>
 
-                {/* Perlu konfirmasi */}
-                {pendingKonfirmasi.data.length > 0 && (
-                    <div className="rounded-2xl border-2 border-yellow-300 bg-yellow-50/50 dark:bg-yellow-950/10 p-4 flex flex-col gap-3">
-                        <div className="flex items-center gap-2">
-                            <ShieldAlert size={18} className="text-yellow-600" />
-                            <p className="font-bold text-yellow-800 dark:text-yellow-300">
-                                Perlu Konfirmasi Anda ({pendingKonfirmasi.data.length})
-                            </p>
-                        </div>
-                        <PendingKonfirmasiList records={pendingKonfirmasi} />
-                    </div>
-                )}
-
-                {/* Form saya */}
-                <div className="flex flex-col gap-3">
-                    <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Form Saya</p>
-                    <RecordList records={myRecords} />
+                <div className="flex gap-1 rounded-xl bg-muted p-1">
+                    {([
+                        { key: 'my',        label: 'Form Saya' },
+                        { key: 'pending',   label: 'Perlu Konfirmasi', count: pendingCount },
+                        { key: 'confirmed', label: 'Riwayat Konfirmasi' },
+                    ] as const).map(t => (
+                        <button
+                            key={t.key}
+                            type="button"
+                            onClick={() => setTab(t.key)}
+                            className={cn(
+                                'flex-1 rounded-lg py-2 text-xs font-semibold transition-all flex items-center justify-center gap-1.5',
+                                tab === t.key
+                                    ? 'bg-background shadow text-foreground'
+                                    : 'text-muted-foreground hover:text-foreground',
+                            )}
+                        >
+                            {t.label}
+                            {'count' in t && t.count > 0 && (
+                                <span className="flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] text-white font-bold">
+                                    {t.count}
+                                </span>
+                            )}
+                        </button>
+                    ))}
                 </div>
 
-                {/* Riwayat konfirmasi sebagai PJ */}
-                {confirmedAsPJ.data.length > 0 && (
-                    <div className="flex flex-col gap-3">
-                        <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                            Riwayat Konfirmasi Saya sebagai PJ
-                        </p>
-                        <RecordList records={confirmedAsPJ} asPJ />
-                    </div>
-                )}
+                {tab === 'my'        && <RecordList records={myRecords} />}
+                {tab === 'pending'   && <PendingKonfirmasiList records={pendingKonfirmasi} />}
+                {tab === 'confirmed' && <RecordList records={confirmedAsPJ} asPJ />}
             </div>
         </>
     );

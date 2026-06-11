@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import { compressImage } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
 type StaffUser = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
@@ -161,6 +162,10 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
     const [pesertaOpen, setPesertaOpen] = useState(false);
     const [siteOpen, setSiteOpen] = useState(false);
     const [fotoFiles, setFotoFiles] = useState<Record<string, File>>({});
+    const handleFotoChange = async (key: string, file: File) => {
+        const compressed = await compressImage(file);
+        setFotoFiles(prev => ({ ...prev, [key]: compressed }));
+    };
 
     const initialScores = Object.fromEntries(ALL_SCORE_KEYS.map(k => [k, ''])) as { [K in ScoreKey]: string };
 
@@ -392,7 +397,7 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
                                                             className="sr-only"
                                                             onChange={e => {
                                                                 const f = e.target.files?.[0];
-                                                                if (f) setFotoFiles(prev => ({ ...prev, [item.key]: f }));
+                                                                if (f) handleFotoChange(item.key, f);
                                                             }}
                                                         />
                                                         {fotoFiles[item.key]

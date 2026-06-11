@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ParticipationTarget extends Model
 {
-    protected $fillable = ['level', 'laporan_per_minggu', 'inspeksi_per_minggu', 'observasi_per_minggu', 'bugar_per_hari', 'updated_by'];
+    protected $fillable = ['level', 'laporan_per_minggu', 'inspeksi_per_minggu', 'observasi_per_minggu', 'jsa_per_2minggu', 'bugar_per_hari', 'updated_by'];
 
     public static function forLevel(string $level): self
     {

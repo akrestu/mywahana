@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import { compressImage } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
 type StaffUser = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
@@ -106,6 +107,10 @@ export default function InspeksiMessCreate({ user, staffUsers, sites }: Props) {
     const [pesertaOpen, setPesertaOpen] = useState(false);
     const [siteOpen, setSiteOpen] = useState(false);
     const [fotoFiles, setFotoFiles] = useState<Record<string, File>>({});
+    const handleFotoChange = async (key: string, file: File) => {
+        const compressed = await compressImage(file);
+        setFotoFiles(prev => ({ ...prev, [key]: compressed }));
+    };
     const initialScores = Object.fromEntries(ALL_SCORE_KEYS.map(k => [k, ''])) as { [K in ScoreKey]: string };
     const defaultSite = sites.find(s => s.value === user.site)?.label ?? '';
     const { data, setData, post, processing } = useForm<FormData>({ re_inspektor_id: '', peserta_ids: [], tanggal: new Date().toISOString().split('T')[0], project_site: defaultSite, lokasi: '', ...initialScores, tindakan_perbaikan: [], ttd_inspektor: '' });
@@ -204,7 +209,7 @@ export default function InspeksiMessCreate({ user, staffUsers, sites }: Props) {
                                                 <p className="text-sm leading-relaxed">{item.label}</p>
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div className="flex gap-2">{[1,2,3,4].map(v => <ScoreButton key={v} val={v} current={data[item.key as ScoreKey]} onChange={val => setData(item.key as ScoreKey, val)} />)}</div>
-                                                    <label className="flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-primary transition-colors"><Camera size={18} /><input type="file" accept="image/*" className="sr-only" onChange={e => { const f = e.target.files?.[0]; if (f) setFotoFiles(prev => ({ ...prev, [item.key]: f })); }} />{fotoFiles[item.key] ? <span className="text-xs text-green-600 font-semibold">Foto ✓</span> : <span className="text-xs">Foto</span>}</label>
+                                                    <label className="flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-primary transition-colors"><Camera size={18} /><input type="file" accept="image/*" className="sr-only" onChange={e => { const f = e.target.files?.[0]; if (f) handleFotoChange(item.key, f); }} />{fotoFiles[item.key] ? <span className="text-xs text-green-600 font-semibold">Foto ✓</span> : <span className="text-xs">Foto</span>}</label>
                                                 </div>
                                             </div>
                                             {idx < cat.items.length - 1 && <Separator />}

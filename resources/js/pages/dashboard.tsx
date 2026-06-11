@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     AlertTriangle,
+    BookOpen,
     ChevronRight,
     ClipboardCheck,
     Clock,
@@ -69,6 +70,7 @@ type TargetInfo = {
     laporan: MetricWeekly;
     inspeksi: MetricWeekly | null;
     observasi: MetricWeekly | null;
+    jsa: MetricWeekly | null;
 };
 
 type NewBadge = { key: string; nama: string; icon: string; earned_at: string };
@@ -347,19 +349,35 @@ export default function Dashboard({
 
                     {/* SAP shortcuts — staff & srstaff saja */}
                     {isSAPUser && (
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-3 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => router.visit('/sap/komunikasi-jsa/create')}
+                                className="block w-full"
+                            >
+                                <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-amber-300 bg-amber-50 px-2 py-4 text-center active:scale-95 transition-transform dark:border-amber-700 dark:bg-amber-950">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-200 dark:bg-amber-800">
+                                        <BookOpen className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-amber-900 dark:text-amber-100">JSA/SOP</p>
+                                        <p className="text-[10px] text-amber-600 dark:text-amber-400">Komunikasi JSA</p>
+                                    </div>
+                                </div>
+                            </button>
+
                             <button
                                 type="button"
                                 onClick={() => router.visit('/sap/observasi-keselamatan/create')}
                                 className="block w-full"
                             >
-                                <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-violet-300 bg-violet-50 px-3 py-4 text-center active:scale-95 transition-transform dark:border-violet-700 dark:bg-violet-950">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-200 dark:bg-violet-800">
-                                        <Eye className="h-6 w-6 text-violet-700 dark:text-violet-300" />
+                                <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-violet-300 bg-violet-50 px-2 py-4 text-center active:scale-95 transition-transform dark:border-violet-700 dark:bg-violet-950">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-200 dark:bg-violet-800">
+                                        <Eye className="h-5 w-5 text-violet-700 dark:text-violet-300" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-violet-900 dark:text-violet-100">Observasi</p>
-                                        <p className="text-[11px] text-violet-600 dark:text-violet-400">Observasi keselamatan</p>
+                                        <p className="text-xs font-bold text-violet-900 dark:text-violet-100">Observasi</p>
+                                        <p className="text-[10px] text-violet-600 dark:text-violet-400">Keselamatan</p>
                                     </div>
                                 </div>
                             </button>
@@ -367,13 +385,13 @@ export default function Dashboard({
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button type="button" className="w-full">
-                                        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-teal-300 bg-teal-50 px-3 py-4 text-center active:scale-95 transition-transform dark:border-teal-700 dark:bg-teal-950">
-                                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-200 dark:bg-teal-800">
-                                                <HardHat className="h-6 w-6 text-teal-700 dark:text-teal-300" />
+                                        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-teal-300 bg-teal-50 px-2 py-4 text-center active:scale-95 transition-transform dark:border-teal-700 dark:bg-teal-950">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-200 dark:bg-teal-800">
+                                                <HardHat className="h-5 w-5 text-teal-700 dark:text-teal-300" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold text-teal-900 dark:text-teal-100">Inspeksi ▾</p>
-                                                <p className="text-[11px] text-teal-600 dark:text-teal-400">Pilih jenis inspeksi</p>
+                                                <p className="text-xs font-bold text-teal-900 dark:text-teal-100">Inspeksi ▾</p>
+                                                <p className="text-[10px] text-teal-600 dark:text-teal-400">Pilih area</p>
                                             </div>
                                         </div>
                                     </button>
@@ -446,6 +464,20 @@ export default function Dashboard({
                                         inactiveColor="bg-violet-100 dark:bg-violet-900"
                                         textColor="text-violet-700 dark:text-violet-300"
                                         dotColor="text-violet-600 dark:text-violet-300"
+                                    />
+                                )}
+
+                                {/* JSA — amber, per 2 minggu */}
+                                {target.jsa && (
+                                    <WeeklyMetricRow
+                                        label="Komunikasi JSA"
+                                        sublabel="1× per 2 minggu"
+                                        metric={target.jsa}
+                                        activeColor="bg-amber-500 dark:bg-amber-400"
+                                        inactiveColor="bg-amber-100 dark:bg-amber-900"
+                                        textColor="text-amber-700 dark:text-amber-300"
+                                        dotColor="text-amber-600 dark:text-amber-300"
+                                        periodLabel="P"
                                     />
                                 )}
                             </CardContent>
@@ -621,26 +653,33 @@ function TargetMetricRow({
 
 function WeeklyMetricRow({
     label,
+    sublabel,
     metric,
     activeColor,
     inactiveColor,
     textColor,
     dotColor,
+    periodLabel = 'M',
 }: {
     label: string;
+    sublabel?: string;
     metric: { weeks: { count: number; terpenuhi: boolean }[]; minggu_berlalu: number; minggu_terpenuhi: number; persen: number };
     activeColor: string;
     inactiveColor: string;
     textColor: string;
     dotColor: string;
+    periodLabel?: string;
 }) {
     return (
         <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground">{label}</span>
+                <div>
+                    <span className="text-[11px] text-muted-foreground">{label}</span>
+                    {sublabel && <span className="ml-1.5 text-[10px] text-muted-foreground/60">{sublabel}</span>}
+                </div>
                 <div className="flex items-center gap-2">
                     <span className={`text-[11px] font-semibold ${textColor}`}>
-                        {metric.minggu_terpenuhi}/{metric.minggu_berlalu} minggu
+                        {metric.minggu_terpenuhi}/{metric.minggu_berlalu} {periodLabel === 'M' ? 'minggu' : 'periode'}
                     </span>
                     <span className={`text-[11px] font-bold ${textColor}`}>{metric.persen}%</span>
                 </div>
@@ -649,7 +688,7 @@ function WeeklyMetricRow({
                 {metric.weeks.map((w, i) => (
                     <div
                         key={i}
-                        title={`Minggu ${i + 1}: ${w.count}`}
+                        title={`${periodLabel}${i + 1}: ${w.count}`}
                         className={`h-2.5 flex-1 rounded-full transition-all ${w.terpenuhi ? activeColor : inactiveColor}`}
                     />
                 ))}
@@ -657,7 +696,7 @@ function WeeklyMetricRow({
             <div className="flex gap-x-1">
                 {metric.weeks.map((w, i) => (
                     <span key={i} className={`text-[10px] flex-1 text-center ${w.terpenuhi ? `${dotColor} font-semibold` : 'text-muted-foreground'}`}>
-                        M{i + 1}: {w.count}
+                        {periodLabel}{i + 1}: {w.count}
                     </span>
                 ))}
             </div>

@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BedDouble, Building2, ClipboardCheck, HeartPulse, LayoutGrid, MapPin, Mountain, ShieldCheck, Target, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, HeartPulse, LayoutGrid, MapPin, Mountain, ShieldCheck, Target, Users, Wrench } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
 import { NavMain } from '@/components/nav-main';
@@ -23,6 +23,7 @@ import { index as inspeksiKantorIndex } from '@/routes/sap/inspeksi-kantor';
 import { index as inspeksiTambangIndex } from '@/routes/sap/inspeksi-tambang';
 import { index as inspeksiWorkshopIndex } from '@/routes/sap/inspeksi-workshop';
 import { index as inspeksiMessIndex } from '@/routes/sap/inspeksi-mess';
+import { index as komunikasiJsaIndex } from '@/routes/sap/komunikasi-jsa';
 import type { Auth } from '@/types/auth';
 import type { NavGroup } from '@/components/nav-main';
 
@@ -75,6 +76,7 @@ export function AppSidebar() {
                 label: 'SAP',
                 items: [
                     { title: 'Observasi Keselamatan', href: okIndex.url(), icon: ClipboardCheck },
+                    { title: 'Komunikasi JSA',       href: komunikasiJsaIndex.url(),   icon: BookOpen },
                     { title: 'Inspeksi Kantor',       href: inspeksiKantorIndex.url(),   icon: Building2 },
                     { title: 'Inspeksi Tambang',      href: inspeksiTambangIndex.url(),  icon: Mountain },
                     { title: 'Inspeksi Workshop',     href: inspeksiWorkshopIndex.url(), icon: Wrench },

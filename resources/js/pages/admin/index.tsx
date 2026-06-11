@@ -30,6 +30,7 @@ type Stats = {
     observasi_keselamatan: { total: number; bulan_ini: number; menunggu_konfirmasi: number };
     inspeksi: { total: number; bulan_ini: number; kantor: number; tambang: number; workshop: number; mess: number };
     users: { total: number; baratama: number; bandhawa: number };
+    komunikasi_jsa: { total: number; bulan_ini: number; menunggu_konfirmasi: number };
 };
 
 type ComplianceData = { total_karyawan: number; sudah_submit_bs: number; dilarang_list: DilarangEntry[] };
@@ -97,6 +98,7 @@ const TREND_SERIES = [
 
 const DEFAULT_OK  = { total: 0, bulan_ini: 0, menunggu_konfirmasi: 0 };
 const DEFAULT_INS = { total: 0, bulan_ini: 0, kantor: 0, tambang: 0, workshop: 0, mess: 0 };
+const DEFAULT_JSA = { total: 0, bulan_ini: 0, menunggu_konfirmasi: 0 };
 const DEFAULT_COMPLIANCE: ComplianceData = { total_karyawan: 0, sudah_submit_bs: 0, dilarang_list: [] };
 
 export default function AdminIndex({ stats: rawStats, compliance: rawCompliance, trend = [], site_breakdown = [], leaderboard = {}, participation_targets = [] }: Props) {
@@ -104,6 +106,7 @@ export default function AdminIndex({ stats: rawStats, compliance: rawCompliance,
         ...rawStats,
         observasi_keselamatan: rawStats.observasi_keselamatan ?? DEFAULT_OK,
         inspeksi:              rawStats.inspeksi              ?? DEFAULT_INS,
+        komunikasi_jsa:        rawStats.komunikasi_jsa        ?? DEFAULT_JSA,
     };
     const tod = useTimeOfDay();
     const [activeLeaderSite, setActiveLeaderSite] = useState<string>(() => Object.keys(leaderboard)[0] ?? '');
@@ -148,6 +151,20 @@ export default function AdminIndex({ stats: rawStats, compliance: rawCompliance,
                                 <p className="text-xs text-violet-600 dark:text-violet-400">Ketuk untuk melihat dan menangani</p>
                             </div>
                             <ChevronRight size={16} className="text-violet-400 shrink-0" />
+                        </div>
+                    </Link>
+                )}
+                {stats.komunikasi_jsa.menunggu_konfirmasi > 0 && (
+                    <Link href="/admin/komunikasi-jsa?status=menunggu_konfirmasi" className="block">
+                        <div className="flex items-center gap-3 rounded-xl border-2 border-amber-400 bg-amber-50 px-4 py-3 dark:border-amber-700 dark:bg-amber-950">
+                            <ClipboardCheck className="h-5 w-5 shrink-0 text-amber-500" />
+                            <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-amber-800 dark:text-amber-200 text-sm">
+                                    📄 {stats.komunikasi_jsa.menunggu_konfirmasi} komunikasi JSA menunggu konfirmasi TL
+                                </p>
+                                <p className="text-xs text-amber-600 dark:text-amber-400">Ketuk untuk melihat</p>
+                            </div>
+                            <ChevronRight size={16} className="text-amber-400 shrink-0" />
                         </div>
                     </Link>
                 )}
@@ -260,6 +277,9 @@ export default function AdminIndex({ stats: rawStats, compliance: rawCompliance,
                         valueColor={stats.laporan_bahaya.pending > 0 ? 'text-red-600 dark:text-red-400' : 'text-foreground'}
                     />
                     <StatCard emoji="👥" label="Karyawan" sublabel={`${stats.users.baratama} Baratama · ${stats.users.bandhawa} Bandhawa`} value={stats.users.total} note="total terdaftar" bg="bg-indigo-50 dark:bg-indigo-950" border="border-indigo-200 dark:border-indigo-800" valueColor="text-indigo-700 dark:text-indigo-300" />
+                    <Link href="/admin/komunikasi-jsa" className="col-span-2">
+                        <StatCard emoji="📄" label="Komunikasi JSA/SOP/IK" sublabel={`${stats.komunikasi_jsa.menunggu_konfirmasi} menunggu konfirmasi TL`} value={stats.komunikasi_jsa.total} note={`${stats.komunikasi_jsa.bulan_ini} bulan ini`} bg={stats.komunikasi_jsa.menunggu_konfirmasi > 0 ? 'bg-amber-50 dark:bg-amber-950' : 'bg-sky-50 dark:bg-sky-950'} border={stats.komunikasi_jsa.menunggu_konfirmasi > 0 ? 'border-amber-200 dark:border-amber-800' : 'border-sky-200 dark:border-sky-800'} valueColor={stats.komunikasi_jsa.menunggu_konfirmasi > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-sky-700 dark:text-sky-300'} />
+                    </Link>
                 </div>
 
                 {/* ⑥ DONUT CHARTS — Kelayakan & Risiko side by side */}

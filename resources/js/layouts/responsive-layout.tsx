@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BedDouble, Building2, ClipboardCheck, ClipboardList, HeartPulse, Home, LayoutGrid, LogOut, MapPin, Mountain, ShieldCheck, Target, User, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, HeartPulse, Home, LayoutGrid, LogOut, MapPin, Mountain, ShieldCheck, Target, User, Users, Wrench } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
@@ -28,6 +28,7 @@ import { index as inspeksiKantorIndex } from '@/routes/sap/inspeksi-kantor';
 import { index as inspeksiTambangIndex } from '@/routes/sap/inspeksi-tambang';
 import { index as inspeksiWorkshopIndex } from '@/routes/sap/inspeksi-workshop';
 import { index as inspeksiMessIndex } from '@/routes/sap/inspeksi-mess';
+import { index as komunikasiJsaIndex } from '@/routes/sap/komunikasi-jsa';
 import type { Auth } from '@/types';
 
 type Props = {
@@ -127,10 +128,20 @@ const sapMobileNavItems = [
         activeBg: 'bg-teal-100 dark:bg-teal-950',
         inactiveColor: 'text-slate-400 dark:text-slate-500',
     },
+    {
+        href: '/sap/komunikasi-jsa',
+        label: 'Kom. JSA',
+        fullLabel: 'Komunikasi JSA',
+        icon: BookOpen,
+        activeColor: 'text-indigo-600 dark:text-indigo-400',
+        activeBg: 'bg-indigo-100 dark:bg-indigo-950',
+        inactiveColor: 'text-slate-400 dark:text-slate-500',
+    },
 ];
 
 const adminSapDrawerItems = [
     { href: '/admin/observasi-keselamatan', fullLabel: 'Monitor Observasi Keselamatan', icon: ClipboardCheck },
+    { href: '/admin/komunikasi-jsa',        fullLabel: 'Monitor Komunikasi JSA',        icon: BookOpen },
     { href: '/admin/inspeksi-kantor',       fullLabel: 'Monitor Inspeksi Kantor',       icon: Building2 },
     { href: '/admin/inspeksi-tambang',      fullLabel: 'Monitor Inspeksi Tambang',      icon: Mountain },
     { href: '/admin/inspeksi-workshop',     fullLabel: 'Monitor Inspeksi Workshop',     icon: Wrench },
@@ -221,7 +232,7 @@ function MobileHeader({ title, showBack, backHref, isAdmin }: { title?: string; 
 function MobileBottomNav({ url, isAdmin, isStaff, navItems }: { url: string; isAdmin: boolean; isStaff: boolean; navItems: typeof baseUserMobileNavItems }) {
     const [sapDrawerOpen, setSapDrawerOpen] = useState(false);
     const items = isAdmin ? adminMobileNavItems : navItems;
-    const isSapActive = url.startsWith('/sap/') || url.startsWith('/laporan-bahaya') || url.startsWith('/admin/inspeksi-') || url.startsWith('/admin/observasi-keselamatan');
+    const isSapActive = url.startsWith('/sap/') || url.startsWith('/laporan-bahaya') || url.startsWith('/admin/inspeksi-') || url.startsWith('/admin/observasi-keselamatan') || url.startsWith('/admin/komunikasi-jsa');
 
     const isActive = (href: string) => {
         if (href === '/admin' || href === '/home') return url === href;
@@ -348,6 +359,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 { title: 'Bugar Selamat',        href: '/admin/bugar-selamat',          icon: HeartPulse },
                 { title: 'Laporan Bahaya',        href: '/admin/laporan-bahaya',         icon: AlertTriangle },
                 { title: 'Observasi Keselamatan', href: '/admin/observasi-keselamatan',  icon: ClipboardCheck },
+                { title: 'Komunikasi JSA',        href: '/admin/komunikasi-jsa',         icon: BookOpen },
                 { title: 'Inspeksi Kantor',       href: '/admin/inspeksi-kantor',        icon: Building2 },
                 { title: 'Inspeksi Tambang',      href: '/admin/inspeksi-tambang',       icon: Mountain },
                 { title: 'Inspeksi Workshop',     href: '/admin/inspeksi-workshop',      icon: Wrench },
@@ -368,6 +380,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
             ]},
             { label: 'SAP', items: [
                 { title: 'Observasi Keselamatan', href: okIndex.url(),             icon: ClipboardCheck },
+                { title: 'Komunikasi JSA',        href: komunikasiJsaIndex.url(),    icon: BookOpen },
                 { title: 'Inspeksi Kantor',       href: inspeksiKantorIndex.url(),   icon: Building2 },
                 { title: 'Inspeksi Tambang',      href: inspeksiTambangIndex.url(),  icon: Mountain },
                 { title: 'Inspeksi Workshop',     href: inspeksiWorkshopIndex.url(), icon: Wrench },
