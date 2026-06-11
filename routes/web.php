@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AssessmentController;
+use App\Http\Controllers\HrAssessmentController;
 use App\Http\Controllers\BugarSelamatController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\DashboardController;
@@ -97,6 +98,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{session}/result', [AssessmentController::class, 'result'])->name('result');
     });
 
+    // HR Assessment
+    Route::prefix('hr-assessment')->name('hr-assessment.')->group(function () {
+        Route::get('/', [HrAssessmentController::class, 'index'])->name('index');
+        Route::post('/start', [HrAssessmentController::class, 'start'])->name('start');
+        Route::get('/{session}/quiz', [HrAssessmentController::class, 'quiz'])->name('quiz');
+        Route::post('/{session}/submit', [HrAssessmentController::class, 'submit'])->name('submit');
+        Route::get('/{session}/result', [HrAssessmentController::class, 'result'])->name('result');
+    });
+
     // Notifications
     Route::post('notifications/{id}/read', function (string $id) {
         auth()->user()->notifications()->where('id', $id)->update(['read_at' => now()]);
@@ -144,6 +154,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Assessment monitoring
         Route::get('/assessment', [AdminController::class, 'assessment'])->name('assessment');
+        Route::get('/hr-assessment', [AdminController::class, 'hrAssessment'])->name('hr-assessment');
 
         // Targets
         Route::get('/targets', [AdminController::class, 'targets'])->name('targets');

@@ -52,5 +52,9 @@ class DatabaseSeeder extends Seeder
             'jabatan' => 'Staff HSE',
             'site'    => 'bandhawa',
         ]);
+
+        $this->call([
+            HrAssessmentQuestionSeeder::class,
+        ]);
     }
 }

@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, GraduationCap, HeartPulse, Home, LayoutGrid, LogOut, MapPin, Mountain, ShieldCheck, Target, User, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, GraduationCap, HeartPulse, Home, LayoutGrid, LogOut, MapPin, Mountain, ShieldCheck, Target, User, UserCheck, Users, Wrench } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
@@ -61,14 +61,6 @@ const baseUserMobileNavItems = [
         icon: AlertTriangle,
         activeColor: 'text-red-500 dark:text-red-400',
         activeBg: 'bg-red-100 dark:bg-red-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
-    },
-    {
-        href: '/assessment',
-        label: 'Assessment',
-        icon: GraduationCap,
-        activeColor: 'text-indigo-600 dark:text-indigo-400',
-        activeBg: 'bg-indigo-100 dark:bg-indigo-950',
         inactiveColor: 'text-slate-400 dark:text-slate-500',
     },
     {
@@ -147,6 +139,11 @@ const sapMobileNavItems = [
     },
 ];
 
+const assessmentDrawerItems = [
+    { href: '/assessment',    fullLabel: 'Safety Assessment', icon: GraduationCap, activeColor: 'text-indigo-600 dark:text-indigo-400', activeBg: 'bg-indigo-100 dark:bg-indigo-950' },
+    { href: '/hr-assessment', fullLabel: 'HR Assessment',     icon: UserCheck,     activeColor: 'text-purple-600 dark:text-purple-400', activeBg: 'bg-purple-100 dark:bg-purple-950' },
+];
+
 const adminSapDrawerItems = [
     { href: '/admin/observasi-keselamatan', fullLabel: 'Monitor Observasi Keselamatan', icon: ClipboardCheck },
     { href: '/admin/komunikasi-jsa',        fullLabel: 'Monitor Komunikasi JSA',        icon: BookOpen },
@@ -156,6 +153,7 @@ const adminSapDrawerItems = [
     { href: '/admin/inspeksi-mess',         fullLabel: 'Monitor Inspeksi Mess',         icon: BedDouble },
     { href: '/admin/sites',                 fullLabel: 'Kelola Site',                   icon: MapPin },
     { href: '/admin/assessment',            fullLabel: 'Assessment Safety',             icon: GraduationCap },
+    { href: '/admin/hr-assessment',         fullLabel: 'Assessment HR',                 icon: UserCheck },
 ];
 
 // Admin navbar: Admin, Bugar, Laporan, [SAP button], Pengguna
@@ -240,8 +238,10 @@ function MobileHeader({ title, showBack, backHref, isAdmin }: { title?: string; 
 
 function MobileBottomNav({ url, isAdmin, isStaff, navItems }: { url: string; isAdmin: boolean; isStaff: boolean; navItems: typeof baseUserMobileNavItems }) {
     const [sapDrawerOpen, setSapDrawerOpen] = useState(false);
+    const [assessmentDrawerOpen, setAssessmentDrawerOpen] = useState(false);
     const items = isAdmin ? adminMobileNavItems : navItems;
     const isSapActive = url.startsWith('/sap/') || url.startsWith('/laporan-bahaya') || url.startsWith('/admin/inspeksi-') || url.startsWith('/admin/observasi-keselamatan') || url.startsWith('/admin/komunikasi-jsa');
+    const isAssessmentActive = url.startsWith('/assessment') || url.startsWith('/hr-assessment') || url.startsWith('/admin/assessment') || url.startsWith('/admin/hr-assessment');
 
     const isActive = (href: string) => {
         if (href === '/admin' || href === '/home') return url === href;
@@ -273,10 +273,10 @@ function MobileBottomNav({ url, isAdmin, isStaff, navItems }: { url: string; isA
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden">
             <div className="flex h-[72px] items-center justify-around px-1">
-                {isStaff || isAdmin ? (
+                {isAdmin ? (
                     <>
-                        {/* Staff: Beranda, Bugar | Admin: Admin, Bugar, Laporan */}
-                        {(isStaff ? navItems.slice(0, 2) : items.slice(0, 3)).map((item) => (
+                        {/* Admin: Admin, Bugar, Laporan, SAP(drawer), Pengguna */}
+                        {items.slice(0, 3).map((item) => (
                             <NavLink key={item.href} item={item} active={isActive(item.href)} />
                         ))}
                         <button
@@ -293,19 +293,82 @@ function MobileBottomNav({ url, isAdmin, isStaff, navItems }: { url: string; isA
                             </div>
                             <span className={`text-[10px] font-semibold leading-none transition-colors ${
                                 isSapActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500'
-                            }`}>
-                                SAP
-                            </span>
+                            }`}>SAP</span>
                         </button>
-                        {/* Staff: Profil (skip Laporan, ada di SAP drawer) | Admin: Pengguna (last item) */}
-                        {(isStaff ? navItems.slice(3) : items.slice(3)).map((item) => (
+                        {items.slice(3).map((item) => (
+                            <NavLink key={item.href} item={item} active={isActive(item.href)} />
+                        ))}
+                    </>
+                ) : isStaff ? (
+                    <>
+                        {/* Staff: Beranda, Bugar, SAP(drawer), Assessment(drawer), Profil */}
+                        {navItems.slice(0, 2).map((item) => (
+                            <NavLink key={item.href} item={item} active={isActive(item.href)} />
+                        ))}
+                        <button
+                            onClick={() => setSapDrawerOpen(true)}
+                            className="flex shrink-0 flex-col items-center gap-1 px-1 py-2 transition-all"
+                            style={{ minWidth: '3.5rem' }}
+                        >
+                            <div className={`flex items-center justify-center rounded-2xl px-3 py-1.5 transition-all ${
+                                isSapActive
+                                    ? 'bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400'
+                                    : 'text-slate-400 dark:text-slate-500'
+                            }`}>
+                                <ClipboardCheck size={22} strokeWidth={isSapActive ? 2.5 : 1.75} />
+                            </div>
+                            <span className={`text-[10px] font-semibold leading-none transition-colors ${
+                                isSapActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500'
+                            }`}>SAP</span>
+                        </button>
+                        <button
+                            onClick={() => setAssessmentDrawerOpen(true)}
+                            className="flex shrink-0 flex-col items-center gap-1 px-1 py-2 transition-all"
+                            style={{ minWidth: '3.5rem' }}
+                        >
+                            <div className={`flex items-center justify-center rounded-2xl px-3 py-1.5 transition-all ${
+                                isAssessmentActive
+                                    ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
+                                    : 'text-slate-400 dark:text-slate-500'
+                            }`}>
+                                <GraduationCap size={22} strokeWidth={isAssessmentActive ? 2.5 : 1.75} />
+                            </div>
+                            <span className={`text-[10px] font-semibold leading-none transition-colors ${
+                                isAssessmentActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'
+                            }`}>Assessment</span>
+                        </button>
+                        {/* Profil — last item (skip Laporan at index 2, ada di SAP drawer) */}
+                        {navItems.slice(3).map((item) => (
                             <NavLink key={item.href} item={item} active={isActive(item.href)} />
                         ))}
                     </>
                 ) : (
-                    items.map((item) => (
-                        <NavLink key={item.href} item={item} active={isActive(item.href)} />
-                    ))
+                    /* Regular user: Beranda, Bugar, Laporan, Assessment(drawer), Profil */
+                    <>
+                        {navItems.slice(0, 3).map((item) => (
+                            <NavLink key={item.href} item={item} active={isActive(item.href)} />
+                        ))}
+                        <button
+                            onClick={() => setAssessmentDrawerOpen(true)}
+                            className="flex shrink-0 flex-col items-center gap-1 px-1 py-2 transition-all"
+                            style={{ minWidth: '3.5rem' }}
+                        >
+                            <div className={`flex items-center justify-center rounded-2xl px-3 py-1.5 transition-all ${
+                                isAssessmentActive
+                                    ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
+                                    : 'text-slate-400 dark:text-slate-500'
+                            }`}>
+                                <GraduationCap size={22} strokeWidth={isAssessmentActive ? 2.5 : 1.75} />
+                            </div>
+                            <span className={`text-[10px] font-semibold leading-none transition-colors ${
+                                isAssessmentActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'
+                            }`}>Assessment</span>
+                        </button>
+                        {/* Profil */}
+                        {navItems.slice(3).map((item) => (
+                            <NavLink key={item.href} item={item} active={isActive(item.href)} />
+                        ))}
+                    </>
                 )}
             </div>
 
@@ -327,6 +390,38 @@ function MobileBottomNav({ url, isAdmin, isStaff, navItems }: { url: string; isA
                                         className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors ${
                                             active
                                                 ? `${'activeBg' in item ? item.activeBg : 'bg-teal-100 dark:bg-teal-950'} ${'activeColor' in item ? item.activeColor : 'text-teal-600 dark:text-teal-400'}`
+                                                : 'text-foreground hover:bg-accent'
+                                        }`}
+                                    >
+                                        <Icon size={20} strokeWidth={active ? 2.5 : 1.75} />
+                                        <span className="text-sm font-medium">{item.fullLabel}</span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </SheetContent>
+                </Sheet>
+            )}
+
+            {/* Assessment drawer — semua user (non-staff/staff) */}
+            {!isAdmin && (
+                <Sheet open={assessmentDrawerOpen} onOpenChange={setAssessmentDrawerOpen}>
+                    <SheetContent side="bottom" className="mx-auto max-w-lg rounded-t-2xl">
+                        <SheetHeader>
+                            <SheetTitle className="text-left">Assessment</SheetTitle>
+                        </SheetHeader>
+                        <div className="flex flex-col gap-1 px-4 pb-6">
+                            {assessmentDrawerItems.map((item) => {
+                                const Icon = item.icon;
+                                const active = isActive(item.href);
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={() => setAssessmentDrawerOpen(false)}
+                                        className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors ${
+                                            active
+                                                ? `${item.activeBg} ${item.activeColor}`
                                                 : 'text-foreground hover:bg-accent'
                                         }`}
                                     >
@@ -374,6 +469,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 { title: 'Inspeksi Workshop',     href: '/admin/inspeksi-workshop',      icon: Wrench },
                 { title: 'Inspeksi Mess',         href: '/admin/inspeksi-mess',          icon: BedDouble },
                 { title: 'Assessment Safety',     href: '/admin/assessment',             icon: GraduationCap },
+                { title: 'Assessment HR',         href: '/admin/hr-assessment',          icon: UserCheck },
             ]},
             { label: 'Manajemen', items: [
                 { title: 'Kelola Pengguna', href: '/admin/users',    icon: Users },
@@ -387,7 +483,10 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 { title: 'Dashboard', href: dashboardUrl, icon: LayoutGrid },
                 { title: 'Bugar Selamat', href: bugarSelamatIndex.url(), icon: HeartPulse },
                 { title: 'Laporan Bahaya', href: laporanBahayaIndex.url(), icon: AlertTriangle },
-                { title: 'Assessment', href: '/assessment', icon: GraduationCap },
+            ]},
+            { label: 'Assessment', items: [
+                { title: 'Safety Assessment', href: '/assessment',    icon: GraduationCap },
+                { title: 'HR Assessment',     href: '/hr-assessment', icon: UserCheck },
             ]},
             { label: 'SAP', items: [
                 { title: 'Observasi Keselamatan', href: okIndex.url(),             icon: ClipboardCheck },
@@ -398,12 +497,17 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 { title: 'Inspeksi Mess',         href: inspeksiMessIndex.url(),     icon: BedDouble },
             ]},
           ]
-        : [{ items: [
-            { title: 'Dashboard', href: dashboardUrl, icon: LayoutGrid },
-            { title: 'Bugar Selamat', href: bugarSelamatIndex.url(), icon: HeartPulse },
-            { title: 'Laporan Bahaya', href: laporanBahayaIndex.url(), icon: AlertTriangle },
-            { title: 'Assessment', href: '/assessment', icon: GraduationCap },
-          ]}];
+        : [
+            { items: [
+                { title: 'Dashboard', href: dashboardUrl, icon: LayoutGrid },
+                { title: 'Bugar Selamat', href: bugarSelamatIndex.url(), icon: HeartPulse },
+                { title: 'Laporan Bahaya', href: laporanBahayaIndex.url(), icon: AlertTriangle },
+            ]},
+            { label: 'Assessment', items: [
+                { title: 'Safety Assessment', href: '/assessment',    icon: GraduationCap },
+                { title: 'HR Assessment',     href: '/hr-assessment', icon: UserCheck },
+            ]},
+          ];
 
     return (
         <SidebarProvider defaultOpen={sidebarOpen ?? true}>

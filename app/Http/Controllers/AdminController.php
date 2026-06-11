@@ -19,6 +19,8 @@ use App\Models\InspeksiTambang;
 use App\Models\InspeksiWorkshop;
 use App\Models\AssessmentSession;
 use App\Models\AssessmentSessionQuestion;
+use App\Models\HrAssessmentSession;
+use App\Models\HrAssessmentSessionQuestion;
 use App\Models\KomunikasiJsa;
 use App\Models\LaporanBahaya;
 use App\Models\ObservasiKeselamatan;
@@ -650,6 +652,80 @@ class AdminController extends Controller
             'monthly_trend'  => $monthlyTrend,
             'weak_questions' => $weakQuestions,
             'uncovered_users'=> $uncoveredUsers,
+        ]);
+    }
+
+    public function hrAssessment(Request $request)
+    {
+        $query = HrAssessmentSession::with('user:id,name,nik,jabatan,site')
+            ->where('status', 'completed')
+            ->latest('completed_at');
+
+        if ($request->filled('search')) {
+            $query->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$request->search}%")
+                ->orWhere('nik', 'like', "%{$request->search}%"));
+        }
+
+        if ($request->filled('passed')) {
+            $query->where('passed', $request->passed === '1');
+        }
+
+        $totalCompleted = HrAssessmentSession::where('status', 'completed')->count();
+        $lulusCount     = HrAssessmentSession::where('status', 'completed')->where('passed', true)->count();
+
+        $summary = [
+            'total'       => $totalCompleted,
+            'lulus'       => $lulusCount,
+            'tidak_lulus' => HrAssessmentSession::where('status', 'completed')->where('passed', false)->count(),
+            'avg_score'   => $totalCompleted > 0
+                ? round(HrAssessmentSession::where('status', 'completed')->avg('percentage'), 1)
+                : 0,
+            'coverage_pct' => ($totalNonAdmin = User::where('is_admin', false)->count()) > 0
+                ? round(HrAssessmentSession::where('status', 'completed')->distinct('user_id')->count('user_id') / $totalNonAdmin * 100)
+                : 0,
+        ];
+
+        $monthlyTrend = HrAssessmentSession::where('status', 'completed')
+            ->selectRaw("DATE_FORMAT(completed_at,'%Y-%m') as month, COUNT(*) as total, SUM(passed) as lulus")
+            ->where('completed_at', '>=', now()->subMonths(5)->startOfMonth())
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get()
+            ->map(fn ($r) => [
+                'month'     => $r->month,
+                'pass_rate' => $r->total > 0 ? round($r->lulus / $r->total * 100) : 0,
+                'total'     => (int) $r->total,
+            ]);
+
+        $weakQuestions = HrAssessmentSessionQuestion::with('question:id,question')
+            ->selectRaw('hr_assessment_question_id, COUNT(*) as total_attempt, SUM(CASE WHEN is_correct=0 THEN 1 ELSE 0 END) as total_salah')
+            ->groupBy('hr_assessment_question_id')
+            ->orderByDesc('total_salah')
+            ->limit(10)
+            ->get()
+            ->map(fn ($r) => [
+                'question_id'   => $r->hr_assessment_question_id,
+                'question'      => $r->question?->question,
+                'total_attempt' => (int) $r->total_attempt,
+                'total_salah'   => (int) $r->total_salah,
+                'pct_salah'     => $r->total_attempt > 0
+                    ? round($r->total_salah / $r->total_attempt * 100)
+                    : 0,
+            ]);
+
+        $uncoveredUsers = User::where('is_admin', false)
+            ->whereNotIn('id', HrAssessmentSession::where('status', 'completed')->select('user_id')->distinct())
+            ->select('id', 'name', 'nik', 'jabatan', 'site')
+            ->orderBy('name')
+            ->get();
+
+        return Inertia::render('admin/hr-assessment', [
+            'records'         => $query->paginate(20)->withQueryString(),
+            'filters'         => $request->only('search', 'passed'),
+            'summary'         => $summary,
+            'monthly_trend'   => $monthlyTrend,
+            'weak_questions'  => $weakQuestions,
+            'uncovered_users' => $uncoveredUsers,
         ]);
     }
 
