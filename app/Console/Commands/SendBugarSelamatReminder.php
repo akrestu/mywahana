@@ -5,15 +5,15 @@ namespace App\Console\Commands;
 use App\Models\BugarSelamat;
 use App\Models\User;
 use App\Notifications\BugarSelamatReminder;
-use Illuminate\Console\Attributes\Description;
-use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
-#[Signature('app:send-bugar-selamat-reminder')]
-#[Description('Kirim reminder ke user yang belum mengisi Bugar Selamat hari ini')]
 class SendBugarSelamatReminder extends Command
 {
+    protected $signature = 'app:send-bugar-selamat-reminder';
+
+    protected $description = 'Kirim reminder ke user yang belum mengisi Bugar Selamat hari ini';
+
     public function handle(): void
     {
         $today = now()->toDateString();
