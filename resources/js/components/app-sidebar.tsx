@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, HeartPulse, LayoutGrid, MapPin, Mountain, ShieldCheck, Target, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, GraduationCap, HeartPulse, LayoutGrid, MapPin, Mountain, ShieldCheck, Target, Users, Wrench } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
 import { NavMain } from '@/components/nav-main';
@@ -52,6 +52,7 @@ export function AppSidebar() {
                     { title: 'Inspeksi Tambang',        href: '/admin/inspeksi-tambang',        icon: Mountain },
                     { title: 'Inspeksi Workshop',       href: '/admin/inspeksi-workshop',       icon: Wrench },
                     { title: 'Inspeksi Mess',           href: '/admin/inspeksi-mess',           icon: BedDouble },
+                    { title: 'Assessment Safety',       href: '/admin/assessment',              icon: GraduationCap },
                 ],
             },
             {
@@ -70,6 +71,7 @@ export function AppSidebar() {
                     { title: 'Dashboard', href: dashboardUrl, icon: LayoutGrid },
                     { title: 'Bugar Selamat', href: bugarSelamatIndex.url(), icon: HeartPulse },
                     { title: 'Laporan Bahaya', href: laporanBahayaIndex.url(), icon: AlertTriangle },
+                    { title: 'Assessment', href: route('assessment.index'), icon: GraduationCap },
                 ],
             },
             ...(isStaff ? [{

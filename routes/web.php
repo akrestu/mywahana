@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\BugarSelamatController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\DashboardController;
@@ -87,6 +88,15 @@ Route::middleware(['auth'])->group(function () {
         Route::post('inspeksi-mess/{inspeksiMess}/tolak', [InspeksiMessController::class, 'tolak'])->name('inspeksi-mess.tolak');
     });
 
+    // Assessment
+    Route::prefix('assessment')->name('assessment.')->group(function () {
+        Route::get('/', [AssessmentController::class, 'index'])->name('index');
+        Route::post('/start', [AssessmentController::class, 'start'])->name('start');
+        Route::get('/{session}/quiz', [AssessmentController::class, 'quiz'])->name('quiz');
+        Route::post('/{session}/submit', [AssessmentController::class, 'submit'])->name('submit');
+        Route::get('/{session}/result', [AssessmentController::class, 'result'])->name('result');
+    });
+
     // Notifications
     Route::post('notifications/{id}/read', function (string $id) {
         auth()->user()->notifications()->where('id', $id)->update(['read_at' => now()]);
@@ -131,6 +141,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/inspeksi-mess/export', [AdminController::class, 'exportInspeksiMess'])->name('inspeksi-mess.export');
         Route::get('/inspeksi-mess', [AdminController::class, 'inspeksiMess'])->name('inspeksi-mess');
         Route::delete('/inspeksi-mess/{inspeksiMess}', [AdminController::class, 'destroyInspeksiMess'])->name('inspeksi-mess.destroy');
+
+        // Assessment monitoring
+        Route::get('/assessment', [AdminController::class, 'assessment'])->name('assessment');
 
         // Targets
         Route::get('/targets', [AdminController::class, 'targets'])->name('targets');
