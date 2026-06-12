@@ -87,9 +87,11 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
         $jabatanRaw = $this->resolve($row, ['jabatan']);
         $jabatan = $jabatanRaw ? trim($jabatanRaw) : null;
 
-        // Departemen
+        // Departemen: must match enum values exactly
+        $validDepartemen = ['Production', 'Maintenance', 'Supply Chain', 'Engineering', 'HSE', 'HRGA', 'Management'];
         $departemenRaw = $this->resolve($row, ['departemen']);
-        $departemen = $departemenRaw ? trim($departemenRaw) : null;
+        $departemenTrimmed = $departemenRaw ? trim($departemenRaw) : null;
+        $departemen = in_array($departemenTrimmed, $validDepartemen, true) ? $departemenTrimmed : null;
 
         // is_admin: handles both slug variants
         $adminRaw = strtolower(trim(
@@ -98,6 +100,9 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
         $isAdmin = in_array($adminRaw, ['1', 'true', 'yes', 'ya'], true);
 
         $isPlainPassword = !str_starts_with($password, '$2y$') && !str_starts_with($password, '$2b$');
+
+        // Use lower bcrypt cost for bulk import to avoid execution timeout
+        $hashOptions = ['rounds' => 6];
 
         $existing = User::where('nik', $nik)->first();
 
@@ -144,7 +149,7 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
                 $existing->getConnection()
                     ->table('users')
                     ->where('id', $existing->id)
-                    ->update(['password' => Hash::make($password)]);
+                    ->update(['password' => Hash::make($password, $hashOptions)]);
             }
 
             $this->imported++;
@@ -153,7 +158,7 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
 
         // New user
         $hashedPassword = $isPlainPassword
-            ? Hash::make($password)
+            ? Hash::make($password, $hashOptions)
             : $password;
 
         $user = new User([
