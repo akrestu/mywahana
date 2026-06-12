@@ -680,6 +680,17 @@ export default function Dashboard({
                 <p className="text-center text-xs text-muted-foreground pt-1 italic">
                     💬 {motivasi}
                 </p>
+
+                <p className="text-center text-xs text-muted-foreground/60 pt-1">
+                    <a
+                        href="https://github.com/akrestu"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-muted-foreground transition-colors"
+                    >
+                        Create with love ❤ by ak.restu
+                    </a>
+                </p>
             </div>
         </>
     );

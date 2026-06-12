@@ -347,8 +347,8 @@ export default function Profile({
                     </div>
                 </div>
 
-                {/* Hapus Akun — disembunyikan di bawah toggle */}
-                <div className="rounded-lg border border-red-200 dark:border-red-900">
+                {/* Hapus Akun — hanya untuk admin */}
+                {isAdmin && <div className="rounded-lg border border-red-200 dark:border-red-900">
                     <button
                         type="button"
                         onClick={() => setShowDelete((v) => !v)}
@@ -365,7 +365,7 @@ export default function Profile({
                             <DeleteUser />
                         </div>
                     )}
-                </div>
+                </div>}
             </div>
         </>
     );

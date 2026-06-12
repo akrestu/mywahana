@@ -49,7 +49,7 @@ class ProfileController extends Controller
         $data = $request->validated();
 
         if (! $request->user()->is_admin) {
-            unset($data['site'], $data['departemen']);
+            unset($data['site'], $data['departemen'], $data['nik']);
         }
 
         $request->user()->fill($data);
@@ -88,6 +88,8 @@ class ProfileController extends Controller
      */
     public function destroy(ProfileDeleteRequest $request): RedirectResponse
     {
+        abort_if(! $request->user()->is_admin, 403);
+
         $user = $request->user();
 
         Auth::logout();
