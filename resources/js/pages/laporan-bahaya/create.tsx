@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, ChevronsUpDown, MapPin, X } from 'lucide-react';
+import { Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, ChevronsUpDown, Images, MapPin, X } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { RiskBadge } from '@/components/risk-badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { compressImage } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
@@ -97,8 +98,20 @@ export default function LaporanBahayaCreate({ user }: Props) {
     const fileRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState(0);
+    const [photoSheet, setPhotoSheet] = useState(false);
     useEffect(() => { window.scrollTo(0, 0); }, [currentStep]);
     const [lokasiOpen, setLokasiOpen] = useState(false);
+
+    function openPhotoSource(source: 'camera' | 'gallery') {
+        setPhotoSheet(false);
+        if (!fileRef.current) return;
+        if (source === 'camera') {
+            fileRef.current.setAttribute('capture', 'environment');
+        } else {
+            fileRef.current.removeAttribute('capture');
+        }
+        setTimeout(() => fileRef.current?.click(), 50);
+    }
 
     const { data, setData, post, processing, errors } = useForm({
         tanggal: today,
@@ -427,7 +440,7 @@ export default function LaporanBahayaCreate({ user }: Props) {
                             ) : (
                                 <button
                                     type="button"
-                                    onClick={() => fileRef.current?.click()}
+                                    onClick={() => setPhotoSheet(true)}
                                     className="flex h-44 w-full flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-border bg-muted/20 transition-all hover:border-orange-400/60 hover:bg-orange-50/50 dark:hover:bg-orange-950/20"
                                 >
                                     <div className="flex size-16 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-950/40">
@@ -439,7 +452,7 @@ export default function LaporanBahayaCreate({ user }: Props) {
                                     </div>
                                 </button>
                             )}
-                            <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFoto} />
+                            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFoto} />
                             {errors.foto && <p className="text-sm text-destructive">{errors.foto}</p>}
                         </div>
 
@@ -691,6 +704,22 @@ export default function LaporanBahayaCreate({ user }: Props) {
                     Datang sehat — kerja aman — pulang selamat
                 </p>
             </form>
+
+            <Sheet open={photoSheet} onOpenChange={setPhotoSheet}>
+                <SheetContent side="bottom" className="pb-8">
+                    <SheetHeader>
+                        <SheetTitle>Pilih Sumber Foto</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-4 flex flex-col gap-3">
+                        <Button variant="outline" className="h-14 text-base gap-3" onClick={() => openPhotoSource('camera')}>
+                            <Camera size={22} /> Ambil dari Kamera
+                        </Button>
+                        <Button variant="outline" className="h-14 text-base gap-3" onClick={() => openPhotoSource('gallery')}>
+                            <Images size={22} /> Pilih dari Galeri
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
         </>
     );
 }

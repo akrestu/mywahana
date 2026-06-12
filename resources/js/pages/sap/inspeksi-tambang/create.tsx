@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { ArrowLeft, ArrowRight, Calendar, Camera, Check, ChevronsUpDown, Plus, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Calendar, Camera, Check, ChevronsUpDown, Images, Plus, Trash2, X } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { compressImage } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
@@ -106,6 +107,17 @@ export default function InspeksiTambangCreate({ user, staffUsers, sites }: Props
     const [pesertaOpen, setPesertaOpen] = useState(false);
     const [siteOpen, setSiteOpen] = useState(false);
     const [fotoFiles, setFotoFiles] = useState<Record<string, File>>({});
+    const fotoRef = useRef<HTMLInputElement>(null);
+    const [photoSheet, setPhotoSheet] = useState(false);
+    const [pendingFotoKey, setPendingFotoKey] = useState<string | null>(null);
+    function openFotoPicker(key: string) { setPendingFotoKey(key); setPhotoSheet(true); }
+    function chooseFotoSource(source: 'camera' | 'gallery') {
+        setPhotoSheet(false);
+        if (!fotoRef.current) return;
+        if (source === 'camera') fotoRef.current.setAttribute('capture', 'environment');
+        else fotoRef.current.removeAttribute('capture');
+        setTimeout(() => fotoRef.current?.click(), 50);
+    }
     const handleFotoChange = async (key: string, file: File) => {
         const compressed = await compressImage(file);
         setFotoFiles(prev => ({ ...prev, [key]: compressed }));
@@ -211,7 +223,7 @@ export default function InspeksiTambangCreate({ user, staffUsers, sites }: Props
                                                 <p className="text-sm leading-relaxed">{item.label}</p>
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div className="flex gap-2">{[1,2,3,4].map(v => <ScoreButton key={v} val={v} current={data[item.key as ScoreKey]} onChange={val => setData(item.key as ScoreKey, val)} />)}</div>
-                                                    <label className="flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-primary transition-colors"><Camera size={18} /><input type="file" accept="image/*" className="sr-only" onChange={e => { const f = e.target.files?.[0]; if (f) handleFotoChange(item.key, f); }} />{fotoFiles[item.key] ? <span className="text-xs text-green-600 font-semibold">Foto ✓</span> : <span className="text-xs">Foto</span>}</label>
+                                                    <button type="button" onClick={() => openFotoPicker(item.key)} className="flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-primary transition-colors"><Camera size={18} />{fotoFiles[item.key] ? <span className="text-xs text-green-600 font-semibold">Foto ✓</span> : <span className="text-xs">Foto</span>}</button>
                                                 </div>
                                             </div>
                                             {idx < cat.items.length - 1 && <Separator />}
@@ -261,6 +273,28 @@ export default function InspeksiTambangCreate({ user, staffUsers, sites }: Props
                     </div>
                 )}
             </form>
+
+            <input ref={fotoRef} type="file" accept="image/*" className="hidden" onChange={e => {
+                const f = e.target.files?.[0];
+                if (f && pendingFotoKey) { handleFotoChange(pendingFotoKey, f); setPendingFotoKey(null); }
+                e.target.value = '';
+            }} />
+
+            <Sheet open={photoSheet} onOpenChange={setPhotoSheet}>
+                <SheetContent side="bottom" className="pb-8">
+                    <SheetHeader>
+                        <SheetTitle>Pilih Sumber Foto</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-4 flex flex-col gap-3">
+                        <Button variant="outline" className="h-14 text-base gap-3" onClick={() => chooseFotoSource('camera')}>
+                            <Camera size={22} /> Ambil dari Kamera
+                        </Button>
+                        <Button variant="outline" className="h-14 text-base gap-3" onClick={() => chooseFotoSource('gallery')}>
+                            <Images size={22} /> Pilih dari Galeri
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
         </>
     );
 }
