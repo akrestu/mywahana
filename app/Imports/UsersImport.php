@@ -31,7 +31,7 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
     private function getValidSites(): Collection
     {
         if ($this->validSites === null) {
-            $this->validSites = Site::pluck('value')->map(fn($v) => strtolower($v));
+            $this->validSites = Site::pluck('value');
         }
         return $this->validSites;
     }
@@ -67,11 +67,12 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
             return null;
         }
 
-        // Site: validate against dynamic sites table (case-insensitive)
+        // Site: validate against dynamic sites table (case-insensitive), preserve original casing from DB
         $siteRaw = strtolower(trim(
             $this->resolve($row, ['site_baratamabandhawa', 'site_baratama_bandhawa', 'site']) ?? ''
         ));
-        $site = $this->getValidSites()->contains($siteRaw) ? $siteRaw : null;
+        $siteMatch = $this->getValidSites()->first(fn($v) => strtolower($v) === $siteRaw);
+        $site = $siteMatch ?? null;
 
         // Level: handles both slug variants from heading formatter
         $levelRaw = strtolower(trim(
