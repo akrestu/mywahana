@@ -41,7 +41,11 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $user,
+                'user' => $user ? array_merge($user->toArray(), [
+                    'avatar' => $user->avatar
+                        ? \Illuminate\Support\Facades\Storage::disk('public')->url($user->avatar)
+                        : null,
+                ]) : null,
             ],
             'notifications' => fn () => $user
                 ? $user->unreadNotifications()->latest()->take(5)->get()->map(fn ($n) => [
