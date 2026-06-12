@@ -42,7 +42,7 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $user ? array_merge($user->toArray(), [
-                    'avatar_url' => $user->avatar
+                    'avatar_url' => $user->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar)
                         ? \Illuminate\Support\Facades\Storage::disk('public')->url($user->avatar)
                         : null,
                 ]) : null,
