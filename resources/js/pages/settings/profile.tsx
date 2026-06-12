@@ -95,7 +95,7 @@ export default function Profile({
     const user = auth.user;
     const isAdmin = user.is_admin === true;
     const [showDelete, setShowDelete] = useState(false);
-    const [avatarPreview, setAvatarPreview] = useState<string | null>(user.avatar ?? null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>((user as any).avatar_url ?? null);
     const [uploading, setUploading] = useState(false);
     const fileRef = useRef<HTMLInputElement>(null);
 
