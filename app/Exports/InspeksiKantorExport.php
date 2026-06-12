@@ -23,7 +23,7 @@ class InspeksiKantorExport implements FromQuery, WithHeadings, WithMapping, Shou
         return [
             'No', 'Inspektor', 'NIK', 'Site',
             'Re-Inspektor', 'Tanggal', 'Project Site', 'Departemen',
-            'Persentase', 'Risk Level', 'Status', 'Tindakan Perbaikan',
+            'Persentase', 'Risk Level', 'Status', 'Peserta Inspeksi', 'Tindakan Perbaikan',
         ];
     }
 
@@ -55,7 +55,8 @@ class InspeksiKantorExport implements FromQuery, WithHeadings, WithMapping, Shou
             $row->persentase !== null ? $row->persentase . '%' : '',
             $riskLabel,
             $statusLabel,
-            $row->tindakan_perbaikan ?? '',
+            $row->peserta->pluck('name')->join(', '),
+            collect($row->tindakan_perbaikan ?? [])->map(fn($t) => $t['tindakan'] ?? '')->filter()->join('; '),
         ];
     }
 }

@@ -21,11 +21,6 @@ class AssessmentController extends Controller
     {
         $user = Auth::user();
 
-        if (! $user->departemen) {
-            return redirect()->route('profile.show')
-                ->with('error', 'Lengkapi profil Anda (departemen) sebelum mengikuti assessment.');
-        }
-
         $sessions = AssessmentSession::where('user_id', $user->id)
             ->latest()
             ->paginate(10);
@@ -34,9 +29,10 @@ class AssessmentController extends Controller
             'sessions' => $sessions,
             'user' => [
                 'departemen' => $user->departemen,
-                'tags' => $this->resolveTag($user),
-                'question_count' => $this->resolveQuestionCount($user),
+                'tags' => $user->departemen ? $this->resolveTag($user) : null,
+                'question_count' => $user->departemen ? $this->resolveQuestionCount($user) : null,
             ],
+            'profile_incomplete' => ! $user->departemen,
         ]);
     }
 

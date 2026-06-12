@@ -35,7 +35,7 @@ type OKRecord = {
     [key: string]: unknown;
 };
 
-type Props = { record: OKRecord };
+type Props = { record: OKRecord; is_pj: boolean };
 
 const CHECKLIST_CATEGORIES = [
     {
@@ -139,7 +139,7 @@ function ClItem({ value, label }: { value: ChecklistVal; label: string }) {
     );
 }
 
-export default function ObservasiKeselamatanShow({ record }: Props) {
+export default function ObservasiKeselamatanShow({ record, is_pj }: Props) {
     const tanggalFormatted = new Date(record.tanggal).toLocaleDateString('id-ID', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     });
@@ -190,7 +190,7 @@ export default function ObservasiKeselamatanShow({ record }: Props) {
                             </p>
                         )}
                     </div>
-                    {record.status === 'menunggu_konfirmasi' && record.penanggung_jawab && (
+                    {record.status === 'menunggu_konfirmasi' && is_pj && (
                         <Link href={`/sap/observasi-keselamatan/${record.id}/konfirmasi`} className="ml-auto">
                             <Button size="sm" variant="outline" className="border-yellow-400 text-yellow-700">Konfirmasi Sekarang</Button>
                         </Link>

@@ -166,6 +166,7 @@ class InspeksiKantorController extends Controller
 
         return Inertia::render('sap/inspeksi-kantor/show', [
             'record' => $inspeksiKantor,
+            'is_ri'  => $user->id === $inspeksiKantor->re_inspektor_id,
         ]);
     }
 

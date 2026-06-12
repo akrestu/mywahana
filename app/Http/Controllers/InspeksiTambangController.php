@@ -147,7 +147,10 @@ class InspeksiTambangController extends Controller
 
         $inspeksiTambang->load('user:id,name,nik,jabatan,site', 'reInspektor:id,name,nik,jabatan,site', 'peserta:id,name,nik,jabatan,site');
 
-        return Inertia::render('sap/inspeksi-tambang/show', ['record' => $inspeksiTambang]);
+        return Inertia::render('sap/inspeksi-tambang/show', [
+            'record' => $inspeksiTambang,
+            'is_ri'  => $user->id === $inspeksiTambang->re_inspektor_id,
+        ]);
     }
 
     public function reInspeksi(Request $request, InspeksiTambang $inspeksiTambang)

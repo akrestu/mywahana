@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, ClipboardCheck, MapPin, Wrench } from 'lucide-react';
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -216,6 +216,7 @@ function ChecklistToggle({
 export default function ObservasiKeselamatanCreate({ user, staffUsers }: Props) {
     const today = new Date().toISOString().split('T')[0];
     const [step, setStep] = useState(0);
+    useEffect(() => { window.scrollTo(0, 0); }, [step]);
     const [pjOpen, setPjOpen] = useState(false);
     const [lokasiOpen, setLokasiOpen] = useState(false);
 
@@ -328,6 +329,7 @@ export default function ObservasiKeselamatanCreate({ user, staffUsers }: Props) 
                             <Input
                                 id="tanggal"
                                 type="date"
+                                max={today}
                                 value={data.tanggal}
                                 onChange={e => setData('tanggal', e.target.value)}
                                 className="h-12 text-base block text-left"

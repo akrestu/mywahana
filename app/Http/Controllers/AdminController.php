@@ -263,6 +263,7 @@ class AdminController extends Controller
 
         $summaryQuery = clone $query;
         $summaryData  = $summaryQuery->selectRaw('status_kelayakan, count(*) as total')
+            ->reorder()
             ->groupBy('status_kelayakan')
             ->pluck('total', 'status_kelayakan');
 
@@ -313,6 +314,7 @@ class AdminController extends Controller
         // Summary dihitung sebelum filter risiko/status agar tetap menyeluruh
         $summaryQuery = clone $query;
         $riskCounts   = $summaryQuery->selectRaw('tingkat_risiko, count(*) as total')
+            ->reorder()
             ->groupBy('tingkat_risiko')
             ->pluck('total', 'tingkat_risiko');
 
@@ -551,7 +553,7 @@ class AdminController extends Controller
 
         return Inertia::render('admin/komunikasi-jsa', [
             'records' => $query->paginate(20)->withQueryString(),
-            'filters' => $request->only('site', 'status', 'shift', 'search', 'periode'),
+            'filters' => (object) $request->only('site', 'status', 'shift', 'search', 'periode'),
             'summary' => $summary,
             'sites'   => Site::orderBy('label')->get(['value', 'label']),
         ]);
@@ -811,37 +813,50 @@ class AdminController extends Controller
         }
 
         $records = $query->get();
-        $csvHeaders = ['Tanggal', 'Nama', 'NIK', 'Jabatan', 'Site', 'Lokasi', 'Shift', 'Durasi (mnt)', 'Kegiatan', 'Judul JSA/SOP/IK', 'Jml Peserta', 'Team Leader', 'Status', 'Catatan'];
-        $rows = $records->map(fn ($r) => [
-            $r->tanggal,
-            $r->user?->name ?? '-',
-            $r->user?->nik ?? '-',
-            $r->user?->jabatan ?? '-',
-            $r->user?->site ?? '-',
-            $r->lokasi,
-            $r->shift,
-            $r->durasi,
-            $r->kegiatan,
-            $r->judul_dokumen,
-            count($r->peserta ?? []),
-            $r->teamLeader?->name ?? '-',
-            $r->status,
-            $r->catatan ?? '-',
-        ]);
 
-        $filename = 'komunikasi-jsa-' . now()->format('Ymd') . '.csv';
-        $callback = function () use ($csvHeaders, $rows) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, $csvHeaders);
-            foreach ($rows as $row) {
-                fputcsv($handle, $row);
-            }
-            fclose($handle);
-        };
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
-        return response()->streamDownload($callback, $filename, [
-            'Content-Type' => 'text/csv',
-        ]);
+        $headers = ['No', 'Tanggal', 'Nama', 'NIK', 'Jabatan', 'Site', 'Lokasi', 'Shift', 'Durasi (mnt)', 'Kegiatan', 'Judul JSA/SOP/IK', 'Jml Peserta', 'Peserta', 'Team Leader', 'Status', 'Catatan'];
+        $sheet->fromArray([$headers], null, 'A1');
+
+        $rowIndex = 2;
+        $no = 0;
+        foreach ($records as $r) {
+            $no++;
+            $sheet->fromArray([[
+                $no,
+                $r->tanggal?->format('d/m/Y') ?? '',
+                $r->user?->name ?? '-',
+                $r->user?->nik ?? '-',
+                $r->user?->jabatan ?? '-',
+                $r->user?->site ?? '-',
+                $r->lokasi,
+                $r->shift,
+                $r->durasi,
+                $r->kegiatan,
+                $r->judul_dokumen,
+                count($r->peserta ?? []),
+                collect($r->peserta ?? [])->pluck('nama')->filter()->join(', '),
+                $r->teamLeader?->name ?? '-',
+                $r->status,
+                $r->catatan ?? '-',
+            ]], null, 'A' . $rowIndex);
+            $rowIndex++;
+        }
+
+        foreach (range('A', 'P') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'komunikasi-jsa-' . now()->format('Ymd') . '.xlsx';
+        $tmpPath = tempnam(sys_get_temp_dir(), 'jsa_export_') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save($tmpPath);
+
+        return response()->download($tmpPath, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
     }
 
     public function exportInductionAttendance(string $type)
@@ -863,28 +878,28 @@ class AdminController extends Controller
 
     public function exportInspeksiKantor(Request $request)
     {
-        $query = InspeksiKantor::with(['user', 'reInspektor'])->latest('tanggal');
+        $query = InspeksiKantor::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
         $this->applyInspeksiFilters($query, $request);
         return Excel::download(new InspeksiKantorExport($query), 'inspeksi-kantor-' . now()->format('Ymd') . '.xlsx');
     }
 
     public function exportInspeksiTambang(Request $request)
     {
-        $query = InspeksiTambang::with(['user', 'reInspektor'])->latest('tanggal');
+        $query = InspeksiTambang::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
         $this->applyInspeksiFilters($query, $request);
         return Excel::download(new InspeksiTambangExport($query), 'inspeksi-tambang-' . now()->format('Ymd') . '.xlsx');
     }
 
     public function exportInspeksiWorkshop(Request $request)
     {
-        $query = InspeksiWorkshop::with(['user', 'reInspektor'])->latest('tanggal');
+        $query = InspeksiWorkshop::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
         $this->applyInspeksiFilters($query, $request);
         return Excel::download(new InspeksiWorkshopExport($query), 'inspeksi-workshop-' . now()->format('Ymd') . '.xlsx');
     }
 
     public function exportInspeksiMess(Request $request)
     {
-        $query = InspeksiMess::with(['user', 'reInspektor'])->latest('tanggal');
+        $query = InspeksiMess::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
         $this->applyInspeksiFilters($query, $request);
         return Excel::download(new InspeksiMessExport($query), 'inspeksi-mess-' . now()->format('Ymd') . '.xlsx');
     }
@@ -952,16 +967,30 @@ class AdminController extends Controller
         return back();
     }
 
-    public function targets()
+    public function targets(Request $request)
     {
         $targets = ParticipationTarget::all(['level', 'laporan_per_minggu', 'inspeksi_per_minggu', 'observasi_per_minggu', 'bugar_per_hari']);
 
-        $users = User::where('is_admin', false)
-            ->get(['id', 'name', 'nik', 'jabatan', 'site', 'participation_level']);
+        $query = User::where('is_admin', false)->orderBy('name');
+
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', "%{$request->search}%")
+                  ->orWhere('nik', 'like', "%{$request->search}%");
+            });
+        }
+        if ($request->filled('site')) {
+            $query->where('site', $request->site);
+        }
+        if ($request->filled('participation_level')) {
+            $query->where('participation_level', $request->participation_level);
+        }
 
         return Inertia::render('admin/targets', [
             'targets' => $targets,
-            'users'   => $users,
+            'users'   => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('search', 'site', 'participation_level'),
+            'sites'   => Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -1211,7 +1240,12 @@ class AdminController extends Controller
         $import = new UsersImport();
         Excel::import($import, $request->file('file'));
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => "Import selesai. {$import->imported} pengguna diproses."]);
+        $msg = "Import selesai. {$import->imported} pengguna diproses";
+        if ($import->skipped > 0) {
+            $msg .= ", {$import->skipped} dilewati (tidak ada perubahan)";
+        }
+        $msg .= '.';
+        Inertia::flash('toast', ['type' => 'success', 'message' => $msg]);
 
         return back();
     }

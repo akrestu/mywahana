@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { BookOpen, CalendarDays, CheckCircle2, ChevronRight, Clock, GraduationCap, Target, XCircle } from 'lucide-react';
+import { AlertCircle, BookOpen, CalendarDays, CheckCircle2, ChevronRight, Clock, GraduationCap, Target, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -26,14 +26,15 @@ type Paginated = {
 };
 
 type UserInfo = {
-    departemen: string;
-    tags: 'S' | 'NS';
-    question_count: number;
+    departemen: string | null;
+    tags: 'S' | 'NS' | null;
+    question_count: number | null;
 };
 
 type Props = {
     sessions: Paginated;
     user: UserInfo;
+    profile_incomplete: boolean;
 };
 
 function groupByMonth(sessions: Session[]) {
@@ -58,7 +59,7 @@ function ScoreBar({ percentage, passed }: { percentage: number; passed: boolean 
     );
 }
 
-export default function AssessmentIndex({ sessions, user }: Props) {
+export default function AssessmentIndex({ sessions, user, profile_incomplete }: Props) {
     const grouped = groupByMonth(sessions.data);
     const [starting, setStarting] = useState(false);
 
@@ -87,6 +88,22 @@ export default function AssessmentIndex({ sessions, user }: Props) {
 
             <div className="mx-auto max-w-xl px-4 py-5 space-y-5">
 
+                {/* ── Profile incomplete warning ── */}
+                {profile_incomplete && (
+                    <div className="fade-up flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/20 px-4 py-3.5">
+                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <div className="flex-1 text-sm">
+                            <p className="font-semibold text-amber-800 dark:text-amber-300">Profil belum lengkap</p>
+                            <p className="text-amber-700 dark:text-amber-400 text-xs mt-0.5">
+                                Lengkapi <strong>departemen</strong> di profil Anda sebelum mengikuti assessment.
+                            </p>
+                            <Link href="/settings/profile" className="mt-2 inline-block text-xs font-semibold text-amber-700 dark:text-amber-300 underline underline-offset-2">
+                                Lengkapi profil →
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
                 {/* ── Hero banner ── */}
                 <div className="fade-up rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-600 to-blue-500 text-white shadow-lg">
                     <div className="px-5 pt-5 pb-4 space-y-1">
@@ -94,16 +111,16 @@ export default function AssessmentIndex({ sessions, user }: Props) {
                             <GraduationCap className="h-3.5 w-3.5" />
                             Assessment Safety
                         </div>
-                        <h1 className="text-xl font-bold">{user.departemen}</h1>
+                        <h1 className="text-xl font-bold">{user.departemen ?? '—'}</h1>
                         <p className="text-indigo-100 text-sm">
-                            Level {user.tags === 'S' ? 'Staff' : 'Non Staff'}
+                            {user.tags ? `Level ${user.tags === 'S' ? 'Staff' : 'Non Staff'}` : 'Departemen belum diisi'}
                         </p>
                     </div>
 
                     {/* Info chips */}
                     <div className="px-5 pb-4 flex gap-2 flex-wrap">
                         {[
-                            { icon: BookOpen,  label: `${user.question_count} soal` },
+                            { icon: BookOpen,  label: user.question_count ? `${user.question_count} soal` : '— soal' },
                             { icon: Target,    label: 'Min. 80% lulus' },
                         ].map(({ icon: Icon, label }) => (
                             <div key={label} className="flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-medium">
@@ -117,11 +134,11 @@ export default function AssessmentIndex({ sessions, user }: Props) {
                     <div className="px-5 pb-5">
                         <button
                             onClick={handleStart}
-                            disabled={starting}
+                            disabled={starting || profile_incomplete}
                             className={cn(
                                 'w-full rounded-xl py-3 text-sm font-semibold transition-all',
                                 'bg-white text-indigo-600 hover:bg-indigo-50 active:scale-[0.98]',
-                                starting && 'opacity-70 cursor-not-allowed',
+                                (starting || profile_incomplete) && 'opacity-50 cursor-not-allowed',
                             )}
                         >
                             {starting ? 'Memulai…' : '🚀  Mulai Assessment Baru'}
