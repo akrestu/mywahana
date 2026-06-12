@@ -49,7 +49,7 @@ class ProfileController extends Controller
         $data = $request->validated();
 
         if (! $request->user()->is_admin) {
-            unset($data['site'], $data['departemen'], $data['nik']);
+            unset($data['site'], $data['departemen'], $data['nik'], $data['jabatan']);
         }
 
         $request->user()->fill($data);

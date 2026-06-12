@@ -226,32 +226,50 @@ export default function Profile({
                                     <FieldRow
                                         icon={<IdCard size={16} />}
                                         label="NIK / NRPP"
-                                        hint="Nomor Induk Karyawan Anda"
+                                        hint={isAdmin ? 'Nomor Induk Karyawan' : 'NIK hanya dapat diubah oleh admin'}
                                         error={errors.nik}
                                     >
-                                        <Input
-                                            id="nik"
-                                            name="nik"
-                                            defaultValue={user.nik ?? ''}
-                                            placeholder="Contoh: 12345678"
-                                            maxLength={16}
-                                            className="h-11 text-base"
-                                        />
+                                        {isAdmin ? (
+                                            <Input
+                                                id="nik"
+                                                name="nik"
+                                                defaultValue={user.nik ?? ''}
+                                                placeholder="Contoh: 12345678"
+                                                maxLength={16}
+                                                className="h-11 text-base"
+                                            />
+                                        ) : (
+                                            <Input
+                                                value={user.nik ?? '—'}
+                                                readOnly
+                                                disabled
+                                                className="h-11 text-base bg-muted cursor-not-allowed"
+                                            />
+                                        )}
                                     </FieldRow>
 
                                     <FieldRow
                                         icon={<Briefcase size={16} />}
                                         label="Jabatan"
-                                        hint="Posisi atau jabatan Anda di perusahaan"
+                                        hint={isAdmin ? 'Posisi atau jabatan di perusahaan' : 'Jabatan hanya dapat diubah oleh admin'}
                                         error={errors.jabatan}
                                     >
-                                        <Input
-                                            id="jabatan"
-                                            name="jabatan"
-                                            defaultValue={user.jabatan ?? ''}
-                                            placeholder="Contoh: Operator, Mekanik, Supervisor"
-                                            className="h-11 text-base"
-                                        />
+                                        {isAdmin ? (
+                                            <Input
+                                                id="jabatan"
+                                                name="jabatan"
+                                                defaultValue={user.jabatan ?? ''}
+                                                placeholder="Contoh: Operator, Mekanik, Supervisor"
+                                                className="h-11 text-base"
+                                            />
+                                        ) : (
+                                            <Input
+                                                value={user.jabatan ?? '—'}
+                                                readOnly
+                                                disabled
+                                                className="h-11 text-base bg-muted cursor-not-allowed"
+                                            />
+                                        )}
                                     </FieldRow>
 
                                     <FieldRow
