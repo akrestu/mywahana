@@ -166,13 +166,10 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
             'participation_level' => $level,
             'is_admin'            => $isAdmin,
         ]);
-        $user->save();
 
-        // Bypass 'hashed' cast to avoid double-hashing
-        $user->getConnection()
-            ->table('users')
-            ->where('id', $user->id)
-            ->update(['password' => $hashedPassword]);
+        // Set raw hashed password directly to bypass the 'hashed' cast (avoid double-hashing)
+        $user->setRawAttributes(array_merge($user->getAttributes(), ['password' => $hashedPassword]));
+        $user->save();
 
         $this->imported++;
         return null;
