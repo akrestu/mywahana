@@ -225,7 +225,7 @@ class DashboardController extends Controller
                     'id'      => $u->id,
                     'name'    => $u->name,
                     'jabatan' => $u->jabatan,
-                    'avatar'  => $u->avatar ? asset('storage/' . $u->avatar) : null,
+                    'avatar'  => $u->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($u->avatar) ? asset('storage/' . $u->avatar) : null,
                     'bs'      => $u->bs_count,
                     'lb'      => $u->lb_count,
                     'skor'    => $u->bs_count + ($u->lb_count * 2),
