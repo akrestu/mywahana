@@ -232,17 +232,33 @@ export default function Dashboard({
                 <div className="relative overflow-hidden rounded-2xl border" style={{ background: tod.gradientStyle }}>
                     <div className={`pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full blur-3xl ${tod.shimmer} animate-pulse`} />
                     <div className="relative flex items-center justify-between p-4">
-                        <div>
-                            <p className="flex items-center gap-1.5 text-xs text-foreground/60">
-                                <span>{tod.emoji}</span>{tod.greeting}
-                            </p>
-                            <h1 className="text-xl font-bold">{firstName}!</h1>
-                            <div className="mt-1 flex flex-wrap gap-1">
-                                {user.jabatan && <Badge variant="secondary" className="text-[11px] px-2 py-0">{user.jabatan}</Badge>}
-                                {user.site && <Badge variant="outline" className="text-[11px] px-2 py-0 capitalize">Site {user.site}</Badge>}
+                        <div className="flex items-center gap-3 min-w-0">
+                            {/* Foto Profil */}
+                            <Link href="/settings/profile" className="shrink-0">
+                                {user.avatar_url ? (
+                                    <img
+                                        src={user.avatar_url}
+                                        alt={user.name}
+                                        className="h-14 w-14 rounded-full object-cover ring-2 ring-white/40 shadow-md"
+                                    />
+                                ) : (
+                                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 ring-2 ring-white/40 shadow-md text-lg font-bold backdrop-blur-sm">
+                                        {user.name?.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
+                                    </div>
+                                )}
+                            </Link>
+                            <div className="min-w-0">
+                                <p className="flex items-center gap-1.5 text-xs text-foreground/60">
+                                    <span>{tod.emoji}</span>{tod.greeting}
+                                </p>
+                                <h1 className="text-xl font-bold">{firstName}!</h1>
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                    {user.jabatan && <Badge variant="secondary" className="text-[11px] px-2 py-0">{user.jabatan}</Badge>}
+                                    {user.site && <Badge variant="outline" className="text-[11px] px-2 py-0 capitalize">Site {user.site}</Badge>}
+                                </div>
                             </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0 ml-2">
                             <p className={`font-mono text-3xl font-bold tabular-nums ${tod.clockColor}`}>{tod.timeStr}</p>
                             <p className="text-[11px] text-muted-foreground capitalize">{tod.dateStr}</p>
                         </div>
