@@ -94,7 +94,7 @@ const STEPS = [
 ];
 
 export default function LaporanBahayaCreate({ user }: Props) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
     const fileRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState(0);

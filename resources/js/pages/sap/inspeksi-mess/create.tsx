@@ -126,10 +126,10 @@ export default function InspeksiMessCreate({ user, staffUsers, sites }: Props) {
     };
     const initialScores = Object.fromEntries(ALL_SCORE_KEYS.map(k => [k, ''])) as { [K in ScoreKey]: string };
     const defaultSite = sites.find(s => s.value === user.site)?.label ?? '';
-    const { data, setData, post, processing } = useForm<FormData>({ re_inspektor_id: '', peserta_ids: [], tanggal: new Date().toISOString().split('T')[0], project_site: defaultSite, lokasi: '', ...initialScores, tindakan_perbaikan: [], ttd_inspektor: '' });
+    const { data, setData, post, processing } = useForm<FormData>({ re_inspektor_id: '', peserta_ids: [], tanggal: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }), project_site: defaultSite, lokasi: '', ...initialScores, tindakan_perbaikan: [], ttd_inspektor: '' });
     const selectedRI = staffUsers.find(u => String(u.id) === data.re_inspektor_id);
     const selectedPeserta = staffUsers.filter(u => data.peserta_ids.includes(u.id));
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
 
     const score = calcScore(data);
     const risk = RISK_CFG[score.level as keyof typeof RISK_CFG];

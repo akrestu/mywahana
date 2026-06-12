@@ -82,8 +82,9 @@ const addMonths = (iso: string, n: number) => {
     return d.toISOString().split('T')[0];
 };
 
-const isToday = (iso: string) => iso === new Date().toISOString().split('T')[0];
-const isFuture = (iso: string) => iso > new Date().toISOString().split('T')[0];
+const todayJakarta = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+const isToday = (iso: string) => iso === todayJakarta();
+const isFuture = (iso: string) => iso > todayJakarta();
 
 const STATUS_COLOR: Record<string, string> = {
     layak:    'bg-green-500',
