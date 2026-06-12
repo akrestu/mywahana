@@ -122,8 +122,9 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
             if ($departemen !== null && $existing->departemen !== $departemen) {
                 $changes['departemen'] = $departemen;
             }
-            if ($site !== null && $existing->site !== $site) {
-                $changes['site'] = $site;
+            // Update site whenever a valid site was found in the row
+            if ($siteMatch !== null && $existing->site !== $siteMatch) {
+                $changes['site'] = $siteMatch;
             }
             if ($existing->participation_level !== $level) {
                 $changes['participation_level'] = $level;
