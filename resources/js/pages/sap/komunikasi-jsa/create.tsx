@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { BookOpen, Calendar, Camera, Check, ChevronsUpDown, MapPin, PenLine, Plus, Trash2, UserCheck, X } from 'lucide-react';
+import { BookOpen, Calendar, Camera, Check, ChevronsUpDown, Images, MapPin, PenLine, Plus, Trash2, UserCheck, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { compressImage } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
@@ -156,6 +157,17 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
     const [fotoDokumen, setFotoDokumen] = useState<File | null>(null);
     const [fotoKelompokPreview, setFotoKelompokPreview] = useState<string>('');
     const [fotoDokumenPreview, setFotoDokumenPreview] = useState<string>('');
+    const fotoKelompokRef = useRef<HTMLInputElement>(null);
+    const fotoDokumenRef = useRef<HTMLInputElement>(null);
+    const [photoSheet, setPhotoSheet] = useState<'kelompok' | 'dokumen' | null>(null);
+    function choosePhotoSource(source: 'camera' | 'gallery') {
+        const ref = photoSheet === 'kelompok' ? fotoKelompokRef : fotoDokumenRef;
+        setPhotoSheet(null);
+        if (!ref.current) return;
+        if (source === 'camera') ref.current.setAttribute('capture', 'environment');
+        else ref.current.removeAttribute('capture');
+        setTimeout(() => ref.current?.click(), 50);
+    }
 
     const [supervisorSig, setSupervisorSig] = useState('');
     const [showSupervisorSig, setShowSupervisorSig] = useState(false);
@@ -504,12 +516,10 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
                                     </Button>
                                 </div>
                             ) : (
-                                <label className="flex flex-col items-center gap-2 border-2 border-dashed rounded-lg p-6 cursor-pointer hover:border-primary transition-colors">
+                                <button type="button" onClick={() => setPhotoSheet('kelompok')} className="flex flex-col items-center gap-2 border-2 border-dashed rounded-lg p-6 w-full cursor-pointer hover:border-primary transition-colors">
                                     <Camera size={28} className="text-muted-foreground" />
                                     <span className="text-sm text-muted-foreground">Ketuk untuk ambil/pilih foto kelompok</span>
-                                    <input type="file" accept="image/*" capture="environment" className="hidden"
-                                        onChange={e => handleFotoChange('kelompok', e.target.files?.[0] ?? null)} />
-                                </label>
+                                </button>
                             )}
                             {errors.foto_kelompok && <p className="text-sm text-destructive">{errors.foto_kelompok}</p>}
                         </div>
@@ -526,12 +536,10 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
                                     </Button>
                                 </div>
                             ) : (
-                                <label className="flex flex-col items-center gap-2 border-2 border-dashed rounded-lg p-6 cursor-pointer hover:border-primary transition-colors">
+                                <button type="button" onClick={() => setPhotoSheet('dokumen')} className="flex flex-col items-center gap-2 border-2 border-dashed rounded-lg p-6 w-full cursor-pointer hover:border-primary transition-colors">
                                     <BookOpen size={28} className="text-muted-foreground" />
                                     <span className="text-sm text-muted-foreground">Ketuk untuk ambil/pilih foto dokumen JSA/SOP/IK</span>
-                                    <input type="file" accept="image/*" capture="environment" className="hidden"
-                                        onChange={e => handleFotoChange('dokumen', e.target.files?.[0] ?? null)} />
-                                </label>
+                                </button>
                             )}
                             {errors.foto_dokumen && <p className="text-sm text-destructive">{errors.foto_dokumen}</p>}
                         </div>
@@ -579,6 +587,29 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
                     )}
                 </DialogContent>
             </Dialog>
+
+            {/* Hidden file inputs untuk foto */}
+            <input ref={fotoKelompokRef} type="file" accept="image/*" className="hidden"
+                onChange={e => { handleFotoChange('kelompok', e.target.files?.[0] ?? null); e.target.value = ''; }} />
+            <input ref={fotoDokumenRef} type="file" accept="image/*" className="hidden"
+                onChange={e => { handleFotoChange('dokumen', e.target.files?.[0] ?? null); e.target.value = ''; }} />
+
+            {/* Sheet pilihan sumber foto */}
+            <Sheet open={photoSheet !== null} onOpenChange={open => { if (!open) setPhotoSheet(null); }}>
+                <SheetContent side="bottom" className="pb-8">
+                    <SheetHeader>
+                        <SheetTitle>Pilih Sumber Foto</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-4 flex flex-col gap-3">
+                        <Button variant="outline" className="h-14 text-base gap-3" onClick={() => choosePhotoSource('camera')}>
+                            <Camera size={22} /> Ambil dari Kamera
+                        </Button>
+                        <Button variant="outline" className="h-14 text-base gap-3" onClick={() => choosePhotoSource('gallery')}>
+                            <Images size={22} /> Pilih dari Galeri
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
 
             {/* Dialog TTD Supervisor */}
             <Dialog open={showSupervisorSig} onOpenChange={setShowSupervisorSig}>
