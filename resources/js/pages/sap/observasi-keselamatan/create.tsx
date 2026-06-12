@@ -214,7 +214,7 @@ function ChecklistToggle({
 }
 
 export default function ObservasiKeselamatanCreate({ user, staffUsers }: Props) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
     const [step, setStep] = useState(0);
     useEffect(() => { window.scrollTo(0, 0); }, [step]);
     const [pjOpen, setPjOpen] = useState(false);

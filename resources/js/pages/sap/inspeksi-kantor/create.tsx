@@ -185,7 +185,7 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
     const { data, setData, post, processing, errors } = useForm<FormData>({
         re_inspektor_id: '',
         peserta_ids: [],
-        tanggal: new Date().toISOString().split('T')[0],
+        tanggal: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }),
         project_site: sites.find(s => s.value === user.site)?.label ?? '',
         departemen: user.departemen ?? '',
         ...initialScores,
@@ -196,7 +196,7 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
     const selectedRI = staffUsers.find(u => String(u.id) === data.re_inspektor_id);
     const selectedPeserta = staffUsers.filter(u => data.peserta_ids.includes(u.id));
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
 
     const score = calcScore(data);
     const risk = RISK_CFG[score.level as keyof typeof RISK_CFG];
