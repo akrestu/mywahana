@@ -85,6 +85,8 @@ type Props = {
     leaderboard?: Record<string, LeaderboardEntry[]>;
     target?: TargetInfo;
     new_badges?: NewBadge[];
+    pending_re_inspeksi?: { kantor: number; tambang: number; workshop: number; mess: number };
+    pending_form_ok?: number;
 };
 
 const defaultStats: Stats = {
@@ -185,6 +187,8 @@ export default function Dashboard({
     target,
     new_badges = [],
     streak = 0,
+    pending_re_inspeksi,
+    pending_form_ok = 0,
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const user = auth.user;
@@ -318,6 +322,51 @@ export default function Dashboard({
                             ))}
                         </div>
                     </div>
+                )}
+
+                {/* ④b REMINDER RE-INSPEKSI */}
+                {pending_re_inspeksi && (pending_re_inspeksi.kantor + pending_re_inspeksi.tambang + pending_re_inspeksi.workshop + pending_re_inspeksi.mess) > 0 && (() => {
+                    const total = pending_re_inspeksi.kantor + pending_re_inspeksi.tambang + pending_re_inspeksi.workshop + pending_re_inspeksi.mess;
+                    const links: { label: string; href: string; count: number }[] = [
+                        { label: 'Kantor', href: '/sap/inspeksi-kantor', count: pending_re_inspeksi.kantor },
+                        { label: 'Tambang', href: '/sap/inspeksi-tambang', count: pending_re_inspeksi.tambang },
+                        { label: 'Workshop', href: '/sap/inspeksi-workshop', count: pending_re_inspeksi.workshop },
+                        { label: 'Mess', href: '/sap/inspeksi-mess', count: pending_re_inspeksi.mess },
+                    ].filter(l => l.count > 0);
+                    return (
+                        <div className="rounded-xl border-2 border-blue-400 bg-blue-50 px-4 py-3 dark:border-blue-700 dark:bg-blue-950">
+                            <div className="flex items-center gap-3">
+                                <ClipboardCheck className="h-7 w-7 shrink-0 text-blue-500" />
+                                <p className="font-semibold text-blue-800 dark:text-blue-200">
+                                    📋 {total} form inspeksi menunggu approval Anda
+                                </p>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-2 pl-10">
+                                {links.map(l => (
+                                    <Link key={l.href} href={l.href}>
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-200 dark:bg-blue-800 px-3 py-1 text-xs font-semibold text-blue-900 dark:text-blue-100">
+                                            {l.label} ({l.count})
+                                        </span>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })()}
+
+                {/* ④c REMINDER FORM OK */}
+                {pending_form_ok > 0 && (
+                    <Link href="/sap/observasi-keselamatan" className="block">
+                        <div className="flex items-center gap-3 rounded-xl border-2 border-purple-400 bg-purple-50 px-4 py-3 active:scale-[0.99] transition-transform dark:border-purple-700 dark:bg-purple-950">
+                            <Eye className="h-7 w-7 shrink-0 text-purple-500" />
+                            <div className="flex-1">
+                                <p className="font-semibold text-purple-800 dark:text-purple-200">
+                                    👁️ {pending_form_ok} Form OK menunggu konfirmasi Anda
+                                </p>
+                                <p className="text-xs text-purple-600 dark:text-purple-400">Ketuk untuk melihat dan mengkonfirmasi →</p>
+                            </div>
+                        </div>
+                    </Link>
                 )}
 
                 {/* ⑤ TOMBOL AKSI UTAMA */}

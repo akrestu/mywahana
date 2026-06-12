@@ -165,7 +165,10 @@ class InspeksiWorkshopController extends Controller
 
         $inspeksiWorkshop->load('user:id,name,nik,jabatan,site', 'reInspektor:id,name,nik,jabatan,site', 'peserta:id,name,nik,jabatan,site');
 
-        return Inertia::render('sap/inspeksi-workshop/show', ['record' => $inspeksiWorkshop]);
+        return Inertia::render('sap/inspeksi-workshop/show', [
+            'record' => $inspeksiWorkshop,
+            'is_ri'  => $user->id === $inspeksiWorkshop->re_inspektor_id,
+        ]);
     }
 
     public function reInspeksi(Request $request, InspeksiWorkshop $inspeksiWorkshop)

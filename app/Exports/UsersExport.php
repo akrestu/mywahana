@@ -21,18 +21,20 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
     public function headings(): array
     {
         return [
-            'No', 'Nama', 'NIK', 'Email', 'Jabatan', 'Site', 'Level', 'Admin', 'Terdaftar',
+            'No', 'Nama', 'NIK', 'Email', 'Password (Hash)', 'Jabatan', 'Site', 'Level', 'Admin', 'Terdaftar',
         ];
     }
 
     public function map($row): array
     {
         $this->no++;
+        $row->makeVisible('password');
         return [
             $this->no,
             $row->name,
             $row->nik ?? '',
             $row->email ?? '',
+            $row->password ?? '',
             $row->jabatan ?? '',
             $row->site ? ucfirst($row->site) : '',
             $row->participation_level ?? '',

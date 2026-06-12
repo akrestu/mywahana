@@ -30,7 +30,7 @@ type Record = {
     [key: string]: unknown;
 };
 
-type Props = { record: Record };
+type Props = { record: Record; is_ri: boolean };
 
 const RISK_CFG = {
     L:  { label: 'Baik',           cls: 'bg-green-100 text-green-800 border-green-300', bar: 'bg-green-500' },
@@ -126,7 +126,7 @@ function StatusBadge({ s }: { s: string }) {
     return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300">Menunggu Re-Inspeksi</Badge>;
 }
 
-export default function InspeksiWorkshopShow({ record }: Props) {
+export default function InspeksiWorkshopShow({ record, is_ri }: Props) {
     const tanggal = new Date(record.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const risk = record.risk_level ? RISK_CFG[record.risk_level] : null;
 
@@ -227,6 +227,19 @@ export default function InspeksiWorkshopShow({ record }: Props) {
                         )}
                     </CardContent>
                 </Card>
+
+                {record.status === 'menunggu_re_inspeksi' && record.re_inspektor && (
+                    <div className="rounded-2xl border-2 border-yellow-300 bg-yellow-50/50 dark:bg-yellow-950/10 px-4 py-4 flex items-center justify-between gap-3">
+                        <p className="text-sm text-yellow-800 dark:text-yellow-300 font-semibold">
+                            Menunggu re-inspeksi dari {record.re_inspektor.name}
+                        </p>
+                        {is_ri && (
+                            <Link href={`/sap/inspeksi-workshop/${record.id}/re-inspeksi`}>
+                                <Button className="bg-yellow-500 hover:bg-yellow-600 text-white shrink-0">Lakukan Re-Inspeksi</Button>
+                            </Link>
+                        )}
+                    </div>
+                )}
             </div>
         </>
     );

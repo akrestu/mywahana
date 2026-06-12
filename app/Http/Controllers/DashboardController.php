@@ -75,6 +75,20 @@ class DashboardController extends Controller
         // Target partisipasi
         $target = $this->buildUserTarget($user, $now);
 
+        // Pending re-inspeksi per tipe (user sebagai re-inspektor/PJ)
+        $pendingReInspeksi = [
+            'kantor'   => InspeksiKantor::where('re_inspektor_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count(),
+            'tambang'  => InspeksiTambang::where('re_inspektor_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count(),
+            'workshop' => InspeksiWorkshop::where('re_inspektor_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count(),
+            'mess'     => InspeksiMess::where('re_inspektor_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count(),
+        ];
+
+        // Pending form OK (Observasi Keselamatan) sebagai PJ
+        $pendingFormOk = ObservasiKeselamatan::where('penanggung_jawab_id', $user->id)
+            ->where('user_id', '!=', $user->id)
+            ->where('status', 'menunggu_konfirmasi')
+            ->count();
+
         // Badge terbaru (yang diraih dalam 7 hari terakhir)
         $new_badges = $user->badges()
             ->where('earned_at', '>=', now()->subDays(7))
@@ -96,6 +110,8 @@ class DashboardController extends Controller
             'leaderboard'           => $leaderboard,
             'target'                => $target,
             'new_badges'            => $new_badges,
+            'pending_re_inspeksi'   => $pendingReInspeksi,
+            'pending_form_ok'       => $pendingFormOk,
         ]);
     }
 

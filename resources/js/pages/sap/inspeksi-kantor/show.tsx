@@ -32,7 +32,7 @@ type Record = {
     [key: string]: unknown;
 };
 
-type Props = { record: Record };
+type Props = { record: Record; is_ri: boolean };
 
 const CATEGORIES = [
     { key: 'situasi', label: 'Situasi', items: [
@@ -78,7 +78,7 @@ const RISK_CFG = {
     VH: { label: 'Perlu Tindakan', cls: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950/30 dark:text-red-400' },
 };
 
-export default function InspeksiKantorShow({ record }: Props) {
+export default function InspeksiKantorShow({ record, is_ri }: Props) {
     const tanggal = new Date(record.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const risk = record.risk_level ? RISK_CFG[record.risk_level] : null;
 
@@ -245,7 +245,7 @@ export default function InspeksiKantorShow({ record }: Props) {
                 </div>
 
                 {/* Re-inspeksi action */}
-                {record.status === 'menunggu_re_inspeksi' && record.re_inspektor && (
+                {record.status === 'menunggu_re_inspeksi' && is_ri && (
                     <div className="rounded-2xl border-2 border-yellow-300 bg-yellow-50/50 dark:bg-yellow-950/10 p-4 text-center">
                         <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300 mb-3">
                             Menunggu re-inspeksi dari {record.re_inspektor.name}

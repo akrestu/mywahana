@@ -164,6 +164,7 @@ class ObservasiKeselamatanController extends Controller
 
         return Inertia::render('sap/observasi-keselamatan/show', [
             'record' => $observasiKeselamatan,
+            'is_pj'  => $request->user()->id === $observasiKeselamatan->penanggung_jawab_id,
         ]);
     }
 

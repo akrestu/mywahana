@@ -199,6 +199,7 @@ function SignaturePad({ onChange }: { onChange: (filled: boolean) => void }) {
 export default function BugarSelamatCreate({ user }: Props) {
     const today = new Date().toISOString().split('T')[0];
     const [step, setStep] = useState(0);
+    useEffect(() => { window.scrollTo(0, 0); }, [step]);
     const [hasSig, setHasSig] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm<FormData>({

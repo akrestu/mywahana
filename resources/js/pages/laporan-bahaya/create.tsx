@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, ChevronsUpDown, MapPin, X } from 'lucide-react';
-import { Fragment, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { RiskBadge } from '@/components/risk-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -97,6 +97,7 @@ export default function LaporanBahayaCreate({ user }: Props) {
     const fileRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState(0);
+    useEffect(() => { window.scrollTo(0, 0); }, [currentStep]);
     const [lokasiOpen, setLokasiOpen] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm({
@@ -248,6 +249,7 @@ export default function LaporanBahayaCreate({ user }: Props) {
                             <div className="relative">
                                 <input
                                     type="date"
+                                    max={today}
                                     value={data.tanggal}
                                     onChange={(e) => setData('tanggal', e.target.value)}
                                     className={cn(

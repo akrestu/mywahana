@@ -102,7 +102,7 @@ export default function AdminKomunikasiJsa({ records, filters, summary, sites }:
                     </div>
                     <a href={exportUrl}>
                         <Button size="sm" variant="outline" className="gap-1">
-                            <Download size={14} /> Export CSV
+                            <Download size={14} /> Export Excel
                         </Button>
                     </a>
                 </div>

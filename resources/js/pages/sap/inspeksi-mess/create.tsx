@@ -103,6 +103,7 @@ function SignaturePad({ onCapture }: { onCapture: (d: string | null) => void }) 
 
 export default function InspeksiMessCreate({ user, staffUsers, sites }: Props) {
     const [step, setStep] = useState(1);
+    useEffect(() => { window.scrollTo(0, 0); }, [step]);
     const [riOpen, setRiOpen] = useState(false);
     const [pesertaOpen, setPesertaOpen] = useState(false);
     const [siteOpen, setSiteOpen] = useState(false);
@@ -116,6 +117,8 @@ export default function InspeksiMessCreate({ user, staffUsers, sites }: Props) {
     const { data, setData, post, processing } = useForm<FormData>({ re_inspektor_id: '', peserta_ids: [], tanggal: new Date().toISOString().split('T')[0], project_site: defaultSite, lokasi: '', ...initialScores, tindakan_perbaikan: [], ttd_inspektor: '' });
     const selectedRI = staffUsers.find(u => String(u.id) === data.re_inspektor_id);
     const selectedPeserta = staffUsers.filter(u => data.peserta_ids.includes(u.id));
+    const today = new Date().toISOString().split('T')[0];
+
     const score = calcScore(data);
     const risk = RISK_CFG[score.level as keyof typeof RISK_CFG];
     const addTindakan = () => setData('tindakan_perbaikan', [...data.tindakan_perbaikan, { tindakan: '', pic: '', due_date: '', remark: '' }]);
@@ -148,7 +151,7 @@ export default function InspeksiMessCreate({ user, staffUsers, sites }: Props) {
                         <Card className="p-0 overflow-hidden">
                             <div className="bg-muted/50 px-4 py-3 border-b font-bold text-sm">Informasi Inspeksi</div>
                             <CardContent className="flex flex-col gap-4 py-4">
-                                <div className="space-y-1.5"><Label>Tanggal <span className="text-destructive">*</span></Label><div className="relative"><Input type="date" value={data.tanggal} onChange={e => setData('tanggal', e.target.value)} className="h-12 text-base pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer" /><Calendar className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" /></div></div>
+                                <div className="space-y-1.5"><Label>Tanggal <span className="text-destructive">*</span></Label><div className="relative"><Input type="date" max={today} value={data.tanggal} onChange={e => setData('tanggal', e.target.value)} className="h-12 text-base pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer" /><Calendar className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" /></div></div>
                                 <div className="space-y-1.5">
                                     <Label>Project / Site <span className="text-destructive">*</span></Label>
                                     <Popover open={siteOpen} onOpenChange={setSiteOpen}>

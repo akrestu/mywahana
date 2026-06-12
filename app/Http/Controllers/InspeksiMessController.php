@@ -152,7 +152,10 @@ class InspeksiMessController extends Controller
 
         $inspeksiMess->load('user:id,name,nik,jabatan,site', 'reInspektor:id,name,nik,jabatan,site', 'peserta:id,name,nik,jabatan,site');
 
-        return Inertia::render('sap/inspeksi-mess/show', ['record' => $inspeksiMess]);
+        return Inertia::render('sap/inspeksi-mess/show', [
+            'record' => $inspeksiMess,
+            'is_ri'  => $user->id === $inspeksiMess->re_inspektor_id,
+        ]);
     }
 
     public function reInspeksi(Request $request, InspeksiMess $inspeksiMess)
