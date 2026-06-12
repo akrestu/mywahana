@@ -67,10 +67,9 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
             return null;
         }
 
-        // Site: validate against dynamic sites table (case-insensitive), preserve original casing from DB
-        $siteRaw = strtolower(trim(
-            $this->resolve($row, ['site_baratamabandhawa', 'site_baratama_bandhawa', 'site']) ?? ''
-        ));
+        // Site: find any column key starting with 'site' (heading slug varies by DB values)
+        $siteKey = collect(array_keys($row))->first(fn($k) => str_starts_with($k, 'site'));
+        $siteRaw = strtolower(trim($siteKey ? ($row[$siteKey] ?? '') : ''));
         $siteMatch = $this->getValidSites()->first(fn($v) => strtolower($v) === $siteRaw);
         $site = $siteMatch ?? null;
 
@@ -108,6 +107,16 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
         $existing = User::where('nik', $nik)->first();
 
         if ($existing) {
+            Log::info('[UsersImport] Checking update for NIK: ' . $nik, [
+                'jabatan_excel'    => $jabatan,
+                'jabatan_db'       => $existing->jabatan,
+                'site_raw'         => $siteRaw,
+                'site_match'       => $siteMatch,
+                'site_db'          => $existing->site,
+                'departemen_excel' => $departemen,
+                'departemen_db'    => $existing->departemen,
+            ]);
+
             $changes = [];
 
             if ($existing->name !== $nama) {
