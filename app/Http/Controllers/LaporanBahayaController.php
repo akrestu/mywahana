@@ -8,8 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Services\BadgeService;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
 use Inertia\Inertia;
 
 class LaporanBahayaController extends Controller
@@ -56,11 +54,7 @@ class LaporanBahayaController extends Controller
             $filename = Str::uuid().'.jpg';
             $relativePath = "laporan-bahaya/{$userId}/{$filename}";
 
-            $manager = new ImageManager(new Driver());
-            $image = $manager->read($request->file('foto')->getRealPath());
-            $image->scaleDown(width: 1200);
-
-            Storage::disk('public')->put($relativePath, $image->toJpeg(quality: 75));
+            Storage::disk('public')->put($relativePath, file_get_contents($request->file('foto')->getRealPath()));
 
             $fotoPath = $relativePath;
         }
