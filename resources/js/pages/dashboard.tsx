@@ -12,7 +12,7 @@ import {
     ShieldCheck,
     X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { KelayakanBadge } from '@/components/status-badge';
 import { RiskBadge } from '@/components/risk-badge';
 import { Badge } from '@/components/ui/badge';
@@ -109,20 +109,71 @@ const motivasiList = [
     'Bahaya yang dilaporkan adalah bahaya yang bisa dicegah.',
 ];
 
-type TimeOfDay = { greeting: string; emoji: string; gradientStyle: string; shimmer: string; clockColor: string };
+const GREETINGS_BY_TIME: Record<'pagi' | 'siang' | 'sore' | 'malam', string[]> = {
+    pagi: [
+        'Selamat Pagi!', 'Good Morning!', 'Bonjour!', 'Buenos Días!',
+        'Guten Morgen!', 'Buongiorno!', 'おはようございます！', '早上好！',
+    ],
+    siang: [
+        'Selamat Siang!', 'Good Afternoon!', 'Bon Après-midi!', 'Buenas Tardes!',
+        'Guten Tag!', 'Buon Pomeriggio!', 'こんにちは！', '下午好！',
+    ],
+    sore: [
+        'Selamat Sore!', 'Good Afternoon!', 'Bonne Soirée!', 'Buenas Tardes!',
+        'Guten Abend!', 'Buona Sera!', 'こんばんは！', '傍晚好！',
+    ],
+    malam: [
+        'Selamat Malam!', 'Good Evening!', 'Bonsoir!', 'Buenas Noches!',
+        'Gute Nacht!', 'Buona Notte!', 'こんばんは！', '晚上好！',
+    ],
+};
+
+function useTypingText(words: string[]) {
+    const [displayed, setDisplayed] = useState('');
+    const [wordIndex, setWordIndex] = useState(0);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+    useEffect(() => {
+        const current = words[wordIndex % words.length];
+        const tick = () => {
+            if (!isDeleting) {
+                const next = current.slice(0, displayed.length + 1);
+                setDisplayed(next);
+                if (next === current) {
+                    timeoutRef.current = setTimeout(() => setIsDeleting(true), 2000);
+                } else {
+                    timeoutRef.current = setTimeout(tick, 65);
+                }
+            } else {
+                const next = current.slice(0, displayed.length - 1);
+                setDisplayed(next);
+                if (next === '') {
+                    setIsDeleting(false);
+                    setWordIndex(i => i + 1);
+                    timeoutRef.current = setTimeout(() => {}, 300);
+                } else {
+                    timeoutRef.current = setTimeout(tick, 35);
+                }
+            }
+        };
+        timeoutRef.current = setTimeout(tick, isDeleting ? 35 : 65);
+        return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+    }, [displayed, isDeleting, wordIndex, words]);
+
+    return displayed;
+}
+
+type TimeOfDay = { greeting: string; emoji: string; gradientStyle: string; shimmer: string; clockColor: string; period: 'pagi' | 'siang' | 'sore' | 'malam' };
 
 function getTimeOfDay(hour: number): TimeOfDay {
-    if (hour >= 4 && hour < 6)
-        return { greeting: 'Selamat Subuh', emoji: '🌄', gradientStyle: 'linear-gradient(135deg, rgba(26,14,60,0.55) 0%, rgba(90,40,120,0.40) 35%, rgba(220,90,40,0.35) 70%, rgba(255,160,60,0.25) 100%)', shimmer: 'bg-[#E85D04]/20', clockColor: 'text-[#C2410C] dark:text-[#FED7AA]' };
-    if (hour >= 6 && hour < 11)
-        return { greeting: 'Selamat Pagi', emoji: '🌅', gradientStyle: 'linear-gradient(135deg, rgba(255,183,77,0.45) 0%, rgba(255,213,120,0.30) 35%, rgba(100,195,230,0.30) 70%, rgba(56,189,248,0.20) 100%)', shimmer: 'bg-[#FFB74D]/25', clockColor: 'text-[#92400E] dark:text-[#FDE68A]' };
+    if (hour >= 4 && hour < 11)
+        return { greeting: 'Selamat Pagi', emoji: '🌅', gradientStyle: 'linear-gradient(135deg, rgba(255,183,77,0.45) 0%, rgba(255,213,120,0.30) 35%, rgba(100,195,230,0.30) 70%, rgba(56,189,248,0.20) 100%)', shimmer: 'bg-[#FFB74D]/25', clockColor: 'text-[#92400E] dark:text-[#FDE68A]', period: 'pagi' };
     if (hour >= 11 && hour < 15)
-        return { greeting: 'Selamat Siang', emoji: '☀️', gradientStyle: 'linear-gradient(135deg, rgba(30,136,229,0.35) 0%, rgba(79,195,247,0.28) 45%, rgba(224,247,254,0.25) 100%)', shimmer: 'bg-[#29B6F6]/20', clockColor: 'text-[#075985] dark:text-[#7DD3FC]' };
-    if (hour >= 15 && hour < 18)
-        return { greeting: 'Selamat Sore', emoji: '🌇', gradientStyle: 'linear-gradient(135deg, rgba(255,111,0,0.45) 0%, rgba(255,160,0,0.35) 35%, rgba(255,213,79,0.25) 65%, rgba(251,140,0,0.15) 100%)', shimmer: 'bg-[#FF6F00]/25', clockColor: 'text-[#9A3412] dark:text-[#FED7AA]' };
-    if (hour >= 18 && hour < 20)
-        return { greeting: 'Selamat Senja', emoji: '🌆', gradientStyle: 'linear-gradient(135deg, rgba(211,47,47,0.45) 0%, rgba(194,24,91,0.35) 35%, rgba(123,31,162,0.35) 65%, rgba(49,27,146,0.25) 100%)', shimmer: 'bg-[#C2185B]/20', clockColor: 'text-[#881337] dark:text-[#FECDD3]' };
-    return { greeting: 'Selamat Malam', emoji: '🌙', gradientStyle: 'linear-gradient(135deg, rgba(10,14,50,0.60) 0%, rgba(26,35,126,0.45) 45%, rgba(49,27,146,0.35) 75%, rgba(13,20,80,0.40) 100%)', shimmer: 'bg-[#3949AB]/20', clockColor: 'text-[#1E3A8A] dark:text-[#BAE6FD]' };
+        return { greeting: 'Selamat Siang', emoji: '☀️', gradientStyle: 'linear-gradient(135deg, rgba(30,136,229,0.35) 0%, rgba(79,195,247,0.28) 45%, rgba(224,247,254,0.25) 100%)', shimmer: 'bg-[#29B6F6]/20', clockColor: 'text-[#075985] dark:text-[#7DD3FC]', period: 'siang' };
+    if (hour >= 15 && hour < 19)
+        return { greeting: 'Selamat Sore', emoji: '🌇', gradientStyle: 'linear-gradient(135deg, rgba(255,111,0,0.45) 0%, rgba(255,160,0,0.35) 35%, rgba(255,213,79,0.25) 65%, rgba(251,140,0,0.15) 100%)', shimmer: 'bg-[#FF6F00]/25', clockColor: 'text-[#9A3412] dark:text-[#FED7AA]', period: 'sore' };
+    return { greeting: 'Selamat Malam', emoji: '🌙', gradientStyle: 'linear-gradient(135deg, rgba(10,14,50,0.60) 0%, rgba(26,35,126,0.45) 45%, rgba(49,27,146,0.35) 75%, rgba(13,20,80,0.40) 100%)', shimmer: 'bg-[#3949AB]/20', clockColor: 'text-[#1E3A8A] dark:text-[#BAE6FD]', period: 'malam' };
 }
 
 function useTimeOfDay() {
@@ -194,6 +245,7 @@ export default function Dashboard({
     const user = auth.user;
     const tod = useTimeOfDay();
     const firstName = user.name?.split(' ')[0] ?? user.name;
+    const typedGreeting = useTypingText(GREETINGS_BY_TIME[tod.period]);
     const [riwayatTab, setRiwayatTab] = useState<'bugar' | 'laporan'>('bugar');
 
     const sudahIsiBugarHariIni = recent_bugar_selamat.length > 0 && isToday(recent_bugar_selamat[0].tanggal);
@@ -248,8 +300,10 @@ export default function Dashboard({
                                 )}
                             </Link>
                             <div className="min-w-0">
-                                <p className="flex items-center gap-1.5 text-xs text-foreground/60">
-                                    <span>{tod.emoji}</span>{tod.greeting}
+                                <p className="flex items-center gap-1 text-xs text-foreground/60 font-medium min-h-[1.25rem]">
+                                    <span>{tod.emoji}</span>
+                                    <span>{typedGreeting}</span>
+                                    <span className="inline-block w-[2px] h-3 bg-foreground/40 animate-pulse rounded-sm" />
                                 </p>
                                 <h1 className="text-xl font-bold">{firstName}!</h1>
                                 <div className="mt-1 flex flex-wrap gap-1">
