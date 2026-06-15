@@ -113,6 +113,10 @@ Route::middleware(['auth'])->group(function () {
         return back();
     })->name('notifications.read');
 
+    // Push Subscriptions (Web Push / VAPID)
+    Route::post('push-subscription', [\App\Http\Controllers\PushSubscriptionController::class, 'store'])->name('push-subscription.store');
+    Route::delete('push-subscription', [\App\Http\Controllers\PushSubscriptionController::class, 'destroy'])->name('push-subscription.destroy');
+
     // Admin
     Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('index');

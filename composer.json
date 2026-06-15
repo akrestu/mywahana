@@ -11,11 +11,16 @@
     "require": {
         "php": "^8.3",
         "barryvdh/laravel-dompdf": "^3.1",
+        "fakerphp/faker": "^1.24",
         "inertiajs/inertia-laravel": "^3.0",
         "intervention/image": "^4.1",
-        "fakerphp/faker": "^1.24",
+        "laravel-notification-channels/webpush": "^11.0",
         "laravel/fortify": "^1.0",
         "laravel/framework": "^12.0",
+        "laravel/tinker": "^3.0",
+        "laravel/wayfinder": "^0.1.14",
+        "maatwebsite/excel": "^3.1",
+        "phpoffice/phpspreadsheet": "^1.30",
         "symfony/clock": "^7.0",
         "symfony/css-selector": "^7.0",
         "symfony/event-dispatcher": "^7.0",
@@ -25,11 +30,7 @@
         "symfony/string": "^7.0",
         "symfony/translation": "^7.0",
         "symfony/type-info": "^7.0",
-        "symfony/yaml": "^7.0",
-        "laravel/tinker": "^3.0",
-        "laravel/wayfinder": "^0.1.14",
-        "maatwebsite/excel": "^3.1",
-        "phpoffice/phpspreadsheet": "^1.30"
+        "symfony/yaml": "^7.0"
     },
     "require-dev": {
         "laravel/boost": "^2.2",

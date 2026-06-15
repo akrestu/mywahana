@@ -4,6 +4,8 @@ namespace App\Notifications;
 
 use App\Models\InspeksiTambang;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushChannel;
+use NotificationChannels\WebPush\WebPushMessage;
 
 class InspeksiTambangDibuat extends Notification
 {
@@ -14,7 +16,7 @@ class InspeksiTambangDibuat extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', WebPushChannel::class];
     }
 
     public function toDatabase(object $notifiable): array
@@ -30,5 +32,18 @@ class InspeksiTambangDibuat extends Notification
             'message' => "Anda ditambahkan sebagai peserta Inspeksi Tambang oleh {$this->record->user->name} pada {$this->record->tanggal->format('d/m/Y')}.",
             'url'     => "/sap/inspeksi-tambang/{$this->record->id}",
         ];
+    }
+
+    public function toWebPush(object $notifiable, object $notification): WebPushMessage
+    {
+        $data = $this->toDatabase($notifiable);
+
+        return (new WebPushMessage)
+            ->title('MyWahana HSE')
+            ->icon('/logo.png')
+            ->body($data['message'])
+            ->action('Buka', 'open')
+            ->data(['url' => $data['url']])
+            ->options(['TTL' => 86400]);
     }
 }

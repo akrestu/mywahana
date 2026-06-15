@@ -54,6 +54,7 @@ class HandleInertiaRequests extends Middleware
                     'url'     => $n->data['url'] ?? null,
                 ])
                 : [],
+            'vapidPublicKey' => config('webpush.vapid.public_key'),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'currentTeam' => fn () => $user?->currentTeam ? $user->toUserTeam($user->currentTeam) : null,
             'teams' => fn () => $user?->toUserTeams(includeCurrent: true) ?? [],
