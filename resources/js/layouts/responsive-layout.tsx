@@ -517,7 +517,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton size="lg" asChild>
-                                <Link href={dashboardUrl} prefetch>
+                                <Link href={dashboardUrl} prefetch="mount">
                                     <AppLogo />
                                 </Link>
                             </SidebarMenuButton>
