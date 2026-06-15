@@ -157,16 +157,19 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
     const [fotoDokumen, setFotoDokumen] = useState<File | null>(null);
     const [fotoKelompokPreview, setFotoKelompokPreview] = useState<string>('');
     const [fotoDokumenPreview, setFotoDokumenPreview] = useState<string>('');
-    const fotoKelompokRef = useRef<HTMLInputElement>(null);
-    const fotoDokumenRef = useRef<HTMLInputElement>(null);
+    const fotoKelompokCameraRef = useRef<HTMLInputElement>(null);
+    const fotoKelompokGalleryRef = useRef<HTMLInputElement>(null);
+    const fotoDokumenCameraRef = useRef<HTMLInputElement>(null);
+    const fotoDokumenGalleryRef = useRef<HTMLInputElement>(null);
     const [photoSheet, setPhotoSheet] = useState<'kelompok' | 'dokumen' | null>(null);
     function choosePhotoSource(source: 'camera' | 'gallery') {
-        const ref = photoSheet === 'kelompok' ? fotoKelompokRef : fotoDokumenRef;
+        const isKelompok = photoSheet === 'kelompok';
         setPhotoSheet(null);
-        if (!ref.current) return;
-        if (source === 'camera') ref.current.setAttribute('capture', 'environment');
-        else ref.current.removeAttribute('capture');
-        setTimeout(() => ref.current?.click(), 300);
+        if (source === 'camera') {
+            (isKelompok ? fotoKelompokCameraRef : fotoDokumenCameraRef).current?.click();
+        } else {
+            (isKelompok ? fotoKelompokGalleryRef : fotoDokumenGalleryRef).current?.click();
+        }
     }
 
     const [supervisorSig, setSupervisorSig] = useState('');
@@ -589,9 +592,13 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
             </Dialog>
 
             {/* Hidden file inputs untuk foto */}
-            <input ref={fotoKelompokRef} type="file" accept="image/*" className="hidden"
+            <input ref={fotoKelompokCameraRef} type="file" accept="image/*" capture="environment" className="hidden"
                 onChange={e => { handleFotoChange('kelompok', e.target.files?.[0] ?? null); e.target.value = ''; }} />
-            <input ref={fotoDokumenRef} type="file" accept="image/*" className="hidden"
+            <input ref={fotoKelompokGalleryRef} type="file" accept="image/*" className="hidden"
+                onChange={e => { handleFotoChange('kelompok', e.target.files?.[0] ?? null); e.target.value = ''; }} />
+            <input ref={fotoDokumenCameraRef} type="file" accept="image/*" capture="environment" className="hidden"
+                onChange={e => { handleFotoChange('dokumen', e.target.files?.[0] ?? null); e.target.value = ''; }} />
+            <input ref={fotoDokumenGalleryRef} type="file" accept="image/*" className="hidden"
                 onChange={e => { handleFotoChange('dokumen', e.target.files?.[0] ?? null); e.target.value = ''; }} />
 
             {/* Sheet pilihan sumber foto */}

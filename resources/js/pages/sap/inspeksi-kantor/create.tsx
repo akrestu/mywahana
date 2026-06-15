@@ -168,16 +168,15 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
         const compressed = await compressImage(file);
         setFotoFiles(prev => ({ ...prev, [key]: compressed }));
     };
-    const fotoRef = useRef<HTMLInputElement>(null);
+    const fotoCameraRef = useRef<HTMLInputElement>(null);
+    const fotoGalleryRef = useRef<HTMLInputElement>(null);
     const [photoSheet, setPhotoSheet] = useState(false);
     const [pendingFotoKey, setPendingFotoKey] = useState<string | null>(null);
     function openFotoPicker(key: string) { setPendingFotoKey(key); setPhotoSheet(true); }
     function chooseFotoSource(source: 'camera' | 'gallery') {
         setPhotoSheet(false);
-        if (!fotoRef.current) return;
-        if (source === 'camera') fotoRef.current.setAttribute('capture', 'environment');
-        else fotoRef.current.removeAttribute('capture');
-        setTimeout(() => fotoRef.current?.click(), 300);
+        if (source === 'camera') fotoCameraRef.current?.click();
+        else fotoGalleryRef.current?.click();
     }
 
     const initialScores = Object.fromEntries(ALL_SCORE_KEYS.map(k => [k, ''])) as { [K in ScoreKey]: string };
@@ -501,7 +500,12 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
                 )}
             </form>
 
-            <input ref={fotoRef} type="file" accept="image/*" className="hidden" onChange={e => {
+            <input ref={fotoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => {
+                const f = e.target.files?.[0];
+                if (f && pendingFotoKey) { handleFotoChange(pendingFotoKey, f); setPendingFotoKey(null); }
+                e.target.value = '';
+            }} />
+            <input ref={fotoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => {
                 const f = e.target.files?.[0];
                 if (f && pendingFotoKey) { handleFotoChange(pendingFotoKey, f); setPendingFotoKey(null); }
                 e.target.value = '';
