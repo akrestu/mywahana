@@ -2,12 +2,14 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     AlertTriangle,
     BookOpen,
+    BriefcaseBusiness,
     ChevronRight,
     ClipboardCheck,
     Clock,
     Eye,
     Flame,
     HardHat,
+    MapPin,
     Plus,
     ShieldCheck,
     X,
@@ -306,9 +308,35 @@ export default function Dashboard({
                                     <span className="inline-block w-[2px] h-3 bg-foreground/40 animate-pulse rounded-sm" />
                                 </p>
                                 <h1 className="text-xl font-bold">{firstName}!</h1>
-                                <div className="mt-1 flex flex-wrap gap-1">
-                                    {user.jabatan && <Badge variant="secondary" className="text-[11px] px-2 py-0">{user.jabatan}</Badge>}
-                                    {user.site && <Badge variant="outline" className="text-[11px] px-2 py-0 capitalize">Site {user.site}</Badge>}
+                                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                    {user.jabatan && (
+                                        <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+                                            style={{
+                                                background: 'linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 100%)',
+                                                backdropFilter: 'blur(12px) saturate(1.8)',
+                                                WebkitBackdropFilter: 'blur(12px) saturate(1.8)',
+                                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.12)',
+                                                border: '1px solid rgba(255,255,255,0.5)',
+                                                color: 'rgba(0,0,0,0.65)',
+                                            }}>
+                                            <BriefcaseBusiness className="h-3 w-3 shrink-0 opacity-70" />
+                                            {user.jabatan}
+                                        </span>
+                                    )}
+                                    {user.site && (
+                                        <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                                            style={{
+                                                background: 'linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.20) 100%)',
+                                                backdropFilter: 'blur(12px) saturate(1.8)',
+                                                WebkitBackdropFilter: 'blur(12px) saturate(1.8)',
+                                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.10)',
+                                                border: '1px solid rgba(255,255,255,0.6)',
+                                                color: 'rgba(0,0,0,0.70)',
+                                            }}>
+                                            <MapPin className="h-3 w-3 shrink-0 opacity-70" />
+                                            Site {user.site.toUpperCase()}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
