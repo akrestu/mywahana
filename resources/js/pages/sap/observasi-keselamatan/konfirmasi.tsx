@@ -150,7 +150,7 @@ function SignaturePadCapture({ onCapture }: { onCapture: (data: string | null) =
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d')!;
-        ctx.strokeStyle = '#0f172a';
+        ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#0f172a';
         ctx.lineWidth = 3;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';

@@ -70,7 +70,7 @@ function startDraw(e: MouseEvent | TouchEvent) {
         const canvas = canvasRef.current!;
         const ctx = canvas.getContext('2d')!;
         const pos = getPosNative(e);
-        ctx.strokeStyle = '#1e293b';
+        ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#1e293b';
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
         ctx.beginPath();
@@ -127,7 +127,7 @@ function startDraw(e: MouseEvent | TouchEvent) {
                 ref={canvasRef}
                 width={320}
                 height={160}
-                className="border rounded-lg bg-white touch-none w-full"
+                className="border rounded-lg bg-white dark:bg-muted/20 touch-none w-full"
             />
             <div className="flex gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={clear} className="flex-1">Hapus</Button>
@@ -166,7 +166,7 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
         if (!ref.current) return;
         if (source === 'camera') ref.current.setAttribute('capture', 'environment');
         else ref.current.removeAttribute('capture');
-        setTimeout(() => ref.current?.click(), 50);
+        setTimeout(() => ref.current?.click(), 300);
     }
 
     const [supervisorSig, setSupervisorSig] = useState('');

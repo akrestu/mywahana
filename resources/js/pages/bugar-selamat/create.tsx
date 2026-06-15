@@ -119,7 +119,7 @@ function SignaturePad({ onChange }: { onChange: (filled: boolean) => void }) {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d')!;
-        ctx.strokeStyle = '#0f172a';
+        ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#0f172a';
         ctx.lineWidth = 3;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -433,9 +433,9 @@ export default function BugarSelamatCreate({ user }: Props) {
                             </div>
                             <div className="grid grid-cols-3 gap-3">
                                 {[
-                                    { value: '<5',  label: '< 5 jam', sub: 'Kurang',  selCls: 'border-red-400 bg-red-50 text-red-700 dark:bg-red-950/40 shadow-sm' },
-                                    { value: '5-6', label: '5–6 jam', sub: 'Cukup',   selCls: 'border-yellow-400 bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40 shadow-sm' },
-                                    { value: '>6',  label: '> 6 jam', sub: 'Optimal', selCls: 'border-green-400 bg-green-50 text-green-700 dark:bg-green-950/40 shadow-sm' },
+                                    { value: '<5',  label: '< 5 jam', sub: 'Kurang',  selCls: 'border-red-400 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 shadow-sm' },
+                                    { value: '5-6', label: '5–6 jam', sub: 'Cukup',   selCls: 'border-yellow-400 bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300 shadow-sm' },
+                                    { value: '>6',  label: '> 6 jam', sub: 'Optimal', selCls: 'border-green-400 bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300 shadow-sm' },
                                 ].map(({ value, label, sub, selCls }) => {
                                     const sel = data.jam_tidur === value;
                                     return (
@@ -487,8 +487,8 @@ export default function BugarSelamatCreate({ user }: Props) {
                                                     onClick={() => setData(key, v)}
                                                     className={cn(
                                                         'flex h-14 items-center justify-center gap-2.5 rounded-xl border-2 text-base font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                                        sel && isDanger  && 'border-red-400 bg-red-100 text-red-700 dark:bg-red-950/40',
-                                                        sel && !isDanger && 'border-green-400 bg-green-100 text-green-700 dark:bg-green-950/40',
+                                                        sel && isDanger  && 'border-red-400 bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300',
+                                                        sel && !isDanger && 'border-green-400 bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300',
                                                         !sel && 'border-border bg-background hover:border-primary/30 hover:bg-muted/40',
                                                     )}
                                                 >

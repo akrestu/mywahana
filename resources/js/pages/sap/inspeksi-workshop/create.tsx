@@ -125,7 +125,7 @@ function SignaturePad({ onCapture }: { onCapture: (d: string | null) => void }) 
     const pos = (e: MouseEvent | Touch, c: HTMLCanvasElement) => { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) }; };
     useEffect(() => {
         const c = ref.current; if (!c) return;
-        const ctx = c.getContext('2d')!; ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        const ctx = c.getContext('2d')!; ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#0f172a'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         const down = (e: MouseEvent | TouchEvent) => { e.preventDefault(); drawing.current = true; const p = pos('touches' in e ? e.touches[0] : e, c); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
         const move = (e: MouseEvent | TouchEvent) => { if (!drawing.current) return; e.preventDefault(); const p = pos('touches' in e ? e.touches[0] : e, c); ctx.lineTo(p.x, p.y); ctx.stroke(); setEmpty(false); onCapture(c.toDataURL()); };
         const up = () => { drawing.current = false; };
@@ -157,7 +157,7 @@ export default function InspeksiWorkshopCreate({ user, staffUsers, sites }: Prop
         if (!fotoRef.current) return;
         if (source === 'camera') fotoRef.current.setAttribute('capture', 'environment');
         else fotoRef.current.removeAttribute('capture');
-        setTimeout(() => fotoRef.current?.click(), 50);
+        setTimeout(() => fotoRef.current?.click(), 300);
     }
     const handleFotoChange = async (key: string, file: File) => {
         const compressed = await compressImage(file);

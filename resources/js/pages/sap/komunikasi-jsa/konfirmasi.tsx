@@ -48,7 +48,7 @@ function SignaturePad({ onSave, onClear }: { onSave: (dataUrl: string) => void; 
         const canvas = canvasRef.current!;
         const ctx = canvas.getContext('2d')!;
         const pos = getPos(e);
-        ctx.strokeStyle = '#1e293b';
+        ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#1e293b';
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
         ctx.beginPath();
@@ -64,7 +64,7 @@ function SignaturePad({ onSave, onClear }: { onSave: (dataUrl: string) => void; 
         const canvas = canvasRef.current;
         if (!canvas) return;
         const onTouchStart = (e: TouchEvent) => { e.preventDefault(); drawing.current = true; lastPos.current = getTouchPos(e, canvas); };
-        const onTouchMove = (e: TouchEvent) => { e.preventDefault(); if (!drawing.current) return; const ctx = canvas.getContext('2d')!; const pos = getTouchPos(e, canvas); ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(lastPos.current!.x, lastPos.current!.y); ctx.lineTo(pos.x, pos.y); ctx.stroke(); lastPos.current = pos; };
+        const onTouchMove = (e: TouchEvent) => { e.preventDefault(); if (!drawing.current) return; const ctx = canvas.getContext('2d')!; const pos = getTouchPos(e, canvas); ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#1e293b'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(lastPos.current!.x, lastPos.current!.y); ctx.lineTo(pos.x, pos.y); ctx.stroke(); lastPos.current = pos; };
         const onTouchEnd = () => stopDraw();
         canvas.addEventListener('touchstart', onTouchStart, { passive: false });
         canvas.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -90,7 +90,7 @@ function SignaturePad({ onSave, onClear }: { onSave: (dataUrl: string) => void; 
                 ref={canvasRef}
                 width={480}
                 height={160}
-                className="border-2 rounded-xl bg-white touch-none w-full"
+                className="border-2 rounded-xl bg-white dark:bg-muted/20 touch-none w-full"
                 onMouseDown={startDraw}
                 onMouseMove={draw}
                 onMouseUp={stopDraw}
