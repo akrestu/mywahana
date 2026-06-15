@@ -2,9 +2,11 @@ import { Head, Link, router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Download, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { KelayakanBadge } from '@/components/status-badge';
+import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog, DialogContent, DialogDescription,
     DialogFooter, DialogHeader, DialogTitle,
@@ -371,6 +373,31 @@ function DaftarView({ records, filters, summary, sites }: Extract<Props, { view:
     const [search, setSearch] = useState(filters.search ?? '');
     const [toDelete, setToDelete] = useState<BugarRecord | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [batchDeleting, setBatchDeleting] = useState(false);
+    const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+    const toggleSelectAll = () => {
+        if (selectedIds.size === records.data.length) setSelectedIds(new Set());
+        else setSelectedIds(new Set(records.data.map(r => r.id)));
+    };
+    const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+
+    const handleBatchDelete = () => {
+        setBatchDeleting(true);
+        router.delete('/admin/bugar-selamat/batch', {
+            data: { ids: Array.from(selectedIds) },
+            onFinish: () => { setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); },
+        });
+    };
 
     const PERIODE_OPTIONS = [
         { value: 'hari_ini',   label: 'Hari Ini' },
@@ -426,12 +453,24 @@ function DaftarView({ records, filters, summary, sites }: Extract<Props, { view:
     return (
         <>
             <div className="space-y-4">
-                <div className="flex justify-end">
-                    <a href={exportUrl}>
-                        <Button size="sm" variant="outline" className="gap-1">
-                            <Download size={14} /> Export Excel
-                        </Button>
-                    </a>
+                <div className="flex justify-end gap-2">
+                    {selectMode ? (
+                        <>
+                            <Button size="sm" variant="outline" onClick={toggleSelectAll}>
+                                {selectedIds.size === records.data.length ? 'Batal Semua' : 'Pilih Semua'}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={exitSelectMode}>Selesai</Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button size="sm" variant="outline" onClick={() => setSelectMode(true)}>Pilih</Button>
+                            <a href={exportUrl}>
+                                <Button size="sm" variant="outline" className="gap-1">
+                                    <Download size={14} /> Export Excel
+                                </Button>
+                            </a>
+                        </>
+                    )}
                 </div>
 
                 {/* Banner Ringkasan */}
@@ -516,6 +555,13 @@ function DaftarView({ records, filters, summary, sites }: Extract<Props, { view:
                             <Card key={record.id} className={cardBorder[record.status_kelayakan]}>
                                 <CardContent className="py-3">
                                     <div className="flex items-start justify-between gap-2">
+                                        {selectMode && (
+                                            <Checkbox
+                                                checked={selectedIds.has(record.id)}
+                                                onCheckedChange={() => toggleSelect(record.id)}
+                                                className="mt-1 shrink-0"
+                                            />
+                                        )}
                                         <div className="min-w-0 flex-1">
                                             <p className="truncate font-semibold">{record.user.name}</p>
                                             <p className="text-sm text-muted-foreground">
@@ -530,18 +576,20 @@ function DaftarView({ records, filters, summary, sites }: Extract<Props, { view:
                                                 <KelayakanBadge status={record.status_kelayakan} />
                                             </div>
                                         </div>
-                                        <div className="flex shrink-0 items-center gap-1">
-                                            <Link href={`/bugar-selamat/${record.id}`}>
-                                                <Button size="sm" variant="outline" className="h-9">Detail</Button>
-                                            </Link>
-                                            <Button
-                                                size="sm" variant="ghost"
-                                                className="h-9 w-9 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                onClick={() => setToDelete(record)}
-                                            >
-                                                <Trash2 size={15} />
-                                            </Button>
-                                        </div>
+                                        {!selectMode && (
+                                            <div className="flex shrink-0 items-center gap-1">
+                                                <Link href={`/bugar-selamat/${record.id}`}>
+                                                    <Button size="sm" variant="outline" className="h-9">Detail</Button>
+                                                </Link>
+                                                <Button
+                                                    size="sm" variant="ghost"
+                                                    className="h-9 w-9 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                    onClick={() => setToDelete(record)}
+                                                >
+                                                    <Trash2 size={15} />
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -579,6 +627,31 @@ function DaftarView({ records, filters, summary, sites }: Extract<Props, { view:
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <Dialog open={showBatchConfirm} onOpenChange={(open) => !open && setShowBatchConfirm(false)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Hapus {selectedIds.size} Data Bugar Selamat</DialogTitle>
+                        <DialogDescription>
+                            Yakin ingin menghapus <strong>{selectedIds.size}</strong> data bugar selamat yang dipilih?
+                            Tindakan ini tidak dapat dibatalkan.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setShowBatchConfirm(false)} disabled={batchDeleting}>Batal</Button>
+                        <Button variant="destructive" onClick={handleBatchDelete} disabled={batchDeleting}>
+                            {batchDeleting ? 'Menghapus...' : 'Ya, Hapus Semua'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <BatchDeleteBar
+                count={selectedIds.size}
+                onDelete={() => setShowBatchConfirm(true)}
+                onCancel={exitSelectMode}
+                deleting={batchDeleting}
+            />
         </>
     );
 }

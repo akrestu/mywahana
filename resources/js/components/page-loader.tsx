@@ -3,7 +3,6 @@ import { router } from '@inertiajs/react';
 
 export function PageLoader() {
     const [visible, setVisible] = useState(false);
-    const [progress, setProgress] = useState(0);
     const [leaving, setLeaving] = useState(false);
     const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const animRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -17,27 +16,17 @@ export function PageLoader() {
         const offStart = router.on('start', () => {
             clearAll();
             setLeaving(false);
-            setProgress(0);
-            // delay 150ms sebelum muncul agar fast navigation tidak flicker
             timeout.current = setTimeout(() => {
                 setVisible(true);
-                setProgress(30);
             }, 150);
         });
 
-        const offProgress = router.on('progress', (e) => {
-            const pct = e.detail.progress?.percentage;
-            if (pct) setProgress(Math.min((pct / 100) * 90, 90));
-        });
-
-        const offFinish = router.on('finish', (e) => {
+        const offFinish = router.on('finish', () => {
             clearAll();
-            setProgress(100);
             animRef.current = setTimeout(() => {
                 setLeaving(true);
                 animRef.current = setTimeout(() => {
                     setVisible(false);
-                    setProgress(0);
                     setLeaving(false);
                 }, 300);
             }, 200);
@@ -46,7 +35,6 @@ export function PageLoader() {
         return () => {
             clearAll();
             offStart();
-            offProgress();
             offFinish();
         };
     }, []);
@@ -55,27 +43,28 @@ export function PageLoader() {
 
     return (
         <>
-            {/* Top progress bar */}
+            <style>{`
+                .page-loader-spinner {
+                    width: 40px;
+                    height: 40px;
+                    --c: no-repeat linear-gradient(orange 0 0);
+                    background: var(--c), var(--c), var(--c), var(--c);
+                    background-size: 21px 21px;
+                    animation: page-loader-l5 1.5s infinite cubic-bezier(0.3,1,0,1);
+                }
+                @keyframes page-loader-l5 {
+                    0%   { background-position: 0 0, 100% 0, 100% 100%, 0 100%; }
+                    33%  { background-position: 0 0, 100% 0, 100% 100%, 0 100%; width: 60px; height: 60px; }
+                    66%  { background-position: 100% 0, 100% 100%, 0 100%, 0 0; width: 60px; height: 60px; }
+                    100% { background-position: 100% 0, 100% 100%, 0 100%, 0 0; }
+                }
+            `}</style>
             <div
-                className="fixed top-0 left-0 right-0 z-[9999] h-[3px] bg-primary/20 pointer-events-none"
-            >
-                <div
-                    className="h-full bg-primary transition-all ease-out"
-                    style={{
-                        width: `${progress}%`,
-                        transitionDuration: progress === 100 ? '200ms' : '600ms',
-                        opacity: leaving ? 0 : 1,
-                        transition: leaving
-                            ? 'opacity 300ms ease'
-                            : `width ${progress === 100 ? '200ms' : '600ms'} ease-out`,
-                    }}
-                />
-            </div>
-            {/* Subtle page dim overlay */}
-            <div
-                className="fixed inset-0 z-[9998] bg-background/30 pointer-events-none transition-opacity duration-300"
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-white dark:bg-black pointer-events-none transition-opacity duration-300"
                 style={{ opacity: leaving ? 0 : 1 }}
-            />
+            >
+                <div className="page-loader-spinner" />
+            </div>
         </>
     );
 }

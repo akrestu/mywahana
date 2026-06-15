@@ -1250,6 +1250,108 @@ class AdminController extends Controller
         return back();
     }
 
+    public function batchDestroyBugarSelamat(Request $request)
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        BugarSelamat::whereIn('id', $ids)->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        return back();
+    }
+
+    public function batchDestroyLaporanBahaya(Request $request)
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        LaporanBahaya::whereIn('id', $ids)->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        return back();
+    }
+
+    public function batchDestroyObservasiKeselamatan(Request $request)
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        ObservasiKeselamatan::whereIn('id', $ids)->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        return back();
+    }
+
+    public function batchDestroyKomunikasiJsa(Request $request)
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        KomunikasiJsa::whereIn('id', $ids)->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        return back();
+    }
+
+    public function batchDestroyInspeksiKantor(Request $request)
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        InspeksiKantor::whereIn('id', $ids)->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        return back();
+    }
+
+    public function batchDestroyInspeksiTambang(Request $request)
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        InspeksiTambang::whereIn('id', $ids)->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        return back();
+    }
+
+    public function batchDestroyInspeksiWorkshop(Request $request)
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        InspeksiWorkshop::whereIn('id', $ids)->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        return back();
+    }
+
+    public function batchDestroyInspeksiMess(Request $request)
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        InspeksiMess::whereIn('id', $ids)->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        return back();
+    }
+
+    public function destroyAssessmentSession(AssessmentSession $session)
+    {
+        AssessmentSessionQuestion::where('assessment_session_id', $session->id)->delete();
+        InductionAttendance::where('type', 'safety')->where('assessment_session_id', $session->id)->delete();
+        $session->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Data assessment berhasil dihapus.']);
+        return back();
+    }
+
+    public function destroyHrAssessmentSession(HrAssessmentSession $session)
+    {
+        HrAssessmentSessionQuestion::where('hr_assessment_session_id', $session->id)->delete();
+        InductionAttendance::where('type', 'hr')->where('assessment_session_id', $session->id)->delete();
+        $session->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Data HR assessment berhasil dihapus.']);
+        return back();
+    }
+
+    public function batchDestroyAssessmentSession(Request $request)
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        AssessmentSessionQuestion::whereIn('assessment_session_id', $ids)->delete();
+        InductionAttendance::where('type', 'safety')->whereIn('assessment_session_id', $ids)->delete();
+        AssessmentSession::whereIn('id', $ids)->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data assessment berhasil dihapus.']);
+        return back();
+    }
+
+    public function batchDestroyHrAssessmentSession(Request $request)
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        HrAssessmentSessionQuestion::whereIn('hr_assessment_session_id', $ids)->delete();
+        InductionAttendance::where('type', 'hr')->whereIn('assessment_session_id', $ids)->delete();
+        HrAssessmentSession::whereIn('id', $ids)->delete();
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data HR assessment berhasil dihapus.']);
+        return back();
+    }
+
     private function buildLeaderboard(Carbon $now): array
     {
         $sites  = Site::pluck('value')->all();

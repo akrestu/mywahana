@@ -3,8 +3,10 @@ import { CheckCircle, Download, Search, Trash2, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 import { RiskBadge } from '@/components/risk-badge';
 import { TindakanBadge } from '@/components/status-badge';
+import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog, DialogContent, DialogDescription,
     DialogFooter, DialogHeader, DialogTitle,
@@ -52,6 +54,31 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites }:
     const [toDelete, setToDelete] = useState<LaporanRecord | null>(null);
     const [deleting, setDeleting] = useState(false);
     const [updatingId, setUpdatingId] = useState<number | null>(null);
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [batchDeleting, setBatchDeleting] = useState(false);
+    const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+    const toggleSelectAll = () => {
+        if (selectedIds.size === records.data.length) setSelectedIds(new Set());
+        else setSelectedIds(new Set(records.data.map(r => r.id)));
+    };
+    const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+
+    const handleBatchDelete = () => {
+        setBatchDeleting(true);
+        router.delete('/admin/laporan-bahaya/batch', {
+            data: { ids: Array.from(selectedIds) },
+            onFinish: () => { setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); },
+        });
+    };
 
     const applyFilters = (newFilters: Partial<Filters>) => {
         const merged = { ...filters, ...newFilters, search };
@@ -107,11 +134,25 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites }:
                         <h2 className="text-lg font-bold">Laporan Bahaya</h2>
                         <p className="text-sm text-muted-foreground">Semua laporan bahaya karyawan</p>
                     </div>
-                    <a href={exportUrl}>
-                        <Button size="sm" variant="outline" className="gap-1">
-                            <Download size={14} /> Export Excel
-                        </Button>
-                    </a>
+                    <div className="flex gap-2">
+                        {selectMode ? (
+                            <>
+                                <Button size="sm" variant="outline" onClick={toggleSelectAll}>
+                                    {selectedIds.size === records.data.length ? 'Batal Semua' : 'Pilih Semua'}
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={exitSelectMode}>Selesai</Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button size="sm" variant="outline" onClick={() => setSelectMode(true)}>Pilih</Button>
+                                <a href={exportUrl}>
+                                    <Button size="sm" variant="outline" className="gap-1">
+                                        <Download size={14} /> Export Excel
+                                    </Button>
+                                </a>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 {/* Banner Ringkasan */}
@@ -209,6 +250,13 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites }:
                             <Card key={record.id} className={cardBorder[record.tingkat_risiko]}>
                                 <CardContent className="space-y-3 py-3">
                                     <div className="flex items-start justify-between gap-2">
+                                        {selectMode && (
+                                            <Checkbox
+                                                checked={selectedIds.has(record.id)}
+                                                onCheckedChange={() => toggleSelect(record.id)}
+                                                className="mt-1 shrink-0"
+                                            />
+                                        )}
                                         <div className="min-w-0 flex-1">
                                             <p className="truncate font-semibold">{record.user.name}</p>
                                             <p className="text-sm text-muted-foreground">
@@ -221,14 +269,16 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites }:
                                         </div>
                                         <div className="flex shrink-0 items-center gap-1">
                                             <RiskBadge level={record.tingkat_risiko} />
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-9 w-9 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                onClick={() => setToDelete(record)}
-                                            >
-                                                <Trash2 size={15} />
-                                            </Button>
+                                            {!selectMode && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="h-9 w-9 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                    onClick={() => setToDelete(record)}
+                                                >
+                                                    <Trash2 size={15} />
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between">
@@ -311,6 +361,32 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites }:
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Dialog konfirmasi batch hapus */}
+            <Dialog open={showBatchConfirm} onOpenChange={(open) => !open && setShowBatchConfirm(false)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Hapus {selectedIds.size} Laporan Bahaya</DialogTitle>
+                        <DialogDescription>
+                            Yakin ingin menghapus <strong>{selectedIds.size}</strong> data laporan bahaya yang dipilih?
+                            Tindakan ini tidak dapat dibatalkan.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setShowBatchConfirm(false)} disabled={batchDeleting}>Batal</Button>
+                        <Button variant="destructive" onClick={handleBatchDelete} disabled={batchDeleting}>
+                            {batchDeleting ? 'Menghapus...' : 'Ya, Hapus Semua'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <BatchDeleteBar
+                count={selectedIds.size}
+                onDelete={() => setShowBatchConfirm(true)}
+                onCancel={exitSelectMode}
+                deleting={batchDeleting}
+            />
         </>
     );
 }
