@@ -21,12 +21,6 @@ class AssessmentController extends Controller
     {
         $user = Auth::user();
 
-        AssessmentSession::where('user_id', $user->id)
-            ->where('status', 'in_progress')
-            ->where('started_at', '<=', now()->subSeconds(AssessmentSession::DURATION_SECONDS))
-            ->get()
-            ->each->autoExpire();
-
         $sessions = AssessmentSession::where('user_id', $user->id)
             ->latest()
             ->paginate(10);
@@ -47,6 +41,18 @@ class AssessmentController extends Controller
         $user = Auth::user();
 
         abort_unless((bool) $user->departemen, 403, 'Departemen belum diisi.');
+
+        $todaySession = AssessmentSession::where('user_id', $user->id)
+            ->whereDate('started_at', today())
+            ->first();
+
+        if ($todaySession) {
+            if ($todaySession->status === 'in_progress' && ! $todaySession->isExpired()) {
+                return redirect()->route('assessment.quiz', $todaySession);
+            }
+            Inertia::flash('toast', ['type' => 'warning', 'message' => 'Kamu sudah mengikuti assessment hari ini.']);
+            return redirect()->route('assessment.index');
+        }
 
         $tags = $this->resolveTag($user);
         $needed = $this->resolveQuestionCount($user);
