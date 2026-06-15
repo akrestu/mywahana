@@ -148,16 +148,15 @@ export default function InspeksiWorkshopCreate({ user, staffUsers, sites }: Prop
     const [pesertaOpen, setPesertaOpen] = useState(false);
     const [siteOpen, setSiteOpen] = useState(false);
     const [fotoFiles, setFotoFiles] = useState<Record<string, File>>({});
-    const fotoRef = useRef<HTMLInputElement>(null);
+    const fotoCameraRef = useRef<HTMLInputElement>(null);
+    const fotoGalleryRef = useRef<HTMLInputElement>(null);
     const [photoSheet, setPhotoSheet] = useState(false);
     const [pendingFotoKey, setPendingFotoKey] = useState<string | null>(null);
     function openFotoPicker(key: string) { setPendingFotoKey(key); setPhotoSheet(true); }
     function chooseFotoSource(source: 'camera' | 'gallery') {
         setPhotoSheet(false);
-        if (!fotoRef.current) return;
-        if (source === 'camera') fotoRef.current.setAttribute('capture', 'environment');
-        else fotoRef.current.removeAttribute('capture');
-        setTimeout(() => fotoRef.current?.click(), 300);
+        if (source === 'camera') fotoCameraRef.current?.click();
+        else fotoGalleryRef.current?.click();
     }
     const handleFotoChange = async (key: string, file: File) => {
         const compressed = await compressImage(file);
@@ -315,7 +314,12 @@ export default function InspeksiWorkshopCreate({ user, staffUsers, sites }: Prop
                 )}
             </form>
 
-            <input ref={fotoRef} type="file" accept="image/*" className="hidden" onChange={e => {
+            <input ref={fotoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => {
+                const f = e.target.files?.[0];
+                if (f && pendingFotoKey) { handleFotoChange(pendingFotoKey, f); setPendingFotoKey(null); }
+                e.target.value = '';
+            }} />
+            <input ref={fotoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => {
                 const f = e.target.files?.[0];
                 if (f && pendingFotoKey) { handleFotoChange(pendingFotoKey, f); setPendingFotoKey(null); }
                 e.target.value = '';

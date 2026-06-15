@@ -95,7 +95,8 @@ const STEPS = [
 
 export default function LaporanBahayaCreate({ user }: Props) {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
-    const fileRef = useRef<HTMLInputElement>(null);
+    const cameraRef = useRef<HTMLInputElement>(null);
+    const galleryRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState(0);
     const [photoSheet, setPhotoSheet] = useState(false);
@@ -104,13 +105,8 @@ export default function LaporanBahayaCreate({ user }: Props) {
 
     function openPhotoSource(source: 'camera' | 'gallery') {
         setPhotoSheet(false);
-        if (!fileRef.current) return;
-        if (source === 'camera') {
-            fileRef.current.setAttribute('capture', 'environment');
-        } else {
-            fileRef.current.removeAttribute('capture');
-        }
-        setTimeout(() => fileRef.current?.click(), 300);
+        if (source === 'camera') cameraRef.current?.click();
+        else galleryRef.current?.click();
     }
 
     const { data, setData, post, processing, errors } = useForm({
@@ -452,7 +448,8 @@ export default function LaporanBahayaCreate({ user }: Props) {
                                     </div>
                                 </button>
                             )}
-                            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFoto} />
+                            <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFoto} />
+                            <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleFoto} />
                             {errors.foto && <p className="text-sm text-destructive">{errors.foto}</p>}
                         </div>
 
