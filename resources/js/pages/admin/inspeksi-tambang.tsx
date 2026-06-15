@@ -1,9 +1,11 @@
-﻿import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Mountain, Download, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog, DialogContent, DialogDescription,
     DialogFooter, DialogHeader, DialogTitle,
@@ -59,6 +61,31 @@ export default function AdminInspeksiTambang({ records, filters, summary, sites 
     const [search, setSearch] = useState(filters.search ?? '');
     const [toDelete, setToDelete] = useState<InspeksiRecord | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [batchDeleting, setBatchDeleting] = useState(false);
+    const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+    const toggleSelectAll = () => {
+        if (selectedIds.size === records.data.length) setSelectedIds(new Set());
+        else setSelectedIds(new Set(records.data.map(r => r.id)));
+    };
+    const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+
+    const handleBatchDelete = () => {
+        setBatchDeleting(true);
+        router.delete('/admin/inspeksi-tambang/batch', {
+            data: { ids: Array.from(selectedIds) },
+            onFinish: () => { setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); },
+        });
+    };
 
     const applyFilters = (newFilters: Partial<Filters>) => {
         const merged = { ...filters, ...newFilters, search };
@@ -94,11 +121,25 @@ export default function AdminInspeksiTambang({ records, filters, summary, sites 
                         <h2 className="text-xl font-bold">Inspeksi Tambang</h2>
                         <p className="text-sm text-muted-foreground">Monitoring seluruh site</p>
                     </div>
-                    <a href={exportUrl} download>
-                        <Button variant="outline" className="gap-2 h-10">
-                            <Download size={16} /> Export
-                        </Button>
-                    </a>
+                    <div className="flex gap-2">
+                        {selectMode ? (
+                            <>
+                                <Button variant="outline" size="sm" onClick={toggleSelectAll}>
+                                    {selectedIds.size === records.data.length ? 'Batal Semua' : 'Pilih Semua'}
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={exitSelectMode}>Selesai</Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button variant="outline" size="sm" onClick={() => setSelectMode(true)}>Pilih</Button>
+                                <a href={exportUrl} download>
+                                    <Button variant="outline" className="gap-2 h-9">
+                                        <Download size={16} /> Export
+                                    </Button>
+                                </a>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-4 gap-3">
@@ -170,6 +211,13 @@ export default function AdminInspeksiTambang({ records, filters, summary, sites 
                                     record.status === 'ditolak'   ? 'border-l-4 border-l-red-500'    :
                                                                     'border-l-4 border-l-yellow-500',
                                 )}>
+                                    {selectMode && (
+                                        <Checkbox
+                                            checked={selectedIds.has(record.id)}
+                                            onCheckedChange={() => toggleSelect(record.id)}
+                                            className="shrink-0"
+                                        />
+                                    )}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
@@ -191,14 +239,16 @@ export default function AdminInspeksiTambang({ records, filters, summary, sites 
                                             </p>
                                         </div>
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-9 w-9 text-destructive hover:text-destructive shrink-0"
-                                        onClick={() => setToDelete(record)}
-                                    >
-                                        <Trash2 size={16} />
-                                    </Button>
+                                    {!selectMode && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-9 w-9 text-destructive hover:text-destructive shrink-0"
+                                            onClick={() => setToDelete(record)}
+                                        >
+                                            <Trash2 size={16} />
+                                        </Button>
+                                    )}
                                 </div>
                                 {idx < records.data.length - 1 && <Separator />}
                             </div>
@@ -209,10 +259,10 @@ export default function AdminInspeksiTambang({ records, filters, summary, sites 
                 {(records.prev_page_url || records.next_page_url) && (
                     <div className="flex justify-between gap-3">
                         {records.prev_page_url
-                            ? <Link href={records.prev_page_url}><Button variant="outline" className="h-10 px-5">â† Sebelumnya</Button></Link>
+                            ? <Link href={records.prev_page_url}><Button variant="outline" className="h-10 px-5">← Sebelumnya</Button></Link>
                             : <div />}
                         {records.next_page_url && (
-                            <Link href={records.next_page_url}><Button variant="outline" className="h-10 px-5">Berikutnya â†’</Button></Link>
+                            <Link href={records.next_page_url}><Button variant="outline" className="h-10 px-5">Berikutnya →</Button></Link>
                         )}
                     </div>
                 )}
@@ -236,8 +286,31 @@ export default function AdminInspeksiTambang({ records, filters, summary, sites 
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <Dialog open={showBatchConfirm} onOpenChange={(open) => !open && setShowBatchConfirm(false)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Hapus {selectedIds.size} Data Inspeksi Tambang</DialogTitle>
+                        <DialogDescription>
+                            Yakin ingin menghapus <strong>{selectedIds.size}</strong> data yang dipilih?
+                            Tindakan ini tidak dapat dibatalkan.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowBatchConfirm(false)} disabled={batchDeleting}>Batal</Button>
+                        <Button variant="destructive" onClick={handleBatchDelete} disabled={batchDeleting}>
+                            {batchDeleting ? 'Menghapus...' : 'Ya, Hapus Semua'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <BatchDeleteBar
+                count={selectedIds.size}
+                onDelete={() => setShowBatchConfirm(true)}
+                onCancel={exitSelectMode}
+                deleting={batchDeleting}
+            />
         </>
     );
 }
-
-

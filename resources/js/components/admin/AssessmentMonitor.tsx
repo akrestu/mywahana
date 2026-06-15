@@ -1,10 +1,12 @@
 import { router } from '@inertiajs/react';
-import { CheckCircle2, ChevronDown, ChevronUp, ClipboardCheck, Download, Search, XCircle } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronUp, ClipboardCheck, Download, Search, Trash2, XCircle } from 'lucide-react';
 import { useState } from 'react';
+import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
@@ -93,6 +95,8 @@ export type AssessmentConfig = {
     attendanceShowDept: boolean;
     belumIndukeShowDept: boolean;
     belumIndukeAllDoneMessage: string;
+    deleteRoute?: string;
+    batchDeleteRoute?: string;
 };
 
 export type Props = {
@@ -119,6 +123,42 @@ export default function AssessmentMonitor({
     const [showAttendance, setShowAttendance] = useState(false);
     const [showBelumInduksi, setShowBelumInduksi] = useState(false);
     const [drillUser, setDrillUser] = useState<{ name: string; records: SessionRecord[] } | null>(null);
+    const [toDelete, setToDelete] = useState<SessionRecord | null>(null);
+    const [deleting, setDeleting] = useState(false);
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [batchDeleting, setBatchDeleting] = useState(false);
+    const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+    const toggleSelectAll = () => {
+        if (selectedIds.size === records.data.length) setSelectedIds(new Set());
+        else setSelectedIds(new Set(records.data.map(r => r.id)));
+    };
+    const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+
+    const handleDelete = () => {
+        if (!toDelete || !config.deleteRoute) return;
+        setDeleting(true);
+        router.delete(`${config.deleteRoute}/${toDelete.id}`, {
+            onFinish: () => { setDeleting(false); setToDelete(null); },
+        });
+    };
+
+    const handleBatchDelete = () => {
+        if (!config.batchDeleteRoute) return;
+        setBatchDeleting(true);
+        router.delete(config.batchDeleteRoute, {
+            data: { ids: Array.from(selectedIds) },
+            onFinish: () => { setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); },
+        });
+    };
 
     const applyFilters = (newFilters: Partial<Filters>) => {
         const merged = { ...filters, ...newFilters, search };
@@ -313,7 +353,23 @@ export default function AssessmentMonitor({
 
             {/* ── Filters ── */}
             <div>
-                <h3 className="text-sm font-semibold mb-3">{config.historyLabel}</h3>
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold">{config.historyLabel}</h3>
+                    {config.deleteRoute && (
+                        <div className="flex gap-2">
+                            {selectMode ? (
+                                <>
+                                    <Button size="sm" variant="outline" onClick={toggleSelectAll}>
+                                        {selectedIds.size === records.data.length ? 'Batal Semua' : 'Pilih Semua'}
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={exitSelectMode}>Selesai</Button>
+                                </>
+                            ) : (
+                                <Button size="sm" variant="outline" onClick={() => setSelectMode(true)}>Pilih</Button>
+                            )}
+                        </div>
+                    )}
+                </div>
                 <div className="flex flex-wrap gap-3">
                     <form onSubmit={handleSearch} className="flex gap-2">
                         <Input
@@ -354,6 +410,14 @@ export default function AssessmentMonitor({
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b bg-muted/40 text-muted-foreground">
+                                {selectMode && (
+                                    <th className="px-4 py-3 w-10">
+                                        <Checkbox
+                                            checked={selectedIds.size === records.data.length && records.data.length > 0}
+                                            onCheckedChange={toggleSelectAll}
+                                        />
+                                    </th>
+                                )}
                                 <th className="px-4 py-3 text-left font-medium">Karyawan</th>
                                 {config.showDeptFilter && <th className="px-4 py-3 text-left font-medium">Departemen</th>}
                                 {config.showTagsInWeakQuestions && <th className="px-4 py-3 text-left font-medium">Level</th>}
@@ -361,6 +425,7 @@ export default function AssessmentMonitor({
                                 <th className="px-4 py-3 text-right font-medium">Persentase</th>
                                 <th className="px-4 py-3 text-center font-medium">Status</th>
                                 <th className="px-4 py-3 text-left font-medium">Tanggal</th>
+                                {config.deleteRoute && !selectMode && <th className="px-4 py-3 text-center font-medium">Hapus</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y">
@@ -372,10 +437,17 @@ export default function AssessmentMonitor({
                             {records.data.map(r => (
                                 <tr
                                     key={r.id}
-                                    className="hover:bg-muted/30 transition-colors cursor-pointer"
-                                    onClick={() => openDrill(r)}
+                                    className="hover:bg-muted/30 transition-colors"
                                 >
-                                    <td className="px-4 py-3">
+                                    {selectMode && (
+                                        <td className="px-4 py-3">
+                                            <Checkbox
+                                                checked={selectedIds.has(r.id)}
+                                                onCheckedChange={() => toggleSelect(r.id)}
+                                            />
+                                        </td>
+                                    )}
+                                    <td className="px-4 py-3 cursor-pointer" onClick={() => openDrill(r)}>
                                         <p className="font-medium hover:underline">{r.user.name}</p>
                                         <p className="text-xs text-muted-foreground">{r.user.nik ?? '-'} · {r.user.site ?? '-'}</p>
                                     </td>
@@ -400,6 +472,18 @@ export default function AssessmentMonitor({
                                             day: 'numeric', month: 'short', year: 'numeric',
                                         })}
                                     </td>
+                                    {config.deleteRoute && !selectMode && (
+                                        <td className="px-4 py-3 text-center">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                                onClick={(e) => { e.stopPropagation(); setToDelete(r); }}
+                                            >
+                                                <Trash2 size={15} />
+                                            </Button>
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>
@@ -548,6 +632,58 @@ export default function AssessmentMonitor({
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* ── Delete Modal ── */}
+            {config.deleteRoute && (
+                <Dialog open={!!toDelete} onOpenChange={() => setToDelete(null)}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Hapus Data Assessment</DialogTitle>
+                            <DialogDescription>
+                                Yakin ingin menghapus data assessment milik <strong>{toDelete?.user.name}</strong> tanggal{' '}
+                                {toDelete ? new Date(toDelete.completed_at).toLocaleDateString('id-ID') : ''}?
+                                Tindakan ini tidak dapat dibatalkan.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setToDelete(null)}>Batal</Button>
+                            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+                                {deleting ? 'Menghapus...' : 'Hapus'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {/* ── Batch Delete Confirm Modal ── */}
+            {config.batchDeleteRoute && (
+                <Dialog open={showBatchConfirm} onOpenChange={(open) => !open && setShowBatchConfirm(false)}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Hapus {selectedIds.size} Data Assessment</DialogTitle>
+                            <DialogDescription>
+                                Yakin ingin menghapus <strong>{selectedIds.size}</strong> data yang dipilih?
+                                Tindakan ini tidak dapat dibatalkan.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowBatchConfirm(false)} disabled={batchDeleting}>Batal</Button>
+                            <Button variant="destructive" onClick={handleBatchDelete} disabled={batchDeleting}>
+                                {batchDeleting ? 'Menghapus...' : 'Ya, Hapus Semua'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {config.batchDeleteRoute && (
+                <BatchDeleteBar
+                    count={selectedIds.size}
+                    onDelete={() => setShowBatchConfirm(true)}
+                    onCancel={exitSelectMode}
+                    deleting={batchDeleting}
+                />
+            )}
 
             {/* ── Belum Induksi Modal ── */}
             <Dialog open={showBelumInduksi} onOpenChange={setShowBelumInduksi}>

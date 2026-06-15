@@ -1,9 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { CheckCircle2, Clock, Download, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog, DialogContent, DialogDescription,
     DialogFooter, DialogHeader, DialogTitle,
@@ -40,6 +42,31 @@ export default function AdminObservasiKeselamatan({ records, filters, summary, s
     const [search, setSearch] = useState(filters.search ?? '');
     const [toDelete, setToDelete] = useState<OKRecord | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [batchDeleting, setBatchDeleting] = useState(false);
+    const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+    const toggleSelectAll = () => {
+        if (selectedIds.size === records.data.length) setSelectedIds(new Set());
+        else setSelectedIds(new Set(records.data.map(r => r.id)));
+    };
+    const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+
+    const handleBatchDelete = () => {
+        setBatchDeleting(true);
+        router.delete('/admin/observasi-keselamatan/batch', {
+            data: { ids: Array.from(selectedIds) },
+            onFinish: () => { setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); },
+        });
+    };
 
     const applyFilters = (newFilters: Partial<Filters>) => {
         const merged = { ...filters, ...newFilters, search };
@@ -76,11 +103,25 @@ export default function AdminObservasiKeselamatan({ records, filters, summary, s
                         <h2 className="text-xl font-bold">Observasi Keselamatan</h2>
                         <p className="text-sm text-muted-foreground">Monitoring form OK seluruh site</p>
                     </div>
-                    <a href={exportUrl} download>
-                        <Button variant="outline" className="gap-2 h-10">
-                            <Download size={16} /> Export
-                        </Button>
-                    </a>
+                    <div className="flex gap-2">
+                        {selectMode ? (
+                            <>
+                                <Button variant="outline" size="sm" onClick={toggleSelectAll}>
+                                    {selectedIds.size === records.data.length ? 'Batal Semua' : 'Pilih Semua'}
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={exitSelectMode}>Selesai</Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button variant="outline" size="sm" onClick={() => setSelectMode(true)}>Pilih</Button>
+                                <a href={exportUrl} download>
+                                    <Button variant="outline" className="gap-2 h-9">
+                                        <Download size={16} /> Export
+                                    </Button>
+                                </a>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 {/* Summary */}
@@ -151,6 +192,13 @@ export default function AdminObservasiKeselamatan({ records, filters, summary, s
                                     'flex items-center gap-3 px-4 py-4',
                                     record.status === 'dikonfirmasi' ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-yellow-500',
                                 )}>
+                                    {selectMode && (
+                                        <Checkbox
+                                            checked={selectedIds.has(record.id)}
+                                            onCheckedChange={() => toggleSelect(record.id)}
+                                            className="shrink-0"
+                                        />
+                                    )}
                                     {/* Status icon */}
                                     {record.status === 'dikonfirmasi'
                                         ? <CheckCircle2 size={20} className="text-green-600 shrink-0" />
@@ -182,14 +230,16 @@ export default function AdminObservasiKeselamatan({ records, filters, summary, s
                                         </div>
                                     </div>
 
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-9 w-9 text-destructive hover:text-destructive shrink-0"
-                                        onClick={() => setToDelete(record)}
-                                    >
-                                        <Trash2 size={16} />
-                                    </Button>
+                                    {!selectMode && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-9 w-9 text-destructive hover:text-destructive shrink-0"
+                                            onClick={() => setToDelete(record)}
+                                        >
+                                            <Trash2 size={16} />
+                                        </Button>
+                                    )}
                                 </div>
                                 {idx < records.data.length - 1 && <Separator />}
                             </div>
@@ -229,6 +279,31 @@ export default function AdminObservasiKeselamatan({ records, filters, summary, s
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <Dialog open={showBatchConfirm} onOpenChange={(open) => !open && setShowBatchConfirm(false)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Hapus {selectedIds.size} Data Observasi Keselamatan</DialogTitle>
+                        <DialogDescription>
+                            Yakin ingin menghapus <strong>{selectedIds.size}</strong> data yang dipilih?
+                            Tindakan ini tidak dapat dibatalkan.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowBatchConfirm(false)} disabled={batchDeleting}>Batal</Button>
+                        <Button variant="destructive" onClick={handleBatchDelete} disabled={batchDeleting}>
+                            {batchDeleting ? 'Menghapus...' : 'Ya, Hapus Semua'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <BatchDeleteBar
+                count={selectedIds.size}
+                onDelete={() => setShowBatchConfirm(true)}
+                onCancel={exitSelectMode}
+                deleting={batchDeleting}
+            />
         </>
     );
 }

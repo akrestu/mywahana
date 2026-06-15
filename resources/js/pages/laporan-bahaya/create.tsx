@@ -147,7 +147,7 @@ export default function LaporanBahayaCreate({ user }: Props) {
     const removeFoto = () => {
         setData('foto', null);
         setPreview(null);
-        if (fileRef.current) fileRef.current.value = '';
+        if (galleryRef.current) galleryRef.current.value = '';
     };
 
     const handleSubmit = (e: React.FormEvent) => {
