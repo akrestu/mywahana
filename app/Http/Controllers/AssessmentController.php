@@ -64,6 +64,8 @@ class AssessmentController extends Controller
             $questions = $questions->take($needed);
         }
 
+        abort_if($questions->isEmpty(), 422, 'Belum ada soal tersedia untuk departemen dan level Anda. Hubungi admin HSE.');
+
         $session = DB::transaction(function () use ($user, $tags, $needed, $questions) {
             $session = AssessmentSession::create([
                 'user_id' => $user->id,
@@ -92,8 +94,6 @@ class AssessmentController extends Controller
     {
         $user = Auth::user();
         abort_unless($session->user_id === $user->id, 403);
-        abort_if($session->status === 'completed', 302, route('assessment.result', $session));
-
         if ($session->status === 'completed') {
             return redirect()->route('assessment.result', $session);
         }

@@ -110,7 +110,7 @@ export default function LaporanBahayaCreate({ user }: Props) {
         } else {
             fileRef.current.removeAttribute('capture');
         }
-        setTimeout(() => fileRef.current?.click(), 50);
+        setTimeout(() => fileRef.current?.click(), 300);
     }
 
     const { data, setData, post, processing, errors } = useForm({
