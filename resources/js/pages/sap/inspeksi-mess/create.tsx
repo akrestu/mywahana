@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight, Calendar, Camera, Check, ChevronsUpDown, Images, Plus, Trash2, X } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
+import { UploadOverlay } from '@/components/upload-overlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -113,6 +114,7 @@ export default function InspeksiMessCreate({ user, staffUsers, sites }: Props) {
     const fotoGalleryRef = useRef<HTMLInputElement>(null);
     const [photoSheet, setPhotoSheet] = useState(false);
     const [showCamera, setShowCamera] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const [pendingFotoKey, setPendingFotoKey] = useState<string | null>(null);
     function openFotoPicker(key: string) { setPendingFotoKey(key); setPhotoSheet(true); }
     function chooseFotoSource(source: 'camera' | 'gallery') {
@@ -145,7 +147,12 @@ export default function InspeksiMessCreate({ user, staffUsers, sites }: Props) {
             else fd.append(k, String(v ?? ''));
         });
         Object.entries(fotoFiles).forEach(([k, f]) => fd.append(`foto[${k}]`, f));
-        post('/sap/inspeksi-mess', { data: fd as unknown as FormData });
+        setUploadProgress(0);
+        post('/sap/inspeksi-mess', {
+            data: fd as unknown as FormData,
+            onProgress: (e) => setUploadProgress(e.percentage ?? null),
+            onFinish: () => setUploadProgress(null),
+        });
     };
 
     return (
@@ -280,6 +287,7 @@ export default function InspeksiMessCreate({ user, staffUsers, sites }: Props) {
                 if (f && pendingFotoKey) { handleFotoChange(pendingFotoKey, f); setPendingFotoKey(null); }
                 e.target.value = '';
             }} />
+            <UploadOverlay open={processing} progress={uploadProgress} label="Menyimpan inspeksi..." />
             <CameraCapture
                 open={showCamera}
                 onCapture={(file) => {

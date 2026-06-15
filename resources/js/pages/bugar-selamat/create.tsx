@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { UploadOverlay } from '@/components/upload-overlay';
 import { cn } from '@/lib/utils';
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -222,7 +223,10 @@ export default function BugarSelamatCreate({ user }: Props) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!step1OK || !step2OK || !hasSig) return;
-        post('/bugar-selamat');
+        post('/bugar-selamat', {
+            onProgress: () => {},
+            onFinish: () => {},
+        });
     };
 
     // ── Step indicator ────────────────────────────────────────────
@@ -608,6 +612,7 @@ export default function BugarSelamatCreate({ user }: Props) {
                     </div>
                 )}
             </form>
+            <UploadOverlay open={processing} label="Menyimpan checklist..." />
         </>
     );
 }

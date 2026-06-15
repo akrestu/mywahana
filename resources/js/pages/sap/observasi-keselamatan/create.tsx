@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { UploadOverlay } from '@/components/upload-overlay';
 import { cn } from '@/lib/utils';
 
 type UserInfo = { name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
@@ -260,10 +261,16 @@ export default function ObservasiKeselamatanCreate({ user, staffUsers }: Props) 
 
     const selectedPj = staffUsers.find(u => String(u.id) === data.penanggung_jawab_id);
 
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!step1OK) return;
-        post('/sap/observasi-keselamatan');
+        setUploadProgress(0);
+        post('/sap/observasi-keselamatan', {
+            onProgress: (e) => setUploadProgress(e.percentage ?? null),
+            onFinish: () => setUploadProgress(null),
+        });
     };
 
     const StepBar = () => (
@@ -620,6 +627,7 @@ export default function ObservasiKeselamatanCreate({ user, staffUsers }: Props) 
                     </div>
                 )}
             </form>
+            <UploadOverlay open={processing} progress={uploadProgress} label="Menyimpan observasi..." />
         </>
     );
 }

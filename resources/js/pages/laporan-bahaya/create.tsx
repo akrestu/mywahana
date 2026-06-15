@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, ChevronsUpDown, Images, MapPin, X } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
+import { UploadOverlay } from '@/components/upload-overlay';
 import { RiskBadge } from '@/components/risk-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -101,6 +102,7 @@ export default function LaporanBahayaCreate({ user }: Props) {
     const [currentStep, setCurrentStep] = useState(0);
     const [photoSheet, setPhotoSheet] = useState(false);
     const [showCamera, setShowCamera] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     useEffect(() => { window.scrollTo(0, 0); }, [currentStep]);
     const [lokasiOpen, setLokasiOpen] = useState(false);
 
@@ -150,7 +152,12 @@ export default function LaporanBahayaCreate({ user }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/laporan-bahaya', { forceFormData: true });
+        setUploadProgress(0);
+        post('/laporan-bahaya', {
+            forceFormData: true,
+            onProgress: (e) => setUploadProgress(e.percentage ?? null),
+            onFinish: () => setUploadProgress(null),
+        });
     };
 
     // ── Step bar ──
@@ -717,6 +724,7 @@ export default function LaporanBahayaCreate({ user }: Props) {
                     </div>
                 </SheetContent>
             </Sheet>
+            <UploadOverlay open={processing} progress={uploadProgress} label="Menyimpan laporan..." />
             <CameraCapture
                 open={showCamera}
                 onCapture={async (file) => {
