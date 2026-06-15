@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\ExpireAssessments;
 use App\Console\Commands\SendBugarSelamatReminder;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -10,3 +11,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command(SendBugarSelamatReminder::class)->dailyAt('07:00');
+Schedule::command(ExpireAssessments::class)->everyMinute();

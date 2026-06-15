@@ -20,6 +20,12 @@ class HrAssessmentController extends Controller
     {
         $user = Auth::user();
 
+        HrAssessmentSession::where('user_id', $user->id)
+            ->where('status', 'in_progress')
+            ->where('started_at', '<=', now()->subSeconds(HrAssessmentSession::DURATION_SECONDS))
+            ->get()
+            ->each->autoExpire();
+
         $sessions = HrAssessmentSession::where('user_id', $user->id)
             ->latest()
             ->paginate(10);
@@ -64,6 +70,10 @@ class HrAssessmentController extends Controller
     {
         $user = Auth::user();
         abort_unless($session->user_id === $user->id, 403);
+
+        if ($session->isExpired()) {
+            $session->autoExpire();
+        }
 
         if ($session->status === 'completed') {
             return redirect()->route('hr-assessment.result', $session);
