@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, ChevronsUpDown, Images, MapPin, X } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
+import { CameraCapture } from '@/components/camera-capture';
 import { RiskBadge } from '@/components/risk-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -95,17 +96,17 @@ const STEPS = [
 
 export default function LaporanBahayaCreate({ user }: Props) {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
-    const cameraRef = useRef<HTMLInputElement>(null);
     const galleryRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(null);
     const [currentStep, setCurrentStep] = useState(0);
     const [photoSheet, setPhotoSheet] = useState(false);
+    const [showCamera, setShowCamera] = useState(false);
     useEffect(() => { window.scrollTo(0, 0); }, [currentStep]);
     const [lokasiOpen, setLokasiOpen] = useState(false);
 
     function openPhotoSource(source: 'camera' | 'gallery') {
         setPhotoSheet(false);
-        if (source === 'camera') cameraRef.current?.click();
+        if (source === 'camera') setShowCamera(true);
         else galleryRef.current?.click();
     }
 
@@ -448,7 +449,6 @@ export default function LaporanBahayaCreate({ user }: Props) {
                                     </div>
                                 </button>
                             )}
-                            <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFoto} />
                             <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleFoto} />
                             {errors.foto && <p className="text-sm text-destructive">{errors.foto}</p>}
                         </div>
@@ -717,6 +717,16 @@ export default function LaporanBahayaCreate({ user }: Props) {
                     </div>
                 </SheetContent>
             </Sheet>
+            <CameraCapture
+                open={showCamera}
+                onCapture={async (file) => {
+                    setShowCamera(false);
+                    const compressed = await compressImage(file);
+                    setData('foto', compressed);
+                    setPreview(URL.createObjectURL(compressed));
+                }}
+                onClose={() => setShowCamera(false)}
+            />
         </>
     );
 }

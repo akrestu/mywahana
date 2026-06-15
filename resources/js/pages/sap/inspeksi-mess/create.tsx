@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight, Calendar, Camera, Check, ChevronsUpDown, Images, Plus, Trash2, X } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
+import { CameraCapture } from '@/components/camera-capture';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -109,14 +110,14 @@ export default function InspeksiMessCreate({ user, staffUsers, sites }: Props) {
     const [pesertaOpen, setPesertaOpen] = useState(false);
     const [siteOpen, setSiteOpen] = useState(false);
     const [fotoFiles, setFotoFiles] = useState<Record<string, File>>({});
-    const fotoCameraRef = useRef<HTMLInputElement>(null);
     const fotoGalleryRef = useRef<HTMLInputElement>(null);
     const [photoSheet, setPhotoSheet] = useState(false);
+    const [showCamera, setShowCamera] = useState(false);
     const [pendingFotoKey, setPendingFotoKey] = useState<string | null>(null);
     function openFotoPicker(key: string) { setPendingFotoKey(key); setPhotoSheet(true); }
     function chooseFotoSource(source: 'camera' | 'gallery') {
         setPhotoSheet(false);
-        if (source === 'camera') fotoCameraRef.current?.click();
+        if (source === 'camera') setShowCamera(true);
         else fotoGalleryRef.current?.click();
     }
     const handleFotoChange = async (key: string, file: File) => {
@@ -274,16 +275,19 @@ export default function InspeksiMessCreate({ user, staffUsers, sites }: Props) {
                 )}
             </form>
 
-            <input ref={fotoCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => {
-                const f = e.target.files?.[0];
-                if (f && pendingFotoKey) { handleFotoChange(pendingFotoKey, f); setPendingFotoKey(null); }
-                e.target.value = '';
-            }} />
             <input ref={fotoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => {
                 const f = e.target.files?.[0];
                 if (f && pendingFotoKey) { handleFotoChange(pendingFotoKey, f); setPendingFotoKey(null); }
                 e.target.value = '';
             }} />
+            <CameraCapture
+                open={showCamera}
+                onCapture={(file) => {
+                    setShowCamera(false);
+                    if (pendingFotoKey) { handleFotoChange(pendingFotoKey, file); setPendingFotoKey(null); }
+                }}
+                onClose={() => { setShowCamera(false); setPendingFotoKey(null); }}
+            />
 
             <Sheet open={photoSheet} onOpenChange={setPhotoSheet}>
                 <SheetContent side="bottom" className="pb-8">
