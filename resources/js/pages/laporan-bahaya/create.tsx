@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+﻿import { Head, useForm } from '@inertiajs/react';
 import { Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, ChevronsUpDown, Images, MapPin, X } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
@@ -10,7 +10,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { compressImage } from '@/lib/compress-image';
+import { compressImageWithToast } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
 type UserInfo = {
@@ -138,7 +138,7 @@ export default function LaporanBahayaCreate({ user }: Props) {
     const handleFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const compressed = await compressImage(file);
+            const compressed = await compressImageWithToast(file);
             setData('foto', compressed);
             setPreview(URL.createObjectURL(compressed));
         }
@@ -729,7 +729,7 @@ export default function LaporanBahayaCreate({ user }: Props) {
                 open={showCamera}
                 onCapture={async (file) => {
                     setShowCamera(false);
-                    const compressed = await compressImage(file);
+                    const compressed = await compressImageWithToast(file);
                     setData('foto', compressed);
                     setPreview(URL.createObjectURL(compressed));
                 }}
