@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { BookOpen, Calendar, Camera, Check, ChevronsUpDown, Images, MapPin, PenLine, Plus, Trash2, UserCheck, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { CameraCapture } from '@/components/camera-capture';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -157,18 +158,17 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
     const [fotoDokumen, setFotoDokumen] = useState<File | null>(null);
     const [fotoKelompokPreview, setFotoKelompokPreview] = useState<string>('');
     const [fotoDokumenPreview, setFotoDokumenPreview] = useState<string>('');
-    const fotoKelompokCameraRef = useRef<HTMLInputElement>(null);
     const fotoKelompokGalleryRef = useRef<HTMLInputElement>(null);
-    const fotoDokumenCameraRef = useRef<HTMLInputElement>(null);
     const fotoDokumenGalleryRef = useRef<HTMLInputElement>(null);
     const [photoSheet, setPhotoSheet] = useState<'kelompok' | 'dokumen' | null>(null);
+    const [showCamera, setShowCamera] = useState<'kelompok' | 'dokumen' | null>(null);
     function choosePhotoSource(source: 'camera' | 'gallery') {
-        const isKelompok = photoSheet === 'kelompok';
+        const slot = photoSheet;
         setPhotoSheet(null);
         if (source === 'camera') {
-            (isKelompok ? fotoKelompokCameraRef : fotoDokumenCameraRef).current?.click();
+            setShowCamera(slot);
         } else {
-            (isKelompok ? fotoKelompokGalleryRef : fotoDokumenGalleryRef).current?.click();
+            (slot === 'kelompok' ? fotoKelompokGalleryRef : fotoDokumenGalleryRef).current?.click();
         }
     }
 
@@ -591,15 +591,20 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
                 </DialogContent>
             </Dialog>
 
-            {/* Hidden file inputs untuk foto */}
-            <input ref={fotoKelompokCameraRef} type="file" accept="image/*" capture="environment" className="hidden"
-                onChange={e => { handleFotoChange('kelompok', e.target.files?.[0] ?? null); e.target.value = ''; }} />
+            {/* Hidden file inputs untuk galeri */}
             <input ref={fotoKelompokGalleryRef} type="file" accept="image/*" className="hidden"
                 onChange={e => { handleFotoChange('kelompok', e.target.files?.[0] ?? null); e.target.value = ''; }} />
-            <input ref={fotoDokumenCameraRef} type="file" accept="image/*" capture="environment" className="hidden"
-                onChange={e => { handleFotoChange('dokumen', e.target.files?.[0] ?? null); e.target.value = ''; }} />
             <input ref={fotoDokumenGalleryRef} type="file" accept="image/*" className="hidden"
                 onChange={e => { handleFotoChange('dokumen', e.target.files?.[0] ?? null); e.target.value = ''; }} />
+            <CameraCapture
+                open={showCamera !== null}
+                onCapture={(file) => {
+                    const slot = showCamera;
+                    setShowCamera(null);
+                    if (slot) handleFotoChange(slot, file);
+                }}
+                onClose={() => setShowCamera(null)}
+            />
 
             {/* Sheet pilihan sumber foto */}
             <Sheet open={photoSheet !== null} onOpenChange={open => { if (!open) setPhotoSheet(null); }}>
