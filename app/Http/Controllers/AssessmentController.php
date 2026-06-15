@@ -21,6 +21,12 @@ class AssessmentController extends Controller
     {
         $user = Auth::user();
 
+        AssessmentSession::where('user_id', $user->id)
+            ->where('status', 'in_progress')
+            ->where('started_at', '<=', now()->subSeconds(AssessmentSession::DURATION_SECONDS))
+            ->get()
+            ->each->autoExpire();
+
         $sessions = AssessmentSession::where('user_id', $user->id)
             ->latest()
             ->paginate(10);
@@ -94,6 +100,11 @@ class AssessmentController extends Controller
     {
         $user = Auth::user();
         abort_unless($session->user_id === $user->id, 403);
+
+        if ($session->isExpired()) {
+            $session->autoExpire();
+        }
+
         if ($session->status === 'completed') {
             return redirect()->route('assessment.result', $session);
         }
