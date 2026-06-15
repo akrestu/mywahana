@@ -40,7 +40,7 @@ export function NavMain({ groups, items }: { groups?: NavGroup[]; items?: NavIte
                                         tooltip={{ children: item.title }}
                                         className="h-10 gap-3 text-sm font-medium"
                                     >
-                                        <Link href={item.href} prefetch>
+                                        <Link href={item.href} prefetch="mount">
                                             {item.icon && (
                                                 <item.icon
                                                     className={active ? 'text-primary' : 'text-sidebar-foreground/60'}
