@@ -513,22 +513,6 @@ export default function Dashboard({
                                 </div>
                             </button>
 
-                            <button
-                                type="button"
-                                onClick={() => router.visit('/sap/observasi-keselamatan/create')}
-                                className="block w-full"
-                            >
-                                <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-violet-300 bg-violet-50 px-2 py-4 text-center active:scale-95 transition-transform dark:border-violet-700 dark:bg-violet-950">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-200 dark:bg-violet-800">
-                                        <Eye className="h-5 w-5 text-violet-700 dark:text-violet-300" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-violet-900 dark:text-violet-100">Observasi</p>
-                                        <p className="text-[10px] text-violet-600 dark:text-violet-400">Keselamatan</p>
-                                    </div>
-                                </div>
-                            </button>
-
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button type="button" className="w-full">
@@ -558,6 +542,22 @@ export default function Dashboard({
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+
+                            <button
+                                type="button"
+                                onClick={() => router.visit('/sap/observasi-keselamatan/create')}
+                                className="block w-full"
+                            >
+                                <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-violet-300 bg-violet-50 px-2 py-4 text-center active:scale-95 transition-transform dark:border-violet-700 dark:bg-violet-950">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-200 dark:bg-violet-800">
+                                        <Eye className="h-5 w-5 text-violet-700 dark:text-violet-300" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-violet-900 dark:text-violet-100">Observasi</p>
+                                        <p className="text-[10px] text-violet-600 dark:text-violet-400">Keselamatan</p>
+                                    </div>
+                                </div>
+                            </button>
                         </div>
                     )}
                 </div>
