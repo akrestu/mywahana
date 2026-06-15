@@ -12,6 +12,7 @@ export function CameraCapture({ open, onCapture, onClose }: Props) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const [ready, setReady] = useState(false);
+    const [capturing, setCapturing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -52,15 +53,19 @@ export function CameraCapture({ open, onCapture, onClose }: Props) {
     function capture() {
         const video = videoRef.current;
         const canvas = canvasRef.current;
-        if (!video || !canvas || !ready) return;
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d')!.drawImage(video, 0, 0);
+        if (!video || !canvas || !ready || capturing) return;
+        setCapturing(true);
+        const MAX_WIDTH = 1280;
+        const scale = video.videoWidth > MAX_WIDTH ? MAX_WIDTH / video.videoWidth : 1;
+        canvas.width = Math.round(video.videoWidth * scale);
+        canvas.height = Math.round(video.videoHeight * scale);
+        canvas.getContext('2d')!.drawImage(video, 0, 0, canvas.width, canvas.height);
         canvas.toBlob(blob => {
+            setCapturing(false);
             if (!blob) return;
             const file = new File([blob], `foto_${Date.now()}.jpg`, { type: 'image/jpeg' });
             onCapture(file);
-        }, 'image/jpeg', 0.9);
+        }, 'image/jpeg', 0.82);
     }
 
     if (!open) return null;
@@ -100,10 +105,17 @@ export function CameraCapture({ open, onCapture, onClose }: Props) {
                 <button
                     type="button"
                     onClick={capture}
-                    disabled={!ready || !!error}
+                    disabled={!ready || !!error || capturing}
                     className="flex size-20 items-center justify-center rounded-full bg-white shadow-lg disabled:opacity-40 active:scale-95 transition-transform"
                 >
-                    <Camera size={34} className="text-black" />
+                    {capturing ? (
+                        <svg className="animate-spin text-black" width={34} height={34} viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                        </svg>
+                    ) : (
+                        <Camera size={34} className="text-black" />
+                    )}
                 </button>
             </div>
         </div>

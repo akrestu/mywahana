@@ -1,0 +1,21 @@
+{
+    "name": "MyWahana HSE",
+    "short_name": "MyWahana",
+    "description": "Aplikasi Health, Safety & Environment PT Wahana Baratama Mining",
+    "start_url": "/home",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#16a34a",
+    "icons": [
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        },
+        {
+            "src": "/favicon.ico",
+            "sizes": "48x48",
+            "type": "image/x-icon"
+        }
+    ]
+}

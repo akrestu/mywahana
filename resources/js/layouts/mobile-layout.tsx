@@ -2,6 +2,7 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { Bell, BookOpen, ClipboardCheck, ClipboardList, Home, LogOut, TriangleAlert, User } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { Separator } from '@/components/ui/separator';
+import { usePushNotification } from '@/hooks/use-push-notification';
 import type { Auth } from '@/types';
 
 type AppNotification = {
@@ -53,6 +54,8 @@ const baseNavItems = [
 ];
 
 export default function MobileLayout({ children, title, showBack, backHref }: Props) {
+    usePushNotification();
+
     const { url } = usePage();
     const { auth, notifications } = usePage<{ auth: Auth; notifications: AppNotification[] }>().props;
 
