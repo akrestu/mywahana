@@ -596,7 +596,7 @@ class AdminController extends Controller
                 ? round(AssessmentSession::completed()->avg('percentage'), 1)
                 : 0,
             'coverage_pct' => ($totalNonAdmin = User::where('is_admin', false)->count()) > 0
-                ? round(AssessmentSession::completed()->distinct('user_id')->count('user_id') / $totalNonAdmin * 100)
+                ? round(InductionAttendance::where('type', 'safety')->distinct('user_id')->count('user_id') / $totalNonAdmin * 100)
                 : 0,
         ];
 
@@ -1316,18 +1316,22 @@ class AdminController extends Controller
 
     public function destroyAssessmentSession(AssessmentSession $session)
     {
-        AssessmentSessionQuestion::where('assessment_session_id', $session->id)->delete();
-        InductionAttendance::where('type', 'safety')->where('assessment_session_id', $session->id)->delete();
-        $session->delete();
+        \DB::transaction(function () use ($session) {
+            AssessmentSessionQuestion::where('assessment_session_id', $session->id)->delete();
+            InductionAttendance::where('type', 'safety')->where('assessment_session_id', $session->id)->delete();
+            $session->delete();
+        });
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data assessment berhasil dihapus.']);
         return back();
     }
 
     public function destroyHrAssessmentSession(HrAssessmentSession $session)
     {
-        HrAssessmentSessionQuestion::where('hr_assessment_session_id', $session->id)->delete();
-        InductionAttendance::where('type', 'hr')->where('assessment_session_id', $session->id)->delete();
-        $session->delete();
+        \DB::transaction(function () use ($session) {
+            HrAssessmentSessionQuestion::where('hr_assessment_session_id', $session->id)->delete();
+            InductionAttendance::where('type', 'hr')->where('assessment_session_id', $session->id)->delete();
+            $session->delete();
+        });
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data HR assessment berhasil dihapus.']);
         return back();
     }
@@ -1335,9 +1339,11 @@ class AdminController extends Controller
     public function batchDestroyAssessmentSession(Request $request)
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
-        AssessmentSessionQuestion::whereIn('assessment_session_id', $ids)->delete();
-        InductionAttendance::where('type', 'safety')->whereIn('assessment_session_id', $ids)->delete();
-        AssessmentSession::whereIn('id', $ids)->delete();
+        \DB::transaction(function () use ($ids) {
+            AssessmentSessionQuestion::whereIn('assessment_session_id', $ids)->delete();
+            InductionAttendance::where('type', 'safety')->whereIn('assessment_session_id', $ids)->delete();
+            AssessmentSession::whereIn('id', $ids)->delete();
+        });
         Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data assessment berhasil dihapus.']);
         return back();
     }
@@ -1345,9 +1351,11 @@ class AdminController extends Controller
     public function batchDestroyHrAssessmentSession(Request $request)
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
-        HrAssessmentSessionQuestion::whereIn('hr_assessment_session_id', $ids)->delete();
-        InductionAttendance::where('type', 'hr')->whereIn('assessment_session_id', $ids)->delete();
-        HrAssessmentSession::whereIn('id', $ids)->delete();
+        \DB::transaction(function () use ($ids) {
+            HrAssessmentSessionQuestion::whereIn('hr_assessment_session_id', $ids)->delete();
+            InductionAttendance::where('type', 'hr')->whereIn('assessment_session_id', $ids)->delete();
+            HrAssessmentSession::whereIn('id', $ids)->delete();
+        });
         Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data HR assessment berhasil dihapus.']);
         return back();
     }

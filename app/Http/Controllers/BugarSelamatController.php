@@ -45,6 +45,11 @@ class BugarSelamatController extends Controller
             'catatan'         => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $exists = $request->user()->bugarSelamats()
+            ->whereDate('tanggal', $validated['tanggal'])
+            ->exists();
+        abort_if($exists, 422, 'Kamu sudah mengisi Bugar Selamat hari ini.');
+
         $record = $request->user()->bugarSelamats()->create($validated);
 
         app(BadgeService::class)->checkAndAward($request->user());

@@ -64,6 +64,7 @@ class User extends Authenticatable implements PasskeyUser
     {
         $dates = $this->bugarSelamats()
             ->selectRaw('DATE(tanggal) as tgl')
+            ->where('tanggal', '>=', now()->subDays(90)->toDateString())
             ->distinct()
             ->orderByDesc('tgl')
             ->pluck('tgl')
