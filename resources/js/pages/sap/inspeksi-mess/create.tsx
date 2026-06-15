@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+﻿import { Head, useForm } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight, Calendar, Camera, Check, ChevronsUpDown, Images, Plus, Trash2, X } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { compressImage } from '@/lib/compress-image';
+import { compressImageWithToast } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
 type StaffUser = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
@@ -123,7 +123,7 @@ export default function InspeksiMessCreate({ user, staffUsers, sites }: Props) {
         else fotoGalleryRef.current?.click();
     }
     const handleFotoChange = async (key: string, file: File) => {
-        const compressed = await compressImage(file);
+        const compressed = await compressImageWithToast(file);
         setFotoFiles(prev => ({ ...prev, [key]: compressed }));
     };
     const initialScores = Object.fromEntries(ALL_SCORE_KEYS.map(k => [k, ''])) as { [K in ScoreKey]: string };

@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+﻿import { Head, router } from '@inertiajs/react';
 import { BookOpen, Calendar, Camera, Check, ChevronsUpDown, Images, MapPin, PenLine, Plus, Trash2, UserCheck, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
-import { compressImage } from '@/lib/compress-image';
+import { compressImageWithToast } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
 const LOKASI_OPTIONS = [
@@ -185,7 +185,7 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
 
     async function handleFotoChange(type: 'kelompok' | 'dokumen', file: File | null) {
         if (!file) return;
-        const compressed = await compressImage(file);
+        const compressed = await compressImageWithToast(file);
         if (type === 'kelompok') {
             setFotoKelompok(compressed);
             setFotoKelompokPreview(URL.createObjectURL(compressed));

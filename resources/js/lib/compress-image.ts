@@ -1,3 +1,17 @@
+import { toast } from 'sonner';
+
+export async function compressImageWithToast(file: File, maxWidth = 1280, quality = 0.75): Promise<File> {
+    const id = toast.loading('Memproses foto...');
+    try {
+        const result = await compressImage(file, maxWidth, quality);
+        toast.success('Foto berhasil ditambahkan', { id });
+        return result;
+    } catch {
+        toast.error('Gagal memproses foto, coba lagi', { id });
+        throw new Error('Compress failed');
+    }
+}
+
 export function compressImage(file: File, maxWidth = 1280, quality = 0.75): Promise<File> {
     return new Promise((resolve, reject) => {
         const img = new Image();

@@ -1,3 +1,4 @@
+import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
 
 interface Props {
@@ -9,23 +10,35 @@ interface Props {
 export function UploadOverlay({ open, progress, label = 'Menyimpan...' }: Props) {
     if (!open) return null;
 
+    const pct = Math.min(Math.round(progress ?? 0), 100);
     const hasProgress = progress != null && progress > 0;
 
     return (
-        <div className="fixed inset-0 z-[9990] flex items-center justify-center bg-background/60 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-4 rounded-2xl border bg-card px-10 py-8 shadow-xl">
-                <Loader2 size={36} className="text-primary animate-spin" />
-                <p className="text-sm font-semibold text-foreground">{label}</p>
+        <div
+            className="fixed inset-0 z-[9990] flex items-center justify-center bg-background/80 backdrop-blur-md"
+            aria-modal="true"
+            role="dialog"
+        >
+            <div className="flex w-72 flex-col items-center gap-6 rounded-3xl border bg-card px-8 py-10 shadow-2xl">
+                {/* Spinner with pulsing ring */}
+                <div className="relative flex items-center justify-center">
+                    <span className="absolute size-20 animate-ping rounded-full bg-primary/20" />
+                    <span className="absolute size-16 rounded-full bg-primary/10" />
+                    <Loader2 size={40} className="relative text-primary animate-spin" />
+                </div>
+
+                {/* Label */}
+                <div className="text-center">
+                    <p className="text-base font-bold text-foreground">{label}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Mohon tunggu sebentar...</p>
+                </div>
+
+                {/* Progress */}
                 {hasProgress && (
-                    <div className="w-48">
-                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                            <div
-                                className="h-full rounded-full bg-primary transition-all duration-300 ease-out"
-                                style={{ width: `${Math.min(progress!, 100)}%` }}
-                            />
-                        </div>
-                        <p className="mt-1.5 text-center text-xs text-muted-foreground">
-                            {Math.round(Math.min(progress!, 100))}%
+                    <div className="w-full flex flex-col gap-2">
+                        <Progress value={pct} className="h-2.5" />
+                        <p className="text-center text-sm font-semibold tabular-nums text-muted-foreground">
+                            {pct}%
                         </p>
                     </div>
                 )}
