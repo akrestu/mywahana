@@ -1,8 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
+import type React from 'react';
 import {
     AlertTriangle,
     ChevronRight,
     ClipboardCheck,
+    MapPin,
+    ShieldCheck,
+    UserCog,
+    Users,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -472,20 +477,25 @@ export default function AdminIndex({ stats: rawStats, compliance: rawCompliance,
                         <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide px-0.5">Per Site</p>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             {site_breakdown.map((s, i) => {
-                                const clr = i === 0 ? '#6366f1' : '#ec4899';
+                                const palette = i === 0
+                                    ? { border: 'border-indigo-300 dark:border-indigo-700', bg: 'bg-indigo-50 dark:bg-indigo-950', header: 'bg-indigo-100 dark:bg-indigo-900', icon: 'text-indigo-600 dark:text-indigo-400', title: 'text-indigo-800 dark:text-indigo-200' }
+                                    : { border: 'border-pink-300 dark:border-pink-700',   bg: 'bg-pink-50 dark:bg-pink-950',       header: 'bg-pink-100 dark:bg-pink-900',     icon: 'text-pink-600 dark:text-pink-400',   title: 'text-pink-800 dark:text-pink-200' };
                                 return (
-                                    <div key={s.site} className="rounded-xl border p-3" style={{ borderColor: clr, backgroundColor: clr + '0d' }}>
-                                        <p className="text-xs font-bold capitalize mb-2.5" style={{ color: clr }}>📍 Site {s.site}</p>
-                                        <div className="grid grid-cols-4 gap-1 text-center">
+                                    <div key={s.site} className={`rounded-xl border ${palette.border} ${palette.bg} overflow-hidden`}>
+                                        <div className={`flex items-center gap-2 px-3 py-2.5 ${palette.header}`}>
+                                            <MapPin className={`h-4 w-4 shrink-0 ${palette.icon}`} />
+                                            <p className={`text-sm font-bold capitalize ${palette.title}`}>Site {s.site}</p>
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-2 p-3">
                                             {[
-                                                { label: 'BS',    value: s.bugar,     color: '#22c55e' },
-                                                { label: 'LB',    value: s.laporan,   color: '#f97316' },
-                                                { label: 'OK',    value: s.observasi, color: '#8b5cf6' },
-                                                { label: 'Insp',  value: s.inspeksi,  color: '#14b8a6' },
+                                                { label: 'Bugar',   value: s.bugar,     bg: 'bg-green-100 dark:bg-green-900',   text: 'text-green-700 dark:text-green-300' },
+                                                { label: 'Laporan', value: s.laporan,   bg: 'bg-orange-100 dark:bg-orange-900', text: 'text-orange-700 dark:text-orange-300' },
+                                                { label: 'Observ.', value: s.observasi, bg: 'bg-violet-100 dark:bg-violet-900', text: 'text-violet-700 dark:text-violet-300' },
+                                                { label: 'Inspeksi',value: s.inspeksi,  bg: 'bg-teal-100 dark:bg-teal-900',     text: 'text-teal-700 dark:text-teal-300' },
                                             ].map((item) => (
-                                                <div key={item.label}>
-                                                    <p className="text-xl font-bold" style={{ color: item.color }}>{item.value}</p>
-                                                    <p className="text-[11px] text-muted-foreground">{item.label}</p>
+                                                <div key={item.label} className={`rounded-lg ${item.bg} py-2 text-center`}>
+                                                    <p className={`text-xl font-bold tabular-nums ${item.text}`}>{item.value}</p>
+                                                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{item.label}</p>
                                                 </div>
                                             ))}
                                         </div>
@@ -509,25 +519,37 @@ export default function AdminIndex({ stats: rawStats, compliance: rawCompliance,
                         <CardContent className="pt-0 space-y-2">
                             {participation_targets.length === 0 ? (
                                 <p className="text-xs text-muted-foreground py-2">Belum ada target. <Link href="/admin/targets" className="underline">Atur sekarang</Link></p>
-                            ) : participation_targets.map((t) => (
-                                <div key={t.level} className="rounded-lg bg-muted/50 px-3 py-2">
-                                    <p className="text-sm font-semibold mb-1">{LEVEL_LABELS[t.level] ?? t.level}</p>
-                                    <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
-                                        {t.bugar_per_hari > 0 && (
-                                            <p className="text-[11px] text-muted-foreground">BS: <span className="font-medium text-foreground">{t.bugar_per_hari}×/hari</span></p>
-                                        )}
-                                        {t.laporan_per_minggu > 0 && (
-                                            <p className="text-[11px] text-muted-foreground">LB: <span className="font-medium text-foreground">{t.laporan_per_minggu}×/minggu</span></p>
-                                        )}
-                                        {t.inspeksi_per_minggu > 0 && (
-                                            <p className="text-[11px] text-muted-foreground">Insp: <span className="font-medium text-foreground">{t.inspeksi_per_minggu}×/minggu</span></p>
-                                        )}
-                                        {t.observasi_per_minggu > 0 && (
-                                            <p className="text-[11px] text-muted-foreground">OK: <span className="font-medium text-foreground">{t.observasi_per_minggu}×/minggu</span></p>
-                                        )}
+                            ) : participation_targets.map((t) => {
+                                const lvlPalette: Record<string, { bg: string; border: string; icon: string; title: string; pill: string; Icon: React.ElementType }> = {
+                                    nonstaff: { bg: 'bg-slate-50 dark:bg-slate-900',   border: 'border-slate-200 dark:border-slate-700', icon: 'text-slate-500 dark:text-slate-400',   title: 'text-slate-800 dark:text-slate-200',   pill: 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300', Icon: Users },
+                                    staff:    { bg: 'bg-blue-50 dark:bg-blue-950',     border: 'border-blue-200 dark:border-blue-800',   icon: 'text-blue-600 dark:text-blue-400',     title: 'text-blue-900 dark:text-blue-100',     pill: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',   Icon: UserCog },
+                                    srstaff:  { bg: 'bg-emerald-50 dark:bg-emerald-950', border: 'border-emerald-200 dark:border-emerald-800', icon: 'text-emerald-600 dark:text-emerald-400', title: 'text-emerald-900 dark:text-emerald-100', pill: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300', Icon: ShieldCheck },
+                                };
+                                const p = lvlPalette[t.level] ?? lvlPalette['staff'];
+                                const { Icon } = p;
+                                return (
+                                    <div key={t.level} className={`rounded-xl border ${p.border} ${p.bg} overflow-hidden`}>
+                                        <div className="flex items-center gap-2 px-3 py-2">
+                                            <Icon className={`h-4 w-4 shrink-0 ${p.icon}`} />
+                                            <p className={`text-sm font-bold ${p.title}`}>{LEVEL_LABELS[t.level] ?? t.level}</p>
+                                        </div>
+                                        <div className="px-3 pb-2.5 flex flex-wrap gap-1.5">
+                                            {t.bugar_per_hari > 0 && (
+                                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${p.pill}`}>BS {t.bugar_per_hari}×/hari</span>
+                                            )}
+                                            {t.laporan_per_minggu > 0 && (
+                                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${p.pill}`}>LB {t.laporan_per_minggu}×/minggu</span>
+                                            )}
+                                            {t.inspeksi_per_minggu > 0 && (
+                                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${p.pill}`}>Insp {t.inspeksi_per_minggu}×/minggu</span>
+                                            )}
+                                            {t.observasi_per_minggu > 0 && (
+                                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${p.pill}`}>OK {t.observasi_per_minggu}×/minggu</span>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </CardContent>
                     </Card>
 
