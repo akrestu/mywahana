@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { BookOpen, Calendar, Camera, Check, ChevronsUpDown, Images, MapPin, PenLine, Plus, Trash2, UserCheck, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
+import { UploadOverlay } from '@/components/upload-overlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -177,6 +178,7 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [processing, setProcessing] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
     const selectedTL = staffUsers.find(u => String(u.id) === teamLeaderId);
     const noExternalTL = !teamLeaderId;
@@ -257,10 +259,12 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
         formData.append('foto_dokumen', fotoDokumen!);
 
         setProcessing(true);
+        setUploadProgress(0);
         router.post('/sap/komunikasi-jsa', formData, {
             forceFormData: true,
-            onError: (errs) => { setErrors(errs); setProcessing(false); },
-            onFinish: () => setProcessing(false),
+            onProgress: (e) => setUploadProgress(e.percentage ?? null),
+            onError: (errs) => { setErrors(errs); setProcessing(false); setUploadProgress(null); },
+            onFinish: () => { setProcessing(false); setUploadProgress(null); },
         });
     }
 
@@ -596,6 +600,7 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
                 onChange={e => { handleFotoChange('kelompok', e.target.files?.[0] ?? null); e.target.value = ''; }} />
             <input ref={fotoDokumenGalleryRef} type="file" accept="image/*" className="hidden"
                 onChange={e => { handleFotoChange('dokumen', e.target.files?.[0] ?? null); e.target.value = ''; }} />
+            <UploadOverlay open={processing} progress={uploadProgress} label="Menyimpan JSA..." />
             <CameraCapture
                 open={showCamera !== null}
                 onCapture={(file) => {
