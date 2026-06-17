@@ -1,193 +1,685 @@
-import { Head, Link } from '@inertiajs/react';
-import type React from 'react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
-    AlertTriangle,
-    ChevronRight,
-    ClipboardCheck,
-    MapPin,
-    ShieldCheck,
-    UserCog,
-    Users,
+    AlertTriangle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp,
+    Download, FileText, Minus, SlidersHorizontal, TrendingUp, Users,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import {
-    Bar,
-    BarChart,
-    CartesianGrid,
-    Cell,
-    Pie,
-    PieChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from 'recharts';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type DilarangEntry = { id: number | null; name: string; jabatan: string | null; site: string | null; avatar: string | null };
-
-type Stats = {
-    bugar_selamat: { total: number; bulan_ini: number; layak: number; catatan: number; dilarang: number };
-    laporan_bahaya: { total: number; bulan_ini: number; AA: number; A: number; B: number; C: number; pending: number; selesai: number };
-    observasi_keselamatan: { total: number; bulan_ini: number; menunggu_konfirmasi: number };
-    inspeksi: { total: number; bulan_ini: number; kantor: number; tambang: number; workshop: number; mess: number };
-    users: { total: number; baratama: number; bandhawa: number };
-    komunikasi_jsa: { total: number; bulan_ini: number; menunggu_konfirmasi: number };
-};
-
+type DilarangEntry  = { id: number | null; name: string; jabatan: string | null; site: string | null; avatar: string | null };
 type ComplianceData = { total_karyawan: number; sudah_submit_bs: number; dilarang_list: DilarangEntry[] };
 
-type SiteItem = { site: string; bugar: number; laporan: number; observasi: number; inspeksi: number };
-type TrendItem = { label: string; bugar: number; laporan: number; observasi: number; inspeksi: number };
-type LeaderboardEntry = { id: number; name: string; jabatan: string | null; avatar: string | null; bs: number; lb: number; skor: number };
-type ParticipationTarget = { level: string; bugar_per_hari: number; laporan_per_minggu: number; inspeksi_per_minggu: number; observasi_per_minggu: number };
+type WeekCell     = { count: number; target: number; met: boolean | null };
+type EmployeeWeek = { laporan: WeekCell; inspeksi: WeekCell; observasi: WeekCell; jsa: WeekCell };
+type WeekMeta     = { num: number; start: string; end: string };
+type EmployeeRecapRow = {
+    id: number; name: string; jabatan: string | null; departemen: string | null;
+    level: string; site: string; avatar: string | null;
+    weeks: EmployeeWeek[];
+};
+type EmployeeRecap = { weeks: WeekMeta[]; employees: EmployeeRecapRow[] };
+type Filter       = { bulan: number; tahun: number; site: string; departemen: string; level: string; jabatan: string };
+type SiteOption   = { value: string; label: string };
 
 type Props = {
-    stats: Stats;
-    compliance: ComplianceData;
-    trend: TrendItem[];
-    site_breakdown: SiteItem[];
-    leaderboard?: Record<string, LeaderboardEntry[]>;
-    participation_targets?: ParticipationTarget[];
+    compliance:       ComplianceData;
+    employee_recap:   EmployeeRecap;
+    filter:           Filter;
+    sites:            SiteOption[];
+    jabatan_options:  string[];
+    admin_site?:      string | null;
+    sap_monitoring?:  unknown;
 };
-
-// ─── Time-of-day helper (greeting card — tidak diubah) ───────────────────────
-
-type TimeOfDay = { greeting: string; emoji: string; gradientStyle: string; shimmer: string; clockColor: string };
-
-function getTimeOfDay(hour: number): TimeOfDay {
-    if (hour >= 4 && hour < 6)
-        return { greeting: 'Selamat Subuh', emoji: '🌄', gradientStyle: 'linear-gradient(135deg, rgba(26,14,60,0.55) 0%, rgba(90,40,120,0.40) 35%, rgba(220,90,40,0.35) 70%, rgba(255,160,60,0.25) 100%)', shimmer: 'bg-[#E85D04]/20', clockColor: 'text-[#C2410C] dark:text-[#FED7AA]' };
-    if (hour >= 6 && hour < 11)
-        return { greeting: 'Selamat Pagi', emoji: '🌅', gradientStyle: 'linear-gradient(135deg, rgba(255,183,77,0.45) 0%, rgba(255,213,120,0.30) 35%, rgba(100,195,230,0.30) 70%, rgba(56,189,248,0.20) 100%)', shimmer: 'bg-[#FFB74D]/25', clockColor: 'text-[#92400E] dark:text-[#FDE68A]' };
-    if (hour >= 11 && hour < 15)
-        return { greeting: 'Selamat Siang', emoji: '☀️', gradientStyle: 'linear-gradient(135deg, rgba(30,136,229,0.35) 0%, rgba(79,195,247,0.28) 45%, rgba(224,247,254,0.25) 100%)', shimmer: 'bg-[#29B6F6]/20', clockColor: 'text-[#075985] dark:text-[#7DD3FC]' };
-    if (hour >= 15 && hour < 18)
-        return { greeting: 'Selamat Sore', emoji: '🌇', gradientStyle: 'linear-gradient(135deg, rgba(255,111,0,0.45) 0%, rgba(255,160,0,0.35) 35%, rgba(255,213,79,0.25) 65%, rgba(251,140,0,0.15) 100%)', shimmer: 'bg-[#FF6F00]/25', clockColor: 'text-[#9A3412] dark:text-[#FED7AA]' };
-    if (hour >= 18 && hour < 20)
-        return { greeting: 'Selamat Senja', emoji: '🌆', gradientStyle: 'linear-gradient(135deg, rgba(211,47,47,0.45) 0%, rgba(194,24,91,0.35) 35%, rgba(123,31,162,0.35) 65%, rgba(49,27,146,0.25) 100%)', shimmer: 'bg-[#C2185B]/20', clockColor: 'text-[#881337] dark:text-[#FECDD3]' };
-    return { greeting: 'Selamat Malam', emoji: '🌙', gradientStyle: 'linear-gradient(135deg, rgba(10,14,50,0.60) 0%, rgba(26,35,126,0.45) 45%, rgba(49,27,146,0.35) 75%, rgba(13,20,80,0.40) 100%)', shimmer: 'bg-[#3949AB]/20', clockColor: 'text-[#1E3A8A] dark:text-[#BAE6FD]' };
-}
-
-function useTimeOfDay() {
-    const [now, setNow] = useState(() => new Date());
-    useEffect(() => {
-        const tick = () => setNow(new Date());
-        const delay = 1000 - new Date().getMilliseconds();
-        const t1 = setTimeout(() => { tick(); const iv = setInterval(tick, 1000); return () => clearInterval(iv); }, delay);
-        return () => clearTimeout(t1);
-    }, []);
-    const tod = useMemo(() => getTimeOfDay(now.getHours()), [now.getHours()]);
-    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    return { ...tod, timeStr, dateStr };
-}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const RISK_COLORS: Record<string, string> = { AA: '#ef4444', A: '#f97316', B: '#eab308', C: '#22c55e' };
-const RISK_LABELS: Record<string, string> = { AA: 'Sangat Tinggi', A: 'Tinggi', B: 'Sedang', C: 'Rendah' };
-const LEVEL_LABELS: Record<string, string> = { nonstaff: 'Non-Staff', staff: 'Staff', srstaff: 'Sr. Staff' };
+const BULAN_NAMES = [
+    'Januari','Februari','Maret','April','Mei','Juni',
+    'Juli','Agustus','September','Oktober','November','Desember',
+];
 
-const TREND_SERIES = [
-    { key: 'bugar',     name: 'Bugar Selamat',          color: '#22c55e' },
-    { key: 'laporan',   name: 'Laporan Bahaya',          color: '#f97316' },
-    { key: 'observasi', name: 'Observasi Keselamatan',   color: '#8b5cf6' },
-    { key: 'inspeksi',  name: 'Inspeksi',                color: '#14b8a6' },
+const LEVEL_LABELS: Record<string, string> = {
+    nonstaff: 'Non-Staff', staff: 'Staff', srstaff: 'Sr. Staff',
+};
+const LEVEL_COLORS: Record<string, string> = {
+    nonstaff: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    staff:    'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+    srstaff:  'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300',
+};
+
+const DEPT_OPTIONS = ['Management','Production','Maintenance','Supply Chain','Engineering','HSE','HRGA'];
+
+// Warna latar tiap departemen untuk group header
+const DEPT_COLORS: Record<string, { bg: string; text: string; badge: string }> = {
+    'Production':    { bg: 'bg-orange-50  dark:bg-orange-950/50',  text: 'text-orange-800 dark:text-orange-200',  badge: 'bg-orange-200 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
+    'Maintenance':   { bg: 'bg-blue-50    dark:bg-blue-950/50',    text: 'text-blue-800   dark:text-blue-200',    badge: 'bg-blue-200   text-blue-800   dark:bg-blue-900   dark:text-blue-200' },
+    'Supply Chain':  { bg: 'bg-violet-50  dark:bg-violet-950/50',  text: 'text-violet-800 dark:text-violet-200',  badge: 'bg-violet-200 text-violet-800 dark:bg-violet-900 dark:text-violet-200' },
+    'Engineering':   { bg: 'bg-teal-50    dark:bg-teal-950/50',    text: 'text-teal-800   dark:text-teal-200',    badge: 'bg-teal-200   text-teal-800   dark:bg-teal-900   dark:text-teal-200' },
+    'HSE':           { bg: 'bg-green-50   dark:bg-green-950/50',   text: 'text-green-800  dark:text-green-200',   badge: 'bg-green-200  text-green-800  dark:bg-green-900  dark:text-green-200' },
+    'HRGA':          { bg: 'bg-pink-50    dark:bg-pink-950/50',    text: 'text-pink-800   dark:text-pink-200',    badge: 'bg-pink-200   text-pink-800   dark:bg-pink-900   dark:text-pink-200' },
+    'Management':    { bg: 'bg-amber-50   dark:bg-amber-950/50',   text: 'text-amber-800  dark:text-amber-200',   badge: 'bg-amber-200  text-amber-800  dark:bg-amber-900  dark:text-amber-200' },
+};
+const DEFAULT_DEPT_COLOR = { bg: 'bg-muted/40', text: 'text-foreground', badge: 'bg-muted text-muted-foreground' };
+
+const DEPT_ICONS: Record<string, string> = {
+    'Production':   '⚙️', 'Maintenance':  '🔧', 'Supply Chain': '📦',
+    'Engineering':  '🏗️', 'HSE':          '🦺', 'HRGA':         '👥',
+    'Management':   '🏢',
+};
+
+const ACTIVITIES = [
+    { key: 'laporan'   as const, label: 'Laporan Bahaya',  unit: 'minggu',  icon: '⚠️' },
+    { key: 'inspeksi'  as const, label: 'Inspeksi',         unit: 'minggu',  icon: '🏗️' },
+    { key: 'observasi' as const, label: 'Obs. Keselamatan', unit: 'minggu',  icon: '👁️' },
+    { key: 'jsa'       as const, label: 'JSA',               unit: 'periode', icon: '📋' },
 ] as const;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+type ActivitySummary = { met: number; total: number };
+
+function computeActivitySummary(
+    weeks: EmployeeWeek[], key: keyof EmployeeWeek, weekMetas: WeekMeta[],
+): ActivitySummary {
+    if (key === 'jsa') {
+        const seen = new Set<number>();
+        let met = 0, total = 0;
+        weeks.forEach((w, i) => {
+            if (i >= weekMetas.length) return;
+            const period = new Date(weekMetas[i].start).getDate() <= 15 ? 1 : 2;
+            if (!seen.has(period)) {
+                seen.add(period);
+                if (w.jsa.met !== null) { total++; if (w.jsa.met) met++; }
+            }
+        });
+        return { met, total };
+    }
+    let met = 0, total = 0;
+    for (const w of weeks) {
+        const cell = w[key];
+        if (cell.met !== null) { total++; if (cell.met) met++; }
+    }
+    return { met, total };
+}
+
+// ─── FilterBar ────────────────────────────────────────────────────────────────
+
+function FilterBar({ filter, sites, jabatanOptions, adminSite }: {
+    filter: Filter; sites: SiteOption[]; jabatanOptions: string[]; adminSite?: string | null | undefined;
+}) {
+    const { url } = usePage();
+    const [open, setOpen] = useState(false);
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+
+    const apply = (patch: Partial<Filter>) =>
+        router.get(url.split('?')[0], { ...filter, ...patch } as Record<string, string | number>, {
+            preserveState: false, replace: true,
+        });
+
+    const siteLabel = filter.site !== 'all'
+        ? (sites.find(s => s.value === filter.site)?.label ?? filter.site)
+        : null;
+
+    const activeFilters = [
+        siteLabel                   && { label: siteLabel, prefix: '📍' },
+        filter.departemen !== 'all' && { label: filter.departemen, prefix: '🏭' },
+        filter.level !== 'all'      && { label: LEVEL_LABELS[filter.level] ?? filter.level, prefix: '👤' },
+        filter.jabatan !== 'all'    && { label: filter.jabatan, prefix: '💼' },
+    ].filter(Boolean) as { label: string; prefix: string }[];
+
+    const activeLabel = `${BULAN_NAMES[filter.bulan - 1]} ${filter.tahun}` +
+        (activeFilters.length ? ` · ${activeFilters.length} filter aktif` : '');
+
+    return (
+        <Collapsible open={open} onOpenChange={setOpen}>
+            {/* Header toggle — always visible */}
+            <CollapsibleTrigger asChild>
+                <button className="flex w-full items-center justify-between rounded-xl border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/30">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold leading-tight">Filter Data</p>
+                            <p className="text-[11px] text-muted-foreground truncate mt-0.5">{activeLabel}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                        {activeFilters.length > 0 && (
+                            <span className="rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 leading-none">
+                                {activeFilters.length}
+                            </span>
+                        )}
+                        {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                    </div>
+                </button>
+            </CollapsibleTrigger>
+
+            {/* Active filter chips — visible when collapsed */}
+            {!open && activeFilters.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 px-1 pt-2">
+                    {activeFilters.map((f, i) => (
+                        <span key={i} className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
+                            {f.prefix} {f.label}
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            {/* Collapsible content */}
+            <CollapsibleContent>
+                <div className="rounded-xl border bg-card mt-1 px-4 py-3 space-y-3">
+
+                    {/* Periode */}
+                    <div className="space-y-1">
+                        <p className="text-[11px] font-medium text-muted-foreground">Periode</p>
+                        <div className="flex gap-2">
+                            <Select value={String(filter.bulan)} onValueChange={v => apply({ bulan: +v })}>
+                                <SelectTrigger className="h-9 flex-1 text-sm"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {BULAN_NAMES.map((name, i) => (
+                                        <SelectItem key={i + 1} value={String(i + 1)}>{name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select value={String(filter.tahun)} onValueChange={v => apply({ tahun: +v })}>
+                                <SelectTrigger className="h-9 w-24 text-sm"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    {/* Site — otomatis terisi dari site admin, bisa diubah jika perlu */}
+                    <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                            <p className="text-[11px] font-medium text-muted-foreground">Site / Lokasi</p>
+                            {adminSite && (
+                                <span className="text-[10px] text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
+                                    otomatis dari akun Anda
+                                </span>
+                            )}
+                        </div>
+                        <Select value={filter.site} onValueChange={v => apply({ site: v })}>
+                            <SelectTrigger className="h-9 w-full text-sm"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">🏢 Semua Site</SelectItem>
+                                {sites.map(s => (
+                                    <SelectItem key={s.value} value={s.value}>
+                                        📍 {s.label}{adminSite === s.value ? ' (site Anda)' : ''}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* Departemen & Level */}
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-medium text-muted-foreground">Departemen</p>
+                            <Select value={filter.departemen} onValueChange={v => apply({ departemen: v })}>
+                                <SelectTrigger className="h-9 w-full text-sm"><SelectValue placeholder="Semua" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Dept.</SelectItem>
+                                    {DEPT_OPTIONS.map(d => <SelectItem key={d} value={d}>{DEPT_ICONS[d] ?? '🏢'} {d}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-medium text-muted-foreground">User Role</p>
+                            <Select value={filter.level} onValueChange={v => apply({ level: v })}>
+                                <SelectTrigger className="h-9 w-full text-sm"><SelectValue placeholder="Semua" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Role</SelectItem>
+                                    <SelectItem value="nonstaff">Non-Staff</SelectItem>
+                                    <SelectItem value="staff">Staff</SelectItem>
+                                    <SelectItem value="srstaff">Sr. Staff</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    {/* Jabatan */}
+                    {jabatanOptions.length > 0 && (
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-medium text-muted-foreground">Jabatan / Posisi</p>
+                            <Select value={filter.jabatan} onValueChange={v => apply({ jabatan: v })}>
+                                <SelectTrigger className="h-9 w-full text-sm"><SelectValue placeholder="Semua Jabatan" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Jabatan</SelectItem>
+                                    {jabatanOptions.map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+                </div>
+            </CollapsibleContent>
+        </Collapsible>
+    );
+}
+
+// ─── ActivityCell ─────────────────────────────────────────────────────────────
+
+function ActivityCell({ summary }: { summary: ActivitySummary }) {
+    const { met, total } = summary;
+
+    if (total === 0) {
+        return (
+            <div className="flex items-center justify-center py-1">
+                <Minus className="h-3 w-3 text-muted-foreground/25" />
+            </div>
+        );
+    }
+
+    const all  = met === total;
+    const none = met === 0;
+    const circleCls = all ? 'bg-green-500' : none ? 'bg-red-400' : 'bg-amber-400';
+    const txtCls    = all ? 'text-green-700 dark:text-green-300' : none ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-300';
+    const IconEl    = all ? <CheckCircle2 className="h-2.5 w-2.5 text-white" /> : none ? <AlertTriangle className="h-2.5 w-2.5 text-white" /> : <TrendingUp className="h-2.5 w-2.5 text-white" />;
+
+    return (
+        <div className="flex flex-col items-center gap-0.5 py-1">
+            <div className={`flex h-5 w-5 items-center justify-center rounded-full ${circleCls}`}>{IconEl}</div>
+            <span className={`text-[9px] font-bold tabular-nums leading-none ${txtCls}`}>
+                {met}<span className="font-normal opacity-50">/{total}</span>
+            </span>
+        </div>
+    );
+}
+
+// ─── ScoreBadge ───────────────────────────────────────────────────────────────
+
+function ScoreBadge({ pct }: { pct: number | null }) {
+    if (pct === null) return <span className="text-[10px] text-muted-foreground/50">—</span>;
+    const cls = pct >= 80
+        ? 'bg-green-100 text-green-800 ring-1 ring-green-300 dark:bg-green-900 dark:text-green-200 dark:ring-green-700'
+        : pct >= 50
+        ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300 dark:bg-amber-900 dark:text-amber-200 dark:ring-amber-700'
+        : 'bg-red-100 text-red-700 ring-1 ring-red-300 dark:bg-red-900 dark:text-red-300 dark:ring-red-700';
+    return (
+        <span className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${cls}`}>
+            {pct}%
+        </span>
+    );
+}
+
+// ─── DeptScoreBar ─────────────────────────────────────────────────────────────
+
+function DeptScoreBar({ avg }: { avg: number }) {
+    const barCls = avg >= 80 ? 'bg-green-500' : avg >= 50 ? 'bg-amber-400' : 'bg-red-400';
+    return (
+        <div className="flex items-center gap-1.5 min-w-[60px]">
+            <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
+                <div className={`h-full rounded-full ${barCls}`} style={{ width: `${avg}%` }} />
+            </div>
+            <span className={`text-[11px] font-bold tabular-nums ${avg >= 80 ? 'text-green-700' : avg >= 50 ? 'text-amber-700' : 'text-red-600'}`}>
+                {avg}%
+            </span>
+        </div>
+    );
+}
+
+// ─── EmployeeRecapTable ───────────────────────────────────────────────────────
+
+const PAGE_SIZE = 50;
+
+type RowData = {
+    emp: EmployeeRecapRow;
+    summaries: ({ key: typeof ACTIVITIES[number]['key']; label: string; unit: string; icon: string; summary: ActivitySummary })[];
+    score: number | null;
+};
+
+function EmployeeRecapTable({ recap, filter, exportRef }: {
+    recap: EmployeeRecap; filter: Filter; exportRef: React.RefObject<HTMLDivElement | null>;
+}) {
+    const { weeks, employees } = recap;
+    const bulanLabel = BULAN_NAMES[filter.bulan - 1] ?? '';
+    const [page, setPage] = useState(0);
+
+    const allRows = useMemo<RowData[]>(() =>
+        employees.map(emp => {
+            const summaries = ACTIVITIES.map(act => ({
+                ...act,
+                summary: computeActivitySummary(emp.weeks, act.key, weeks),
+            }));
+            let metTotal = 0, appTotal = 0;
+            summaries.forEach(({ summary }) => { metTotal += summary.met; appTotal += summary.total; });
+            return { emp, summaries, score: appTotal > 0 ? Math.round(metTotal / appTotal * 100) : null };
+        }),
+        [employees, weeks]
+    );
+
+    const deptGroups = useMemo(() => {
+        const map = new Map<string, RowData[]>();
+        for (const row of allRows) {
+            const dept = row.emp.departemen ?? 'Lainnya';
+            if (!map.has(dept)) map.set(dept, []);
+            map.get(dept)!.push(row);
+        }
+        map.forEach(rows => rows.sort((a, b) => {
+            if (a.score === null && b.score === null) return 0;
+            if (a.score === null) return 1;
+            if (b.score === null) return -1;
+            return b.score - a.score;
+        }));
+        return [...map.entries()].sort(([a], [b]) => {
+            const ai = DEPT_OPTIONS.indexOf(a);
+            const bi = DEPT_OPTIONS.indexOf(b);
+            return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+        });
+    }, [allRows]);
+
+    // Flatten all rows preserving dept order for pagination
+    const flatRows = useMemo(() => deptGroups.flatMap(([dept, rows]) =>
+        rows.map(r => ({ ...r, dept }))
+    ), [deptGroups]);
+
+    // Reset to page 0 when employees change
+    useEffect(() => { setPage(0); }, [employees]);
+
+    const totalPages = Math.ceil(flatRows.length / PAGE_SIZE);
+    const pageRows   = flatRows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+    const agg = useMemo(() => {
+        const valid = allRows.filter(r => r.score !== null);
+        if (valid.length === 0) return null;
+        const avg  = Math.round(valid.reduce((s, r) => s + (r.score ?? 0), 0) / valid.length);
+        const full = valid.filter(r => r.score === 100).length;
+        return { avg, full, total: employees.length };
+    }, [allRows, employees.length]);
+
+    if (employees.length === 0) {
+        return (
+            <Card>
+                <CardHeader className="px-4 pt-4 pb-2">
+                    <p className="text-sm font-bold">📊 Rekap Capaian Karyawan</p>
+                    <p className="text-xs text-muted-foreground">{bulanLabel} {filter.tahun}</p>
+                </CardHeader>
+                <CardContent className="pt-0 pb-10 text-center">
+                    <Users className="h-9 w-9 text-muted-foreground/30 mx-auto mb-2 mt-6" />
+                    <p className="text-sm font-medium text-muted-foreground">Tidak ada karyawan</p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">Coba ubah filter di atas</p>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    return (
+        <div className="space-y-2">
+            {/* Section header */}
+            <div className="flex items-center justify-between gap-2">
+                <div>
+                    <h2 className="text-sm font-bold">📊 Rekap Capaian Karyawan</h2>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {bulanLabel} {filter.tahun} · {employees.length} karyawan · {deptGroups.length} departemen
+                    </p>
+                </div>
+                {agg && (
+                    <div className="text-right shrink-0">
+                        <p className={`text-sm font-bold ${agg.avg >= 80 ? 'text-green-600' : agg.avg >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
+                            {agg.avg}%
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">{agg.full} capai 100%</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Legend — single compact row */}
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground px-0.5">
+                {[
+                    { cls: 'bg-green-500', Icon: CheckCircle2,  label: 'Terpenuhi' },
+                    { cls: 'bg-amber-400', Icon: TrendingUp,    label: 'Sebagian'  },
+                    { cls: 'bg-red-400',   Icon: AlertTriangle, label: 'Belum'     },
+                    { cls: 'bg-muted',     Icon: Minus,         label: 'N/A'       },
+                ].map(({ cls, Icon, label }) => (
+                    <span key={label} className="flex items-center gap-1">
+                        <span className={`flex h-3.5 w-3.5 items-center justify-center rounded-full ${cls}`}>
+                            <Icon className="h-2 w-2 text-white" />
+                        </span>
+                        {label}
+                    </span>
+                ))}
+            </div>
+
+            <div ref={exportRef} className="overflow-x-auto rounded-xl border bg-card">
+                <table className="min-w-full border-separate border-spacing-0">
+                    <thead>
+                        <tr>
+                            <th className="sticky left-0 top-0 z-20 bg-muted/95 backdrop-blur-sm px-2 py-1.5 text-left border-b border-r border-border min-w-[140px]">
+                                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Karyawan</span>
+                            </th>
+                            {ACTIVITIES.map(act => (
+                                <th key={act.key} className="sticky top-0 z-10 bg-muted/95 backdrop-blur-sm px-1 py-1.5 text-center border-b border-border min-w-[56px]">
+                                    <div className="flex flex-col items-center gap-0.5">
+                                        <span className="text-xs leading-none">{act.icon}</span>
+                                        <span className="text-[9px] font-medium text-muted-foreground leading-tight">{act.label}</span>
+                                    </div>
+                                </th>
+                            ))}
+                            <th className="sticky top-0 z-10 bg-muted/95 backdrop-blur-sm px-1.5 py-1.5 text-center border-b border-l border-border min-w-[44px]">
+                                <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wide">Skor</span>
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {pageRows.map((row, i) => {
+                            const { emp, summaries, score, dept } = row;
+                            const levelCls = LEVEL_COLORS[emp.level] ?? LEVEL_COLORS['staff'];
+                            const rowBg    = i % 2 === 0 ? 'bg-background' : 'bg-muted/10';
+                            const deptColor = DEPT_COLORS[dept] ?? DEFAULT_DEPT_COLOR;
+
+                            // Show dept header row when dept changes
+                            const prevDept = i > 0 ? pageRows[i - 1].dept : null;
+                            const showDeptHeader = dept !== prevDept;
+
+                            return (
+                                <Fragment key={emp.id}>
+                                    {showDeptHeader && (
+                                        <tr>
+                                            <td colSpan={ACTIVITIES.length + 2} className={`${deptColor.bg} border-b border-t border-border/50 px-2 py-1`}>
+                                                <span className={`text-[10px] font-semibold ${deptColor.text}`}>
+                                                    {DEPT_ICONS[dept] ?? '🏢'} {dept}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    )}
+                                    <tr>
+                                        <td className={`sticky left-0 z-10 ${rowBg} border-b border-r border-border/40 px-2 py-1`}>
+                                            <p className="font-medium text-[11px] leading-tight truncate max-w-[130px]">{emp.name}</p>
+                                            <div className="flex items-center gap-1 mt-0.5">
+                                                <span className={`inline-flex rounded-full px-1 text-[9px] font-medium leading-tight ${levelCls}`}>
+                                                    {LEVEL_LABELS[emp.level] ?? emp.level}
+                                                </span>
+                                                {emp.jabatan && (
+                                                    <span className="text-[9px] text-muted-foreground truncate max-w-[60px] leading-tight">{emp.jabatan}</span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        {summaries.map(({ key, summary }) => (
+                                            <td key={key} className={`${rowBg} border-b border-border/40 px-0 py-0 text-center`}>
+                                                <ActivityCell summary={summary} />
+                                            </td>
+                                        ))}
+                                        <td className={`${rowBg} border-b border-l border-border/40 px-1 py-1 text-center`}>
+                                            <ScoreBadge pct={score} />
+                                        </td>
+                                    </tr>
+                                </Fragment>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-between px-1">
+                    <p className="text-[11px] text-muted-foreground">
+                        {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, flatRows.length)} dari {flatRows.length}
+                    </p>
+                    <div className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                        </Button>
+                        <span className="text-[11px] font-medium px-1">{page + 1} / {totalPages}</span>
+                        <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>
+                            <ChevronRight className="h-3.5 w-3.5" />
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            <p className="text-[10px] text-muted-foreground/60 text-center">
+                Geser ke kanan untuk melihat semua kolom →
+            </p>
+        </div>
+    );
+}
+
+// ─── ExportButtons ────────────────────────────────────────────────────────────
+
+function ExportButtons({ targetRef, filename }: { targetRef: React.RefObject<HTMLDivElement | null>; filename: string }) {
+    const [loading, setLoading] = useState<'png' | 'pdf' | null>(null);
+
+    const exportPng = useCallback(async () => {
+        const el = targetRef.current;
+        if (!el) return;
+        setLoading('png');
+        try {
+            const { toPng } = await import('html-to-image');
+            // Expand overflow agar seluruh tabel tertangkap
+            const prevOverflow = el.style.overflow;
+            el.style.overflow = 'visible';
+            const dataUrl = await toPng(el, {
+                cacheBust: true,
+                pixelRatio: 2,
+                backgroundColor: '#ffffff',
+                width: el.scrollWidth,
+                height: el.scrollHeight,
+            });
+            el.style.overflow = prevOverflow;
+            const link = document.createElement('a');
+            link.download = `${filename}.png`;
+            link.href = dataUrl;
+            link.click();
+        } catch (e) {
+            console.error('Export PNG gagal:', e);
+        } finally {
+            setLoading(null);
+        }
+    }, [targetRef, filename]);
+
+    const exportPdf = useCallback(() => {
+        setLoading('pdf');
+        // Buka print dialog — browser render ke PDF langsung
+        const style = document.createElement('style');
+        style.id = '__print_override';
+        style.innerHTML = `
+            @media print {
+                body > * { display: none !important; }
+                body > #print-target { display: block !important; }
+                @page { size: A4 landscape; margin: 12mm; }
+            }
+        `;
+        const wrap = document.createElement('div');
+        wrap.id = 'print-target';
+        wrap.style.cssText = 'position:fixed;top:0;left:0;width:100%;z-index:9999;background:#fff;';
+        const clone = targetRef.current?.cloneNode(true) as HTMLElement | undefined;
+        if (clone) {
+            clone.style.cssText = 'overflow:visible;max-height:none;';
+            wrap.appendChild(clone);
+        }
+        document.head.appendChild(style);
+        document.body.appendChild(wrap);
+        window.print();
+        setTimeout(() => {
+            document.getElementById('print-target')?.remove();
+            document.getElementById('__print_override')?.remove();
+            setLoading(null);
+        }, 1000);
+    }, [targetRef]);
+
+    return (
+        <div className="flex gap-2">
+            <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+                onClick={exportPng}
+                disabled={loading !== null}
+            >
+                <Download className="h-3.5 w-3.5" />
+                {loading === 'png' ? 'Menyimpan…' : 'Simpan PNG'}
+            </Button>
+            <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+                onClick={exportPdf}
+                disabled={loading !== null}
+            >
+                <FileText className="h-3.5 w-3.5" />
+                {loading === 'pdf' ? 'Membuka…' : 'Cetak PDF'}
+            </Button>
+        </div>
+    );
+}
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const DEFAULT_OK  = { total: 0, bulan_ini: 0, menunggu_konfirmasi: 0 };
-const DEFAULT_INS = { total: 0, bulan_ini: 0, kantor: 0, tambang: 0, workshop: 0, mess: 0 };
-const DEFAULT_JSA = { total: 0, bulan_ini: 0, menunggu_konfirmasi: 0 };
 const DEFAULT_COMPLIANCE: ComplianceData = { total_karyawan: 0, sudah_submit_bs: 0, dilarang_list: [] };
+const DEFAULT_FILTER: Filter = {
+    bulan: new Date().getMonth() + 1, tahun: new Date().getFullYear(),
+    site: 'all', departemen: 'all', level: 'all', jabatan: 'all',
+};
+const DEFAULT_RECAP: EmployeeRecap = { weeks: [], employees: [] };
 
-export default function AdminIndex({ stats: rawStats, compliance: rawCompliance, trend = [], site_breakdown = [], leaderboard = {}, participation_targets = [] }: Props) {
-    const stats = {
-        ...rawStats,
-        observasi_keselamatan: rawStats.observasi_keselamatan ?? DEFAULT_OK,
-        inspeksi:              rawStats.inspeksi              ?? DEFAULT_INS,
-        komunikasi_jsa:        rawStats.komunikasi_jsa        ?? DEFAULT_JSA,
-    };
-    const tod = useTimeOfDay();
-    const [activeLeaderSite, setActiveLeaderSite] = useState<string>(() => Object.keys(leaderboard)[0] ?? '');
+export default function AdminIndex({
+    compliance: rawCompliance,
+    employee_recap  = DEFAULT_RECAP,
+    filter          = DEFAULT_FILTER,
+    sites           = [],
+    jabatan_options = [],
+    admin_site,
+}: Props) {
     const [dilarangExpanded, setDilarangExpanded] = useState(false);
-    const leaderSites = Object.keys(leaderboard);
-
-    const compliance = rawCompliance ?? DEFAULT_COMPLIANCE;
-    const compliancePct = compliance.total_karyawan > 0
-        ? Math.round(compliance.sudah_submit_bs / compliance.total_karyawan * 100)
-        : 0;
+    const compliance   = rawCompliance ?? DEFAULT_COMPLIANCE;
     const dilarangList = compliance.dilarang_list ?? [];
+    const exportRef    = useRef<HTMLDivElement>(null);
+
+    const exportFilename = `monitoring-sap-${BULAN_NAMES[filter.bulan - 1].toLowerCase()}-${filter.tahun}`;
 
     return (
         <>
             <Head title="Admin Dashboard" />
 
-            <div className="space-y-3 pb-8">
+            <div className="space-y-4 pb-10">
 
-                {/* ① ALERTS DARURAT */}
-                {stats.laporan_bahaya.pending > 0 && (
-                    <Link href="/admin/laporan-bahaya" className="block">
-                        <div className="flex items-center gap-3 rounded-xl border-2 border-red-400 bg-red-50 px-4 py-3 dark:border-red-700 dark:bg-red-950">
-                            <AlertTriangle className="h-5 w-5 shrink-0 text-red-500" />
-                            <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-red-800 dark:text-red-200 text-sm">
-                                    ⚠️ {stats.laporan_bahaya.pending} laporan bahaya belum ditindaklanjuti
-                                </p>
-                                <p className="text-xs text-red-600 dark:text-red-400">Ketuk untuk melihat dan menangani</p>
-                            </div>
-                            <ChevronRight size={16} className="text-red-400 shrink-0" />
-                        </div>
-                    </Link>
-                )}
-                {stats.observasi_keselamatan.menunggu_konfirmasi > 0 && (
-                    <Link href="/admin/observasi-keselamatan" className="block">
-                        <div className="flex items-center gap-3 rounded-xl border-2 border-violet-400 bg-violet-50 px-4 py-3 dark:border-violet-700 dark:bg-violet-950">
-                            <ClipboardCheck className="h-5 w-5 shrink-0 text-violet-500" />
-                            <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-violet-800 dark:text-violet-200 text-sm">
-                                    📋 {stats.observasi_keselamatan.menunggu_konfirmasi} observasi menunggu konfirmasi
-                                </p>
-                                <p className="text-xs text-violet-600 dark:text-violet-400">Ketuk untuk melihat dan menangani</p>
-                            </div>
-                            <ChevronRight size={16} className="text-violet-400 shrink-0" />
-                        </div>
-                    </Link>
-                )}
-                {stats.komunikasi_jsa.menunggu_konfirmasi > 0 && (
-                    <Link href="/admin/komunikasi-jsa?status=menunggu_konfirmasi" className="block">
-                        <div className="flex items-center gap-3 rounded-xl border-2 border-amber-400 bg-amber-50 px-4 py-3 dark:border-amber-700 dark:bg-amber-950">
-                            <ClipboardCheck className="h-5 w-5 shrink-0 text-amber-500" />
-                            <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-amber-800 dark:text-amber-200 text-sm">
-                                    📄 {stats.komunikasi_jsa.menunggu_konfirmasi} komunikasi JSA menunggu konfirmasi TL
-                                </p>
-                                <p className="text-xs text-amber-600 dark:text-amber-400">Ketuk untuk melihat</p>
-                            </div>
-                            <ChevronRight size={16} className="text-amber-400 shrink-0" />
-                        </div>
-                    </Link>
-                )}
+                {/* ① DILARANG BEKERJA ALERT */}
                 {dilarangList.length > 0 && (
                     <div className="rounded-xl border-2 border-red-300 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
                         <div className="flex items-center gap-3">
-                            <span className="text-lg">🚫</span>
+                            <span className="text-xl shrink-0">🚫</span>
                             <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-red-800 dark:text-red-200 text-sm">
+                                <p className="font-bold text-red-800 dark:text-red-200 text-sm">
                                     {dilarangList.length} karyawan dilarang bekerja hari ini
                                 </p>
-                                <p className="text-xs text-red-600 dark:text-red-400">Berdasarkan hasil Bugar Selamat</p>
+                                <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
+                                    Berdasarkan hasil Bugar Selamat terbaru
+                                </p>
                             </div>
                             <button
                                 onClick={() => setDilarangExpanded(v => !v)}
-                                className="text-xs text-red-600 dark:text-red-400 underline shrink-0"
+                                className="shrink-0 rounded-lg bg-red-100 dark:bg-red-900 px-2.5 py-1 text-xs font-medium text-red-700 dark:text-red-300"
                             >
-                                {dilarangExpanded ? 'Sembunyikan' : 'Lihat'}
+                                {dilarangExpanded ? 'Tutup' : 'Lihat'}
                             </button>
                         </div>
                         {dilarangExpanded && (
@@ -195,15 +687,15 @@ export default function AdminIndex({ stats: rawStats, compliance: rawCompliance,
                                 {dilarangList.map((entry, i) => (
                                     <div key={i} className="flex items-center gap-2 rounded-lg bg-red-100 dark:bg-red-900 px-3 py-2">
                                         {entry.avatar ? (
-                                            <img src={entry.avatar} alt={entry.name} className="h-7 w-7 rounded-full object-cover shrink-0" />
+                                            <img src={entry.avatar} alt={entry.name} className="h-8 w-8 rounded-full object-cover shrink-0" />
                                         ) : (
-                                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-300 dark:bg-red-700 text-xs font-bold text-red-800 dark:text-red-200">
+                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-300 dark:bg-red-700 text-sm font-bold text-red-800 dark:text-red-200">
                                                 {entry.name.charAt(0).toUpperCase()}
                                             </div>
                                         )}
                                         <div className="min-w-0">
-                                            <p className="text-sm font-medium text-red-900 dark:text-red-100 truncate">{entry.name}</p>
-                                            <p className="text-[11px] text-red-600 dark:text-red-400">{entry.jabatan ?? '-'} · {entry.site ?? '-'}</p>
+                                            <p className="text-sm font-semibold text-red-900 dark:text-red-100 truncate">{entry.name}</p>
+                                            <p className="text-xs text-red-600 dark:text-red-400">{entry.jabatan ?? '-'} · {entry.site ?? '-'}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -212,405 +704,25 @@ export default function AdminIndex({ stats: rawStats, compliance: rawCompliance,
                     </div>
                 )}
 
-                {/* ② GREETING CARD — tidak diubah */}
-                <div className="relative overflow-hidden rounded-2xl border" style={{ background: tod.gradientStyle }}>
-                    <div className={`pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full blur-3xl ${tod.shimmer} animate-pulse`} />
-                    <div className="relative flex items-center justify-between p-4">
-                        <div>
-                            <p className="flex items-center gap-1.5 text-xs text-foreground/60"><span>{tod.emoji}</span>{tod.greeting}</p>
-                            <h1 className="text-xl font-bold">Admin Dashboard</h1>
-                            <p className="text-xs text-muted-foreground">Monitoring HSE semua site</p>
-                        </div>
-                        <div className="text-right">
-                            <p className={`font-mono text-3xl font-bold tabular-nums ${tod.clockColor}`}>{tod.timeStr}</p>
-                            <p className="text-[11px] text-muted-foreground capitalize">{tod.dateStr}</p>
-                        </div>
+                {/* ② PAGE TITLE + EXPORT */}
+                <div className="flex items-start justify-between gap-2">
+                    <div>
+                        <h1 className="text-xl font-bold">Monitoring SAP</h1>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            {BULAN_NAMES[filter.bulan - 1]} {filter.tahun}
+                            {filter.site !== 'all' && <span> · {sites.find(s => s.value === filter.site)?.label ?? filter.site}</span>}
+                        </p>
                     </div>
+                    <ExportButtons targetRef={exportRef} filename={exportFilename} />
                 </div>
 
-                {/* ③ COMPLIANCE HARI INI */}
-                <Card>
-                    <CardHeader className="px-4 pt-4 pb-3">
-                        <p className="text-sm font-bold">📅 Compliance Hari Ini</p>
-                    </CardHeader>
-                    <CardContent className="pt-0 space-y-3">
-                        <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-sm text-muted-foreground">Bugar Selamat sudah submit</span>
-                                <span className="text-sm font-bold">
-                                    {compliance.sudah_submit_bs}
-                                    <span className="text-xs font-normal text-muted-foreground"> / {compliance.total_karyawan} ({compliancePct}%)</span>
-                                </span>
-                            </div>
-                            <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
-                                <div
-                                    className={`h-full rounded-full transition-all ${compliancePct >= 80 ? 'bg-green-500' : compliancePct >= 50 ? 'bg-yellow-400' : 'bg-red-500'}`}
-                                    style={{ width: `${compliancePct}%` }}
-                                />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                            <div className="rounded-lg bg-green-50 dark:bg-green-950 py-2 px-1">
-                                <p className="text-xl font-bold text-green-700 dark:text-green-300">{compliance.sudah_submit_bs}</p>
-                                <p className="text-[11px] text-muted-foreground">Sudah Submit</p>
-                            </div>
-                            <div className="rounded-lg bg-muted/50 py-2 px-1">
-                                <p className="text-xl font-bold">{compliance.total_karyawan - compliance.sudah_submit_bs}</p>
-                                <p className="text-[11px] text-muted-foreground">Belum Submit</p>
-                            </div>
-                            <div className={`rounded-lg py-2 px-1 ${dilarangList.length > 0 ? 'bg-red-50 dark:bg-red-950' : 'bg-muted/50'}`}>
-                                <p className={`text-xl font-bold ${dilarangList.length > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>{dilarangList.length}</p>
-                                <p className="text-[11px] text-muted-foreground">Dilarang Kerja</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                {/* ③ COLLAPSIBLE FILTER */}
+                <FilterBar filter={filter} sites={sites} jabatanOptions={jabatan_options} adminSite={admin_site} />
 
-
-                {/* ⑤ 6 STAT CARDS */}
-                <div className="grid grid-cols-2 gap-3">
-                    <StatCard emoji="📋" label="Bugar Selamat"           sublabel="Checklist kesehatan"         value={stats.bugar_selamat.total}           note={`${stats.bugar_selamat.bulan_ini} bulan ini`}           bg="bg-green-50 dark:bg-green-950"   border="border-green-200 dark:border-green-800"   valueColor="text-green-700 dark:text-green-300" />
-                    <StatCard emoji="⚠️" label="Laporan Bahaya"          sublabel="Temuan risiko"               value={stats.laporan_bahaya.total}          note={`${stats.laporan_bahaya.bulan_ini} bulan ini`}          bg="bg-orange-50 dark:bg-orange-950" border="border-orange-200 dark:border-orange-800" valueColor="text-orange-700 dark:text-orange-300" />
-                    <StatCard emoji="👁️" label="Observasi Keselamatan"   sublabel="SAP — observasi lapangan"    value={stats.observasi_keselamatan.total}   note={`${stats.observasi_keselamatan.bulan_ini} bulan ini`}   bg="bg-violet-50 dark:bg-violet-950" border="border-violet-200 dark:border-violet-800" valueColor="text-violet-700 dark:text-violet-300" />
-                    <StatCard emoji="🏗️" label="Inspeksi"               sublabel="4 jenis inspeksi"            value={stats.inspeksi.total}               note={`${stats.inspeksi.bulan_ini} bulan ini`}               bg="bg-teal-50 dark:bg-teal-950"     border="border-teal-200 dark:border-teal-800"     valueColor="text-teal-700 dark:text-teal-300" />
-                    <StatCard
-                        emoji="⏳" label="LB Belum Selesai" sublabel="Perlu tindak lanjut"
-                        value={stats.laporan_bahaya.pending}
-                        note={`${stats.laporan_bahaya.selesai} sudah selesai`}
-                        bg={stats.laporan_bahaya.pending > 0 ? 'bg-red-50 dark:bg-red-950' : 'bg-muted/40'}
-                        border={stats.laporan_bahaya.pending > 0 ? 'border-red-200 dark:border-red-800' : 'border-border'}
-                        valueColor={stats.laporan_bahaya.pending > 0 ? 'text-red-600 dark:text-red-400' : 'text-foreground'}
-                    />
-                    <StatCard emoji="👥" label="Karyawan" sublabel={`${stats.users.baratama} Baratama · ${stats.users.bandhawa} Bandhawa`} value={stats.users.total} note="total terdaftar" bg="bg-indigo-50 dark:bg-indigo-950" border="border-indigo-200 dark:border-indigo-800" valueColor="text-indigo-700 dark:text-indigo-300" />
-                    <Link href="/admin/komunikasi-jsa" className="col-span-2">
-                        <StatCard emoji="📄" label="Komunikasi JSA/SOP/IK" sublabel={`${stats.komunikasi_jsa.menunggu_konfirmasi} menunggu konfirmasi TL`} value={stats.komunikasi_jsa.total} note={`${stats.komunikasi_jsa.bulan_ini} bulan ini`} bg={stats.komunikasi_jsa.menunggu_konfirmasi > 0 ? 'bg-amber-50 dark:bg-amber-950' : 'bg-sky-50 dark:bg-sky-950'} border={stats.komunikasi_jsa.menunggu_konfirmasi > 0 ? 'border-amber-200 dark:border-amber-800' : 'border-sky-200 dark:border-sky-800'} valueColor={stats.komunikasi_jsa.menunggu_konfirmasi > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-sky-700 dark:text-sky-300'} />
-                    </Link>
-                </div>
-
-                {/* ⑥ DONUT CHARTS — Kelayakan & Risiko side by side */}
-                <div className="grid grid-cols-2 gap-3">
-                    {/* Kelayakan Kerja donut */}
-                    <Card>
-                        <CardHeader className="px-4 pt-4 pb-1">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm font-bold">Kelayakan Kerja</p>
-                                <Link href="/admin/bugar-selamat">
-                                    <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px]">Semua <ChevronRight size={11} /></Button>
-                                </Link>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-0 pb-3">
-                            {stats.bugar_selamat.total > 0 ? (
-                                <>
-                                    <ResponsiveContainer width="100%" height={130}>
-                                        <PieChart>
-                                            <Pie
-                                                data={[
-                                                    { name: 'Layak',    value: stats.bugar_selamat.layak,    fill: '#22c55e' },
-                                                    { name: 'Catatan',  value: stats.bugar_selamat.catatan,  fill: '#eab308' },
-                                                    { name: 'Dilarang', value: stats.bugar_selamat.dilarang, fill: '#ef4444' },
-                                                ]}
-                                                cx="50%" cy="50%"
-                                                innerRadius="52%" outerRadius="78%"
-                                                paddingAngle={2} dataKey="value"
-                                            >
-                                                {[{ fill: '#22c55e' }, { fill: '#eab308' }, { fill: '#ef4444' }].map((c, i) => (
-                                                    <Cell key={i} fill={c.fill} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip formatter={(v) => [`${v}`, '']} contentStyle={{ fontSize: 11, borderRadius: 6 }} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                    <div className="space-y-1 mt-1">
-                                        {[
-                                            { label: 'Layak',    value: stats.bugar_selamat.layak,    color: '#22c55e' },
-                                            { label: 'Catatan',  value: stats.bugar_selamat.catatan,  color: '#eab308' },
-                                            { label: 'Dilarang', value: stats.bugar_selamat.dilarang, color: '#ef4444' },
-                                        ].map((item) => (
-                                            <div key={item.label} className="flex items-center justify-between">
-                                                <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                                                    <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                                                    {item.label}
-                                                </span>
-                                                <span className="text-[11px] font-semibold">{item.value}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </>
-                            ) : <p className="py-8 text-center text-xs text-muted-foreground">Belum ada data</p>}
-                        </CardContent>
-                    </Card>
-
-                    {/* Tingkat Risiko donut */}
-                    <Card>
-                        <CardHeader className="px-4 pt-4 pb-1">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm font-bold">Tingkat Risiko</p>
-                                <Link href="/admin/laporan-bahaya">
-                                    <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px]">Semua <ChevronRight size={11} /></Button>
-                                </Link>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-0 pb-3">
-                            {stats.laporan_bahaya.total > 0 ? (
-                                <>
-                                    <ResponsiveContainer width="100%" height={130}>
-                                        <PieChart>
-                                            <Pie
-                                                data={(['AA', 'A', 'B', 'C'] as const).map((k) => ({ name: k, value: stats.laporan_bahaya[k], fill: RISK_COLORS[k] }))}
-                                                cx="50%" cy="50%"
-                                                innerRadius="52%" outerRadius="78%"
-                                                paddingAngle={2} dataKey="value"
-                                            >
-                                                {(['AA', 'A', 'B', 'C'] as const).map((k) => (
-                                                    <Cell key={k} fill={RISK_COLORS[k]} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip formatter={(v) => [`${v}`, '']} contentStyle={{ fontSize: 11, borderRadius: 6 }} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                    <div className="space-y-1 mt-1">
-                                        {(['AA', 'A', 'B', 'C'] as const).map((k) => (
-                                            <div key={k} className="flex items-center justify-between">
-                                                <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                                                    <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: RISK_COLORS[k] }} />
-                                                    {k} — {RISK_LABELS[k]}
-                                                </span>
-                                                <span className="text-[11px] font-semibold">{stats.laporan_bahaya[k]}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </>
-                            ) : <p className="py-8 text-center text-xs text-muted-foreground">Belum ada data</p>}
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* ⑥b DONUT — Distribusi Inspeksi per jenis */}
-                {stats.inspeksi.total > 0 && (
-                    <Card>
-                        <CardHeader className="px-4 pt-4 pb-1">
-                            <p className="text-sm font-bold">🏗️ Distribusi Inspeksi SAP</p>
-                        </CardHeader>
-                        <CardContent className="pt-0 pb-4">
-                            <div className="flex items-center gap-2">
-                                <ResponsiveContainer width="45%" height={150}>
-                                    <PieChart>
-                                        <Pie
-                                            data={[
-                                                { name: 'Kantor',   value: stats.inspeksi.kantor,   fill: '#14b8a6' },
-                                                { name: 'Tambang',  value: stats.inspeksi.tambang,  fill: '#0d9488' },
-                                                { name: 'Workshop', value: stats.inspeksi.workshop, fill: '#0f766e' },
-                                                { name: 'Mess',     value: stats.inspeksi.mess,     fill: '#134e4a' },
-                                            ]}
-                                            cx="50%" cy="50%"
-                                            innerRadius="50%" outerRadius="80%"
-                                            paddingAngle={2} dataKey="value"
-                                        >
-                                            {['#14b8a6', '#0d9488', '#0f766e', '#134e4a'].map((c, i) => <Cell key={i} fill={c} />)}
-                                        </Pie>
-                                        <Tooltip formatter={(v) => [`${v}`, '']} contentStyle={{ fontSize: 11, borderRadius: 6 }} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                                <div className="flex-1 space-y-2">
-                                    {[
-                                        { label: 'Kantor',   value: stats.inspeksi.kantor,   color: '#14b8a6' },
-                                        { label: 'Tambang',  value: stats.inspeksi.tambang,  color: '#0d9488' },
-                                        { label: 'Workshop', value: stats.inspeksi.workshop, color: '#0f766e' },
-                                        { label: 'Mess',     value: stats.inspeksi.mess,     color: '#134e4a' },
-                                    ].map((item) => {
-                                        const pct = stats.inspeksi.total > 0 ? Math.round(item.value / stats.inspeksi.total * 100) : 0;
-                                        return (
-                                            <div key={item.label}>
-                                                <div className="flex justify-between text-[11px] mb-0.5">
-                                                    <span className="text-muted-foreground">{item.label}</span>
-                                                    <span className="font-semibold">{item.value} <span className="text-muted-foreground font-normal">({pct}%)</span></span>
-                                                </div>
-                                                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                                                    <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: item.color }} />
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* ⑦ TREND CHART 6 BULAN */}
-                {trend.length > 0 && (
-                    <Card>
-                        <CardHeader className="px-4 pt-4 pb-2">
-                            <p className="text-sm font-bold">📈 Tren Aktivitas 6 Bulan</p>
-                        </CardHeader>
-                        <CardContent className="pt-0 pb-4">
-                            <div className="flex flex-wrap gap-x-3 gap-y-1 mb-3">
-                                {TREND_SERIES.map((s) => (
-                                    <span key={s.key} className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                        <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: s.color }} />
-                                        {s.name}
-                                    </span>
-                                ))}
-                            </div>
-                            <ResponsiveContainer width="100%" height={180}>
-                                <BarChart data={trend} margin={{ top: 0, right: 4, bottom: 0, left: -20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" strokeOpacity={0.08} />
-                                    <XAxis dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                                    <Tooltip
-                                        contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                                        cursor={{ fill: 'currentColor', fillOpacity: 0.05 }}
-                                    />
-                                    {TREND_SERIES.map((s) => (
-                                        <Bar key={s.key} dataKey={s.key} name={s.name} fill={s.color} radius={[3, 3, 0, 0]} maxBarSize={14} />
-                                    ))}
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* ⑧ PER SITE BREAKDOWN */}
-                {site_breakdown.length > 0 && (
-                    <div className="space-y-2">
-                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide px-0.5">Per Site</p>
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            {site_breakdown.map((s, i) => {
-                                const palette = i === 0
-                                    ? { border: 'border-indigo-300 dark:border-indigo-700', bg: 'bg-indigo-50 dark:bg-indigo-950', header: 'bg-indigo-100 dark:bg-indigo-900', icon: 'text-indigo-600 dark:text-indigo-400', title: 'text-indigo-800 dark:text-indigo-200' }
-                                    : { border: 'border-pink-300 dark:border-pink-700',   bg: 'bg-pink-50 dark:bg-pink-950',       header: 'bg-pink-100 dark:bg-pink-900',     icon: 'text-pink-600 dark:text-pink-400',   title: 'text-pink-800 dark:text-pink-200' };
-                                return (
-                                    <div key={s.site} className={`rounded-xl border ${palette.border} ${palette.bg} overflow-hidden`}>
-                                        <div className={`flex items-center gap-2 px-3 py-2.5 ${palette.header}`}>
-                                            <MapPin className={`h-4 w-4 shrink-0 ${palette.icon}`} />
-                                            <p className={`text-sm font-bold capitalize ${palette.title}`}>Site {s.site}</p>
-                                        </div>
-                                        <div className="grid grid-cols-4 gap-2 p-3">
-                                            {[
-                                                { label: 'Bugar',   value: s.bugar,     bg: 'bg-green-100 dark:bg-green-900',   text: 'text-green-700 dark:text-green-300' },
-                                                { label: 'Laporan', value: s.laporan,   bg: 'bg-orange-100 dark:bg-orange-900', text: 'text-orange-700 dark:text-orange-300' },
-                                                { label: 'Observ.', value: s.observasi, bg: 'bg-violet-100 dark:bg-violet-900', text: 'text-violet-700 dark:text-violet-300' },
-                                                { label: 'Inspeksi',value: s.inspeksi,  bg: 'bg-teal-100 dark:bg-teal-900',     text: 'text-teal-700 dark:text-teal-300' },
-                                            ].map((item) => (
-                                                <div key={item.label} className={`rounded-lg ${item.bg} py-2 text-center`}>
-                                                    <p className={`text-xl font-bold tabular-nums ${item.text}`}>{item.value}</p>
-                                                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{item.label}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {/* ⑨ TARGET PARTISIPASI + LEADERBOARD */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                    {/* Target */}
-                    <Card>
-                        <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                            <p className="text-sm font-bold">🎯 Target Partisipasi</p>
-                            <Link href="/admin/targets">
-                                <Button size="sm" variant="outline" className="h-7 text-xs">Ubah</Button>
-                            </Link>
-                        </div>
-                        <CardContent className="pt-0 space-y-2">
-                            {participation_targets.length === 0 ? (
-                                <p className="text-xs text-muted-foreground py-2">Belum ada target. <Link href="/admin/targets" className="underline">Atur sekarang</Link></p>
-                            ) : participation_targets.map((t) => {
-                                const lvlPalette: Record<string, { bg: string; border: string; icon: string; title: string; pill: string; Icon: React.ElementType }> = {
-                                    nonstaff: { bg: 'bg-slate-50 dark:bg-slate-900',   border: 'border-slate-200 dark:border-slate-700', icon: 'text-slate-500 dark:text-slate-400',   title: 'text-slate-800 dark:text-slate-200',   pill: 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300', Icon: Users },
-                                    staff:    { bg: 'bg-blue-50 dark:bg-blue-950',     border: 'border-blue-200 dark:border-blue-800',   icon: 'text-blue-600 dark:text-blue-400',     title: 'text-blue-900 dark:text-blue-100',     pill: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',   Icon: UserCog },
-                                    srstaff:  { bg: 'bg-emerald-50 dark:bg-emerald-950', border: 'border-emerald-200 dark:border-emerald-800', icon: 'text-emerald-600 dark:text-emerald-400', title: 'text-emerald-900 dark:text-emerald-100', pill: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300', Icon: ShieldCheck },
-                                };
-                                const p = lvlPalette[t.level] ?? lvlPalette['staff'];
-                                const { Icon } = p;
-                                return (
-                                    <div key={t.level} className={`rounded-xl border ${p.border} ${p.bg} overflow-hidden`}>
-                                        <div className="flex items-center gap-2 px-3 py-2">
-                                            <Icon className={`h-4 w-4 shrink-0 ${p.icon}`} />
-                                            <p className={`text-sm font-bold ${p.title}`}>{LEVEL_LABELS[t.level] ?? t.level}</p>
-                                        </div>
-                                        <div className="px-3 pb-2.5 flex flex-wrap gap-1.5">
-                                            {t.bugar_per_hari > 0 && (
-                                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${p.pill}`}>BS {t.bugar_per_hari}×/hari</span>
-                                            )}
-                                            {t.laporan_per_minggu > 0 && (
-                                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${p.pill}`}>LB {t.laporan_per_minggu}×/minggu</span>
-                                            )}
-                                            {t.inspeksi_per_minggu > 0 && (
-                                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${p.pill}`}>Insp {t.inspeksi_per_minggu}×/minggu</span>
-                                            )}
-                                            {t.observasi_per_minggu > 0 && (
-                                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${p.pill}`}>OK {t.observasi_per_minggu}×/minggu</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </CardContent>
-                    </Card>
-
-                    {/* Leaderboard */}
-                    {leaderSites.length > 0 && (
-                        <Card>
-                            <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                                <p className="text-sm font-bold">🏆 Peringkat Bulan Ini</p>
-                                <div className="flex gap-1">
-                                    {leaderSites.map((site) => (
-                                        <button
-                                            key={site}
-                                            onClick={() => setActiveLeaderSite(site)}
-                                            className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium capitalize transition-colors ${activeLeaderSite === site ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
-                                        >
-                                            {site}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <CardContent className="pt-0 space-y-1.5">
-                                {(leaderboard[activeLeaderSite] ?? []).filter((e) => e.skor > 0).slice(0, 3).map((entry, idx) => (
-                                    <div key={entry.id} className="flex items-center gap-2 rounded-xl bg-muted/40 px-3 py-2">
-                                        <span className="text-base w-6 shrink-0 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>
-                                        {entry.avatar ? (
-                                            <img src={entry.avatar} alt={entry.name} className="h-8 w-8 shrink-0 rounded-full object-cover" />
-                                        ) : (
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                                                {entry.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
-                                            </div>
-                                        )}
-                                        <p className="flex-1 text-sm font-medium truncate">{entry.name}</p>
-                                        <span className="text-sm font-bold text-primary">{entry.skor}</span>
-                                    </div>
-                                ))}
-                                {(leaderboard[activeLeaderSite] ?? []).filter((e) => e.skor > 0).length === 0 && (
-                                    <p className="text-center text-xs text-muted-foreground py-3">Belum ada data bulan ini</p>
-                                )}
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
+                {/* ④ TABLE */}
+                <EmployeeRecapTable recap={employee_recap} filter={filter} exportRef={exportRef} />
 
             </div>
         </>
-    );
-}
-
-// ─── StatCard component ───────────────────────────────────────────────────────
-
-function StatCard({ emoji, label, sublabel, value, note, bg, border, valueColor }: {
-    emoji: string; label: string; sublabel: string; value: number;
-    note: string; bg: string; border: string; valueColor: string;
-}) {
-    return (
-        <div className={`rounded-xl border ${border} ${bg} p-4`}>
-            <p className="text-2xl leading-none mb-2">{emoji}</p>
-            <p className={`text-3xl font-bold tabular-nums ${valueColor}`}>{value}</p>
-            <p className="text-sm font-semibold mt-0.5">{label}</p>
-            <p className="text-[11px] text-muted-foreground">{sublabel}</p>
-            <p className="text-[11px] text-muted-foreground mt-1">{note}</p>
-        </div>
     );
 }

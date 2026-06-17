@@ -73,11 +73,11 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
         $siteMatch = $this->getValidSites()->first(fn($v) => strtolower($v) === $siteRaw);
         $site = $siteMatch ?? null;
 
-        // Level: handles both slug variants from heading formatter
+        // Level: null if blank/invalid — avoids accidental downgrade on import
         $levelRaw = strtolower(trim(
             $this->resolve($row, ['level_nonstaffstaffsrstaff', 'level_nonstaff_staff_srstaff', 'level']) ?? ''
         ));
-        $level = in_array($levelRaw, ['nonstaff', 'staff', 'srstaff']) ? $levelRaw : 'nonstaff';
+        $levelExplicit = in_array($levelRaw, ['nonstaff', 'staff', 'srstaff']) ? $levelRaw : null;
 
         // Email
         $emailRaw = $this->resolve($row, ['email']);
@@ -93,11 +93,13 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
         $departemenTrimmed = $departemenRaw ? trim($departemenRaw) : null;
         $departemen = in_array($departemenTrimmed, $validDepartemen, true) ? $departemenTrimmed : null;
 
-        // is_admin: handles both slug variants
+        // is_admin: null if blank — avoids accidental demotion on import
         $adminRaw = strtolower(trim(
-            $this->resolve($row, ['is_admin_01', 'is_admin_0_1', 'is_admin', 'admin']) ?? '0'
+            $this->resolve($row, ['is_admin_01', 'is_admin_0_1', 'is_admin', 'admin']) ?? ''
         ));
-        $isAdmin = in_array($adminRaw, ['1', 'true', 'yes', 'ya'], true);
+        $isAdminExplicit = $adminRaw !== ''
+            ? in_array($adminRaw, ['1', 'true', 'yes', 'ya'], true)
+            : null;
 
         $isPlainPassword = !str_starts_with($password, '$2y$') && !str_starts_with($password, '$2b$');
 
@@ -135,11 +137,11 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
             if ($siteMatch !== null && $existing->site !== $siteMatch) {
                 $changes['site'] = $siteMatch;
             }
-            if ($existing->participation_level !== $level) {
-                $changes['participation_level'] = $level;
+            if ($levelExplicit !== null && $existing->participation_level !== $levelExplicit) {
+                $changes['participation_level'] = $levelExplicit;
             }
-            if ($existing->is_admin !== $isAdmin) {
-                $changes['is_admin'] = $isAdmin;
+            if ($isAdminExplicit !== null && (bool) $existing->is_admin !== $isAdminExplicit) {
+                $changes['is_admin'] = $isAdminExplicit;
             }
 
             $passwordChanged = false;
@@ -153,7 +155,10 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
             }
 
             if (!empty($changes)) {
-                $existing->fill($changes)->save();
+                $existing->getConnection()
+                    ->table('users')
+                    ->where('id', $existing->id)
+                    ->update($changes);
             }
 
             if ($passwordChanged) {
@@ -179,8 +184,8 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
             'jabatan'             => $jabatan,
             'departemen'          => $departemen,
             'site'                => $site,
-            'participation_level' => $level,
-            'is_admin'            => $isAdmin,
+            'participation_level' => $levelExplicit ?? 'nonstaff',
+            'is_admin'            => $isAdminExplicit ?? false,
         ]);
 
         // Set raw hashed password directly to bypass the 'hashed' cast (avoid double-hashing)

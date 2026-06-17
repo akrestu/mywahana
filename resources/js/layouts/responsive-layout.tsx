@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/sidebar';
 import { index as bugarSelamatIndex } from '@/routes/bugar-selamat';
 import { index as laporanBahayaIndex } from '@/routes/laporan-bahaya';
-import { index as adminIndex } from '@/routes/admin';
 import { index as okIndex } from '@/routes/sap/observasi-keselamatan';
 import { index as inspeksiKantorIndex } from '@/routes/sap/inspeksi-kantor';
 import { index as inspeksiTambangIndex } from '@/routes/sap/inspeksi-tambang';
@@ -159,7 +158,7 @@ const adminSapDrawerItems = [
 // Admin navbar: Admin, Bugar, Laporan, [SAP button], Pengguna
 const adminMobileNavItems = [
     {
-        href: '/admin',
+        href: '/home',
         label: 'Admin',
         icon: ShieldCheck,
         activeColor: 'text-blue-600 dark:text-blue-400',
@@ -244,7 +243,8 @@ function MobileBottomNav({ url, isAdmin, isStaff, navItems }: { url: string; isA
     const isAssessmentActive = url.startsWith('/assessment') || url.startsWith('/hr-assessment') || url.startsWith('/admin/assessment') || url.startsWith('/admin/hr-assessment');
 
     const isActive = (href: string) => {
-        if (href === '/admin' || href === '/home') return url === href;
+        if (href === '/home') return url === href || url.startsWith('/home?');
+        if (href === '/admin') return url === href;
         return url.startsWith(href);
     };
 
@@ -457,7 +457,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
     const mainNavGroups = isAdmin
         ? [
             { label: 'Dashboard', items: [
-                { title: 'Ringkasan Admin', href: adminIndex.url(), icon: ShieldCheck },
+                { title: 'Ringkasan Admin', href: '/home', icon: ShieldCheck },
             ]},
             { label: 'Monitoring', items: [
                 { title: 'Bugar Selamat',        href: '/admin/bugar-selamat',          icon: HeartPulse },
