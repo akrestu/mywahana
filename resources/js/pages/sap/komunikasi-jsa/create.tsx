@@ -1,5 +1,6 @@
 ﻿import { Head, router } from '@inertiajs/react';
 import { BookOpen, Calendar, Camera, Check, ChevronsUpDown, Images, MapPin, PenLine, Plus, Trash2, UserCheck, X } from 'lucide-react';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
 import { UploadOverlay } from '@/components/upload-overlay';
@@ -282,10 +283,12 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
                     <CardContent className="flex flex-col gap-5 pt-5">
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="tanggal" className="text-base font-bold">Tanggal <span className="text-destructive">*</span></Label>
-                            <div className="relative">
-                                <Input id="tanggal" type="date" max={today} value={tanggal} onChange={e => setTanggal(e.target.value)} className="h-12 text-base pr-10 cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer" />
-                                <Calendar size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                            </div>
+                            <DatePickerInput
+                                value={tanggal}
+                                onChange={setTanggal}
+                                max={today}
+                                error={!!errors.tanggal}
+                            />
                             {errors.tanggal && <p className="text-sm text-destructive">{errors.tanggal}</p>}
                         </div>
 

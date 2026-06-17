@@ -1,5 +1,7 @@
 ﻿import { Head, useForm } from '@inertiajs/react';
 import { Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, ChevronsUpDown, Images, MapPin, X } from 'lucide-react';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
+import { TimePickerInput } from '@/components/ui/time-picker-input';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
 import { UploadOverlay } from '@/components/upload-overlay';
@@ -263,19 +265,12 @@ export default function LaporanBahayaCreate({ user }: Props) {
                         {/* Tanggal */}
                         <div className="flex flex-col gap-2">
                             <label className="text-base font-bold">📅 Tanggal Kejadian</label>
-                            <div className="relative">
-                                <input
-                                    type="date"
-                                    max={today}
-                                    value={data.tanggal}
-                                    onChange={(e) => setData('tanggal', e.target.value)}
-                                    className={cn(
-                                        'border-input bg-background text-foreground flex h-14 w-full appearance-none rounded-xl border-2 px-4 text-base shadow-xs',
-                                        'focus-visible:ring-ring/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:outline-none',
-                                        '[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0',
-                                    )}
-                                />
-                            </div>
+                            <DatePickerInput
+                                value={data.tanggal}
+                                onChange={(val) => setData('tanggal', val)}
+                                max={today}
+                                error={!!errors.tanggal}
+                            />
                             {errors.tanggal && <p className="text-sm text-destructive">{errors.tanggal}</p>}
                         </div>
 
@@ -283,18 +278,11 @@ export default function LaporanBahayaCreate({ user }: Props) {
                         <div className="flex flex-col gap-2">
                             <label className="text-base font-bold">🕐 Waktu Pengamatan</label>
                             <p className="text-sm text-muted-foreground -mt-1">Jam berapa Anda melihat bahaya ini?</p>
-                            <div className="relative">
-                                <input
-                                    type="time"
-                                    value={data.waktu_pengamatan}
-                                    onChange={(e) => setData('waktu_pengamatan', e.target.value)}
-                                    className={cn(
-                                        'border-input bg-background text-foreground flex h-14 w-full appearance-none rounded-xl border-2 px-4 text-base shadow-xs',
-                                        'focus-visible:ring-ring/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:outline-none',
-                                        '[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0',
-                                    )}
-                                />
-                            </div>
+                            <TimePickerInput
+                                value={data.waktu_pengamatan}
+                                onChange={(val) => setData('waktu_pengamatan', val)}
+                                error={!!errors.waktu_pengamatan}
+                            />
                             {errors.waktu_pengamatan && <p className="text-sm text-destructive">{errors.waktu_pengamatan}</p>}
                         </div>
 
