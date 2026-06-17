@@ -128,9 +128,10 @@ class DashboardController extends Controller
         $bulan   = max(1, min(12, (int) $request->query('bulan', $now->month)));
         $tahun   = max(2020, min($now->year + 1, (int) $request->query('tahun', $now->year)));
 
-        $adminSite = $admin->site ?? null;
-        $siteInput = $request->query('site', 'all');
-        $site      = ($siteInput === 'all' || in_array($siteInput, $allSiteValues)) ? $siteInput : 'all';
+        $adminSite    = $admin->site ?? null;
+        $siteDefault  = ($adminSite && in_array($adminSite, $allSiteValues)) ? $adminSite : 'all';
+        $siteInput    = $request->query('site', $siteDefault);
+        $site         = ($siteInput === 'all' || in_array($siteInput, $allSiteValues)) ? $siteInput : 'all';
 
         $deptInput   = $request->query('departemen', 'all');
         $departemen  = ($deptInput === 'all' || in_array($deptInput, $validDepartemen)) ? $deptInput : 'all';
