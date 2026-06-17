@@ -34,7 +34,7 @@ class BugarSelamatController extends Controller
     {
         $validated = $request->validate([
             'tanggal'         => ['required', 'date', 'date_equals:today'],
-            'shift'           => ['required', 'in:Siang,Malam'],
+            'shift'           => ['required', 'in:Pagi,Siang,Malam'],
             'hari_ke'         => ['required', 'integer', 'min:1'],
             'jam_tidur'       => ['required', 'in:<5,5-6,>6'],
             'kondisi_sakit'   => ['required', 'boolean'],
