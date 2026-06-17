@@ -21,7 +21,7 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
     public function headings(): array
     {
         return [
-            'No', 'Nama', 'NIK', 'Email', 'Password (Hash)', 'Jabatan', 'Site', 'Level', 'Admin', 'Terdaftar',
+            'No', 'Nama', 'NIK', 'Email', 'Password (Hash)', 'Jabatan', 'Departemen', 'Site', 'Level', 'Admin', 'Terdaftar',
         ];
     }
 
@@ -36,6 +36,7 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
             $row->email ?? '',
             $row->password ?? '',
             $row->jabatan ?? '',
+            $row->departemen ?? '',
             $row->site ? ucfirst($row->site) : '',
             $row->participation_level ?? '',
             $row->is_admin ? 'Ya' : 'Tidak',

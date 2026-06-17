@@ -13,7 +13,8 @@ export function PageLoader() {
             if (animRef.current) clearTimeout(animRef.current);
         };
 
-        const offStart = router.on('start', () => {
+        const offStart = router.on('start', (event) => {
+            if (event.detail.visit.method.toLowerCase() !== 'get') return;
             clearAll();
             setLeaving(false);
             timeout.current = setTimeout(() => {
