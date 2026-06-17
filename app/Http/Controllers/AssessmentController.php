@@ -16,6 +16,7 @@ class AssessmentController extends Controller
     private const PASSING_PERCENTAGE = 80;
     private const STAFF_QUESTION_COUNT = 30;
     private const NS_QUESTION_COUNT = 25;
+    private const MAX_DAILY_ATTEMPTS = 3;
 
     public function index()
     {
@@ -25,6 +26,8 @@ class AssessmentController extends Controller
             ->latest()
             ->paginate(10);
 
+        [$attemptsToday, $canStart] = $this->resolveDailyStatus($user->id);
+
         return Inertia::render('assessment/index', [
             'sessions' => $sessions,
             'user' => [
@@ -33,6 +36,9 @@ class AssessmentController extends Controller
                 'question_count' => $user->departemen ? $this->resolveQuestionCount($user) : null,
             ],
             'profile_incomplete' => ! $user->departemen,
+            'attempts_today' => $attemptsToday,
+            'daily_limit' => self::MAX_DAILY_ATTEMPTS,
+            'can_start' => $canStart,
         ]);
     }
 
@@ -42,15 +48,33 @@ class AssessmentController extends Controller
 
         abort_unless((bool) $user->departemen, 403, 'Departemen belum diisi.');
 
-        $todaySession = AssessmentSession::where('user_id', $user->id)
+        $todayInProgress = AssessmentSession::where('user_id', $user->id)
             ->whereDate('started_at', today())
+            ->where('status', 'in_progress')
             ->first();
 
-        if ($todaySession) {
-            if ($todaySession->status === 'in_progress' && ! $todaySession->isExpired()) {
-                return redirect()->route('assessment.quiz', $todaySession);
-            }
-            Inertia::flash('toast', ['type' => 'warning', 'message' => 'Kamu sudah mengikuti assessment hari ini.']);
+        if ($todayInProgress && ! $todayInProgress->isExpired()) {
+            return redirect()->route('assessment.quiz', $todayInProgress);
+        }
+
+        $passedToday = AssessmentSession::where('user_id', $user->id)
+            ->whereDate('started_at', today())
+            ->where('status', 'completed')
+            ->where('passed', true)
+            ->exists();
+
+        if ($passedToday) {
+            Inertia::flash('toast', ['type' => 'info', 'message' => 'Kamu sudah lulus assessment hari ini. Selamat!']);
+            return redirect()->route('assessment.index');
+        }
+
+        $completedToday = AssessmentSession::where('user_id', $user->id)
+            ->whereDate('started_at', today())
+            ->where('status', 'completed')
+            ->count();
+
+        if ($completedToday >= self::MAX_DAILY_ATTEMPTS) {
+            Inertia::flash('toast', ['type' => 'warning', 'message' => 'Kamu sudah mencapai batas maksimal ' . self::MAX_DAILY_ATTEMPTS . 'x percobaan hari ini. Coba lagi besok.']);
             return redirect()->route('assessment.index');
         }
 
@@ -218,6 +242,8 @@ class AssessmentController extends Controller
             ->where('type', 'safety')
             ->first();
 
+        [$attemptsToday, $canStart] = $this->resolveDailyStatus($user->id);
+
         return Inertia::render('assessment/result', [
             'session' => [
                 'id' => $session->id,
@@ -235,7 +261,28 @@ class AssessmentController extends Controller
                 'attended_at' => $attendance->attended_at->toIso8601String(),
                 'is_new' => $attendance->assessment_session_id === $session->id,
             ] : null,
+            'attempts_today' => $attemptsToday,
+            'daily_limit' => self::MAX_DAILY_ATTEMPTS,
+            'can_retry' => $canStart,
         ]);
+    }
+
+    private function resolveDailyStatus(int $userId): array
+    {
+        $completedToday = AssessmentSession::where('user_id', $userId)
+            ->whereDate('started_at', today())
+            ->where('status', 'completed')
+            ->count();
+
+        $passedToday = AssessmentSession::where('user_id', $userId)
+            ->whereDate('started_at', today())
+            ->where('status', 'completed')
+            ->where('passed', true)
+            ->exists();
+
+        $canStart = ! $passedToday && $completedToday < self::MAX_DAILY_ATTEMPTS;
+
+        return [$completedToday, $canStart];
     }
 
     private function resolveTag($user): string
