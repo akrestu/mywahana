@@ -36,6 +36,9 @@ type Props = {
     session: SessionResult;
     review: ReviewItem[];
     attendance: AttendanceInfo;
+    attempts_today: number;
+    daily_limit: number;
+    can_retry: boolean;
 };
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
@@ -172,7 +175,7 @@ function ReviewCard({ item, index }: { item: ReviewItem; index: number }) {
     );
 }
 
-export default function HrAssessmentResult({ session, review, attendance }: Props) {
+export default function HrAssessmentResult({ session, review, attendance, attempts_today, daily_limit, can_retry }: Props) {
     const correctCount = review.filter(r => r.is_correct).length;
     const incorrectCount = review.length - correctCount;
     const [retrying, setRetrying] = useState(false);
@@ -264,17 +267,40 @@ export default function HrAssessmentResult({ session, review, attendance }: Prop
                     </div>
                 )}
 
+                {/* ── Retry limit info ── */}
+                {!session.passed && (
+                    <div className="section-enter" style={{ animationDelay: '0.18s' }}>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5 px-1">
+                            <span>Percobaan hari ini</span>
+                            <span className="font-semibold">{attempts_today}/{daily_limit}</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                            <div
+                                className={cn('h-full rounded-full transition-all', attempts_today >= daily_limit ? 'bg-red-400' : 'bg-purple-400')}
+                                style={{ width: `${(attempts_today / daily_limit) * 100}%` }}
+                            />
+                        </div>
+                        {!can_retry && (
+                            <p className="text-xs text-red-500 mt-1.5 text-center">
+                                Batas percobaan hari ini tercapai. Coba lagi besok.
+                            </p>
+                        )}
+                    </div>
+                )}
+
                 {/* ── Action buttons ── */}
                 <div className="section-enter flex gap-3" style={{ animationDelay: '0.2s' }}>
-                    <Button
-                        variant="outline"
-                        className="flex-1 gap-2"
-                        disabled={retrying}
-                        onClick={() => { setRetrying(true); router.post('/hr-assessment/start'); }}
-                    >
-                        <RotateCcw className={cn('h-4 w-4', retrying && 'animate-spin')} />
-                        {retrying ? 'Memulai...' : 'Ulangi Assessment'}
-                    </Button>
+                    {!session.passed && (
+                        <Button
+                            variant="outline"
+                            className="flex-1 gap-2"
+                            disabled={retrying || !can_retry}
+                            onClick={() => { setRetrying(true); router.post('/hr-assessment/start'); }}
+                        >
+                            <RotateCcw className={cn('h-4 w-4', retrying && 'animate-spin')} />
+                            {retrying ? 'Memulai...' : 'Ulangi Assessment'}
+                        </Button>
+                    )}
                     <Link href="/hr-assessment" className="flex-1">
                         <Button className="w-full bg-purple-600 hover:bg-purple-700">Lihat Riwayat</Button>
                     </Link>

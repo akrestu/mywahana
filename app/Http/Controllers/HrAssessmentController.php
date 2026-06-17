@@ -15,6 +15,7 @@ class HrAssessmentController extends Controller
 {
     private const PASSING_PERCENTAGE = 80;
     private const QUESTION_COUNT = 30;
+    private const MAX_DAILY_ATTEMPTS = 3;
 
     public function index()
     {
@@ -30,15 +31,50 @@ class HrAssessmentController extends Controller
             ->latest()
             ->paginate(10);
 
+        [$attemptsToday, $canStart] = $this->resolveDailyStatus($user->id);
+
         return Inertia::render('hr-assessment/index', [
             'sessions' => $sessions,
             'question_count' => self::QUESTION_COUNT,
+            'attempts_today' => $attemptsToday,
+            'daily_limit' => self::MAX_DAILY_ATTEMPTS,
+            'can_start' => $canStart,
         ]);
     }
 
     public function start()
     {
         $user = Auth::user();
+
+        $todayInProgress = HrAssessmentSession::where('user_id', $user->id)
+            ->whereDate('started_at', today())
+            ->where('status', 'in_progress')
+            ->first();
+
+        if ($todayInProgress && ! $todayInProgress->isExpired()) {
+            return redirect()->route('hr-assessment.quiz', $todayInProgress);
+        }
+
+        $passedToday = HrAssessmentSession::where('user_id', $user->id)
+            ->whereDate('started_at', today())
+            ->where('status', 'completed')
+            ->where('passed', true)
+            ->exists();
+
+        if ($passedToday) {
+            Inertia::flash('toast', ['type' => 'info', 'message' => 'Kamu sudah lulus HR Assessment hari ini. Selamat!']);
+            return redirect()->route('hr-assessment.index');
+        }
+
+        $completedToday = HrAssessmentSession::where('user_id', $user->id)
+            ->whereDate('started_at', today())
+            ->where('status', 'completed')
+            ->count();
+
+        if ($completedToday >= self::MAX_DAILY_ATTEMPTS) {
+            Inertia::flash('toast', ['type' => 'warning', 'message' => 'Kamu sudah mencapai batas maksimal ' . self::MAX_DAILY_ATTEMPTS . 'x percobaan hari ini. Coba lagi besok.']);
+            return redirect()->route('hr-assessment.index');
+        }
 
         $questions = HrAssessmentQuestion::inRandomOrder()
             ->limit(self::QUESTION_COUNT)
@@ -180,6 +216,8 @@ class HrAssessmentController extends Controller
             ->where('type', 'hr')
             ->first();
 
+        [$attemptsToday, $canStart] = $this->resolveDailyStatus($user->id);
+
         return Inertia::render('hr-assessment/result', [
             'session' => [
                 'id' => $session->id,
@@ -195,6 +233,27 @@ class HrAssessmentController extends Controller
                 'attended_at' => $attendance->attended_at->toIso8601String(),
                 'is_new' => $attendance->assessment_session_id === $session->id,
             ] : null,
+            'attempts_today' => $attemptsToday,
+            'daily_limit' => self::MAX_DAILY_ATTEMPTS,
+            'can_retry' => $canStart,
         ]);
+    }
+
+    private function resolveDailyStatus(int $userId): array
+    {
+        $completedToday = HrAssessmentSession::where('user_id', $userId)
+            ->whereDate('started_at', today())
+            ->where('status', 'completed')
+            ->count();
+
+        $passedToday = HrAssessmentSession::where('user_id', $userId)
+            ->whereDate('started_at', today())
+            ->where('status', 'completed')
+            ->where('passed', true)
+            ->exists();
+
+        $canStart = ! $passedToday && $completedToday < self::MAX_DAILY_ATTEMPTS;
+
+        return [$completedToday, $canStart];
     }
 }

@@ -26,6 +26,9 @@ type Paginated = {
 type Props = {
     sessions: Paginated;
     question_count: number;
+    attempts_today: number;
+    daily_limit: number;
+    can_start: boolean;
 };
 
 function groupByMonth(sessions: Session[]) {
@@ -49,7 +52,7 @@ function ScoreBar({ percentage, passed }: { percentage: number; passed: boolean 
     );
 }
 
-export default function HrAssessmentIndex({ sessions, question_count }: Props) {
+export default function HrAssessmentIndex({ sessions, question_count, attempts_today, daily_limit, can_start }: Props) {
     const grouped = groupByMonth(sessions.data);
     const [starting, setStarting] = useState(false);
 
@@ -59,6 +62,8 @@ export default function HrAssessmentIndex({ sessions, question_count }: Props) {
         const pct = s.percentage != null ? Number(s.percentage) : 0;
         return pct > best ? pct : best;
     }, 0);
+
+    const isButtonDisabled = starting || !can_start;
 
     function handleStart() {
         setStarting(true);
@@ -102,17 +107,40 @@ export default function HrAssessmentIndex({ sessions, question_count }: Props) {
                         ))}
                     </div>
 
+                    {/* Attempt counter */}
+                    {attempts_today > 0 && (
+                        <div className="px-5 pb-3">
+                            <div className="flex items-center justify-between text-xs text-purple-200 mb-1.5">
+                                <span>Percobaan hari ini</span>
+                                <span className="font-semibold">{attempts_today}/{daily_limit}</span>
+                            </div>
+                            <div className="h-1.5 w-full rounded-full bg-white/20 overflow-hidden">
+                                <div
+                                    className="h-full rounded-full bg-white transition-all"
+                                    style={{ width: `${(attempts_today / daily_limit) * 100}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     <div className="px-5 pb-5">
                         <button
                             onClick={handleStart}
-                            disabled={starting}
+                            disabled={isButtonDisabled}
                             className={cn(
                                 'w-full rounded-xl py-3 text-sm font-semibold transition-all',
                                 'bg-white text-purple-600 hover:bg-purple-50 active:scale-[0.98]',
-                                starting && 'opacity-70 cursor-not-allowed',
+                                isButtonDisabled && 'opacity-50 cursor-not-allowed',
                             )}
                         >
-                            {starting ? 'Memulai…' : '🚀  Mulai Assessment Baru'}
+                            {starting
+                                ? 'Memulai…'
+                                : !can_start && attempts_today >= daily_limit
+                                    ? `Batas ${daily_limit}x percobaan tercapai`
+                                    : !can_start
+                                        ? 'Kamu sudah lulus hari ini'
+                                        : '🚀  Mulai Assessment Baru'
+                            }
                         </button>
                     </div>
                 </div>
