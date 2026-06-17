@@ -54,7 +54,7 @@ type Props = { user: UserInfo; staffUsers: StaffUser[] };
 
 type Peserta = { nama: string; jabatan: string; nik: string; tanda_tangan: string };
 
-const today = new Date().toISOString().slice(0, 10);
+const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
 
 function SignaturePad({ onSave, onCancel }: { onSave: (dataUrl: string) => void; onCancel: () => void }) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
