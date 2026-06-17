@@ -1,5 +1,6 @@
 ﻿import { Head, useForm } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight, Calendar, Camera, Check, ChevronsUpDown, Images, Plus, Trash2, X } from 'lucide-react';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
 import { UploadOverlay } from '@/components/upload-overlay';
@@ -209,7 +210,7 @@ export default function InspeksiWorkshopCreate({ user, staffUsers, sites }: Prop
                         <Card className="p-0 overflow-hidden">
                             <div className="bg-muted/50 px-4 py-3 border-b font-bold text-sm">Informasi Inspeksi</div>
                             <CardContent className="flex flex-col gap-4 py-4">
-                                <div className="space-y-1.5"><Label>Tanggal <span className="text-destructive">*</span></Label><div className="relative"><Input type="date" max={today} value={data.tanggal} onChange={e => setData('tanggal', e.target.value)} className="h-12 text-base pr-10 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer" /><Calendar className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" /></div></div>
+                                <div className="space-y-1.5"><Label>Tanggal <span className="text-destructive">*</span></Label><DatePickerInput value={data.tanggal} onChange={(val) => setData('tanggal', val)} max={today} error={!!errors.tanggal} />{errors.tanggal && <p className="text-sm text-destructive">{errors.tanggal}</p>}</div>
                                 <div className="space-y-1.5">
                                     <Label>Project / Site <span className="text-destructive">*</span></Label>
                                     <Popover open={siteOpen} onOpenChange={setSiteOpen}>

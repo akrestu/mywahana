@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Textarea } from '@/components/ui/textarea';
 import { UploadOverlay } from '@/components/upload-overlay';
 import { cn } from '@/lib/utils';
@@ -338,15 +339,11 @@ export default function BugarSelamatCreate({ user }: Props) {
                         {/* Tanggal — dikunci ke hari ini, tidak bisa diubah */}
                         <div className="flex flex-col gap-2">
                             <Label className="text-base font-bold">📅 Tanggal Kerja</Label>
-                            <div className="flex h-14 w-full items-center gap-3 rounded-xl border-2 border-input bg-muted/40 px-4 text-base">
-                                <CalendarIcon size={18} className="shrink-0 text-muted-foreground" />
-                                <span className="font-semibold">
-                                    {new Date(data.tanggal).toLocaleDateString('id-ID', {
-                                        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-                                    })}
-                                </span>
-                                <span className="ml-auto text-xs text-muted-foreground">Hari ini</span>
-                            </div>
+                            <DatePickerInput
+                                value={data.tanggal}
+                                onChange={() => {}}
+                                disabled
+                            />
                             <input type="hidden" name="tanggal" value={data.tanggal} />
                             {errors.tanggal && <p className="text-sm text-destructive">{errors.tanggal}</p>}
                         </div>

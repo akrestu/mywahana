@@ -1,5 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, ClipboardCheck, MapPin, Wrench } from 'lucide-react';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Fragment, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -333,13 +334,11 @@ export default function ObservasiKeselamatanCreate({ user, staffUsers }: Props) 
                         {/* Tanggal */}
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="tanggal" className="text-base font-bold">Tanggal <span className="text-destructive">*</span></Label>
-                            <Input
-                                id="tanggal"
-                                type="date"
-                                max={today}
+                            <DatePickerInput
                                 value={data.tanggal}
-                                onChange={e => setData('tanggal', e.target.value)}
-                                className="h-12 text-base block text-left"
+                                onChange={(val) => setData('tanggal', val)}
+                                max={today}
+                                error={!!errors.tanggal}
                             />
                             {errors.tanggal && <p className="text-sm text-destructive">{errors.tanggal}</p>}
                         </div>
