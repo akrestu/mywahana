@@ -599,6 +599,13 @@ export default function BugarSelamatCreate({ user }: Props) {
                             )}
                         </div>
 
+                        {/* Server error (e.g. sudah mengisi hari ini) */}
+                        {errors.tanggal && (
+                            <div className="rounded-2xl border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive font-medium">
+                                {errors.tanggal}
+                            </div>
+                        )}
+
                         {/* Pernyataan */}
                         <div className="rounded-2xl border bg-muted/40 px-4 py-4">
                             <p className="text-sm italic leading-relaxed text-muted-foreground">

@@ -6,6 +6,7 @@ use App\Models\BugarSelamat;
 use App\Services\BadgeService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class BugarSelamatController extends Controller
@@ -48,7 +49,11 @@ class BugarSelamatController extends Controller
         $exists = $request->user()->bugarSelamats()
             ->whereDate('tanggal', $validated['tanggal'])
             ->exists();
-        abort_if($exists, 422, 'Kamu sudah mengisi Bugar Selamat hari ini.');
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'tanggal' => 'Kamu sudah mengisi Bugar Selamat hari ini.',
+            ]);
+        }
 
         $record = $request->user()->bugarSelamats()->create($validated);
 
