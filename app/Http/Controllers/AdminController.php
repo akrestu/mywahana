@@ -41,6 +41,8 @@ class AdminController extends Controller
 {
     public function index()
     {
+        return redirect()->route('app.home');
+
         $now        = Carbon::now();
         $todayDate  = $now->toDateString();
 
@@ -134,10 +136,13 @@ class AdminController extends Controller
 
     public function bugarSelamat(Request $request)
     {
-        $viewMode = $request->get('view', 'harian');
-        $site     = $request->filled('site')   ? $request->site   : null;
-        $search   = $request->filled('search') ? $request->search : null;
-        $sites    = Site::orderBy('label')->get(['value', 'label']);
+        $viewMode  = $request->get('view', 'harian');
+        $site      = $this->adminSite($request);
+        $adminSite = $request->user()->site;
+        $search    = $request->filled('search') ? $request->search : null;
+        $sites     = $adminSite
+            ? Site::where('value', $adminSite)->get(['value', 'label'])
+            : Site::orderBy('label')->get(['value', 'label']);
 
         // ── Harian view: semua karyawan + status hari tertentu ───────────────
         if ($viewMode === 'harian') {
@@ -170,12 +175,13 @@ class AdminController extends Controller
             $total    = $users->count();
 
             return Inertia::render('admin/bugar-selamat', [
-                'view'    => 'harian',
-                'tanggal' => $tanggal,
-                'users'   => $users,
-                'entries' => $entries,
-                'sites'   => $sites,
-                'summary' => [
+                'view'       => 'harian',
+                'tanggal'    => $tanggal,
+                'users'      => $users,
+                'entries'    => $entries,
+                'sites'      => $sites,
+                'admin_site' => $adminSite,
+                'summary'    => [
                     'filled'     => $filled,
                     'not_filled' => $total - $filled,
                     'layak'      => $entries->where('status', 'layak')->count(),
@@ -183,7 +189,7 @@ class AdminController extends Controller
                     'dilarang'   => $entries->where('status', 'dilarang')->count(),
                     'total'      => $total,
                 ],
-                'filters' => $request->only('site', 'search', 'tanggal', 'view'),
+                'filters'    => $request->only('site', 'search', 'tanggal', 'view'),
             ]);
         }
 
@@ -224,17 +230,18 @@ class AdminController extends Controller
             }
 
             return Inertia::render('admin/bugar-selamat', [
-                'view'    => 'kalender',
-                'tanggal' => $tanggal,
-                'users'   => $users,
-                'dates'   => $dates,
-                'entries' => $entries,
-                'sites'   => $sites,
-                'summary' => [
+                'view'       => 'kalender',
+                'tanggal'    => $tanggal,
+                'users'      => $users,
+                'dates'      => $dates,
+                'entries'    => $entries,
+                'sites'      => $sites,
+                'admin_site' => $adminSite,
+                'summary'    => [
                     'total' => $users->count(),
                     'bulan' => $carbon->locale('id')->isoFormat('MMMM YYYY'),
                 ],
-                'filters' => $request->only('site', 'search', 'tanggal', 'view'),
+                'filters'    => $request->only('site', 'search', 'tanggal', 'view'),
             ]);
         }
 
@@ -279,20 +286,23 @@ class AdminController extends Controller
         }
 
         return Inertia::render('admin/bugar-selamat', [
-            'view'    => 'daftar',
-            'records' => $query->paginate(20)->withQueryString(),
-            'sites'   => $sites,
-            'filters' => $request->only('site', 'status', 'search', 'periode', 'view'),
-            'summary' => $summary,
+            'view'       => 'daftar',
+            'records'    => $query->paginate(20)->withQueryString(),
+            'sites'      => $sites,
+            'admin_site' => $adminSite,
+            'filters'    => $request->only('site', 'status', 'search', 'periode', 'view'),
+            'summary'    => $summary,
         ]);
     }
 
     public function laporanBahaya(Request $request)
     {
-        $query = LaporanBahaya::with('user')->latest('tanggal');
+        $query     = LaporanBahaya::with('user')->latest('tanggal');
+        $adminSite = $request->user()->site;
+        $site      = $this->adminSite($request);
 
-        if ($request->filled('site')) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        if ($site) {
+            $query->whereHas('user', fn ($q) => $q->where('site', $site));
         }
 
         if ($request->filled('search')) {
@@ -338,10 +348,13 @@ class AdminController extends Controller
         }
 
         return Inertia::render('admin/laporan-bahaya', [
-            'records' => $query->paginate(20)->withQueryString(),
-            'filters' => $request->only('site', 'tingkat_risiko', 'status_tindakan', 'search', 'periode'),
-            'summary' => $summary,
-            'sites'   => Site::orderBy('label')->get(['value', 'label']),
+            'records'    => $query->paginate(20)->withQueryString(),
+            'filters'    => $request->only('site', 'tingkat_risiko', 'status_tindakan', 'search', 'periode'),
+            'summary'    => $summary,
+            'sites'      => $adminSite
+                ? Site::where('value', $adminSite)->get(['value', 'label'])
+                : Site::orderBy('label')->get(['value', 'label']),
+            'admin_site' => $adminSite,
         ]);
     }
 
@@ -365,10 +378,12 @@ class AdminController extends Controller
 
     public function observasiKeselamatan(Request $request)
     {
-        $query = ObservasiKeselamatan::with(['user', 'penanggungJawab'])->latest('tanggal');
+        $query     = ObservasiKeselamatan::with(['user', 'penanggungJawab'])->latest('tanggal');
+        $adminSite = $request->user()->site;
+        $site      = $this->adminSite($request);
 
-        if ($request->filled('site')) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        if ($site) {
+            $query->whereHas('user', fn ($q) => $q->where('site', $site));
         }
 
         if ($request->filled('search')) {
@@ -398,10 +413,13 @@ class AdminController extends Controller
         ];
 
         return Inertia::render('admin/observasi-keselamatan', [
-            'records' => $query->paginate(20)->withQueryString(),
-            'filters' => $request->only('site', 'status', 'search', 'periode'),
-            'summary' => $summary,
-            'sites'   => Site::orderBy('label')->get(['value', 'label']),
+            'records'    => $query->paginate(20)->withQueryString(),
+            'filters'    => $request->only('site', 'status', 'search', 'periode'),
+            'summary'    => $summary,
+            'sites'      => $adminSite
+                ? Site::where('value', $adminSite)->get(['value', 'label'])
+                : Site::orderBy('label')->get(['value', 'label']),
+            'admin_site' => $adminSite,
         ]);
     }
 
@@ -416,16 +434,20 @@ class AdminController extends Controller
 
     public function inspeksiKantor(Request $request)
     {
-        $query = InspeksiKantor::with(['user', 'reInspektor'])->latest('tanggal');
+        $query     = InspeksiKantor::with(['user', 'reInspektor'])->latest('tanggal');
+        $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
         $summary = $this->inspeksiSummary(InspeksiKantor::class);
 
         return Inertia::render('admin/inspeksi-kantor', [
-            'records' => $query->paginate(20)->withQueryString(),
-            'filters' => $request->only('site', 'status', 'search', 'periode'),
-            'summary' => $summary,
-            'sites'   => Site::orderBy('label')->get(['value', 'label']),
+            'records'    => $query->paginate(20)->withQueryString(),
+            'filters'    => $request->only('site', 'status', 'search', 'periode'),
+            'summary'    => $summary,
+            'sites'      => $adminSite
+                ? Site::where('value', $adminSite)->get(['value', 'label'])
+                : Site::orderBy('label')->get(['value', 'label']),
+            'admin_site' => $adminSite,
         ]);
     }
 
@@ -438,16 +460,20 @@ class AdminController extends Controller
 
     public function inspeksiTambang(Request $request)
     {
-        $query = InspeksiTambang::with(['user', 'reInspektor'])->latest('tanggal');
+        $query     = InspeksiTambang::with(['user', 'reInspektor'])->latest('tanggal');
+        $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
         $summary = $this->inspeksiSummary(InspeksiTambang::class);
 
         return Inertia::render('admin/inspeksi-tambang', [
-            'records' => $query->paginate(20)->withQueryString(),
-            'filters' => $request->only('site', 'status', 'search', 'periode'),
-            'summary' => $summary,
-            'sites'   => Site::orderBy('label')->get(['value', 'label']),
+            'records'    => $query->paginate(20)->withQueryString(),
+            'filters'    => $request->only('site', 'status', 'search', 'periode'),
+            'summary'    => $summary,
+            'sites'      => $adminSite
+                ? Site::where('value', $adminSite)->get(['value', 'label'])
+                : Site::orderBy('label')->get(['value', 'label']),
+            'admin_site' => $adminSite,
         ]);
     }
 
@@ -460,16 +486,20 @@ class AdminController extends Controller
 
     public function inspeksiWorkshop(Request $request)
     {
-        $query = InspeksiWorkshop::with(['user', 'reInspektor'])->latest('tanggal');
+        $query     = InspeksiWorkshop::with(['user', 'reInspektor'])->latest('tanggal');
+        $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
         $summary = $this->inspeksiSummary(InspeksiWorkshop::class);
 
         return Inertia::render('admin/inspeksi-workshop', [
-            'records' => $query->paginate(20)->withQueryString(),
-            'filters' => $request->only('site', 'status', 'search', 'periode'),
-            'summary' => $summary,
-            'sites'   => Site::orderBy('label')->get(['value', 'label']),
+            'records'    => $query->paginate(20)->withQueryString(),
+            'filters'    => $request->only('site', 'status', 'search', 'periode'),
+            'summary'    => $summary,
+            'sites'      => $adminSite
+                ? Site::where('value', $adminSite)->get(['value', 'label'])
+                : Site::orderBy('label')->get(['value', 'label']),
+            'admin_site' => $adminSite,
         ]);
     }
 
@@ -482,16 +512,20 @@ class AdminController extends Controller
 
     public function inspeksiMess(Request $request)
     {
-        $query = InspeksiMess::with(['user', 'reInspektor'])->latest('tanggal');
+        $query     = InspeksiMess::with(['user', 'reInspektor'])->latest('tanggal');
+        $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
         $summary = $this->inspeksiSummary(InspeksiMess::class);
 
         return Inertia::render('admin/inspeksi-mess', [
-            'records' => $query->paginate(20)->withQueryString(),
-            'filters' => $request->only('site', 'status', 'search', 'periode'),
-            'summary' => $summary,
-            'sites'   => Site::orderBy('label')->get(['value', 'label']),
+            'records'    => $query->paginate(20)->withQueryString(),
+            'filters'    => $request->only('site', 'status', 'search', 'periode'),
+            'summary'    => $summary,
+            'sites'      => $adminSite
+                ? Site::where('value', $adminSite)->get(['value', 'label'])
+                : Site::orderBy('label')->get(['value', 'label']),
+            'admin_site' => $adminSite,
         ]);
     }
 
@@ -504,12 +538,14 @@ class AdminController extends Controller
 
     public function komunikasiJsa(Request $request)
     {
-        $query = KomunikasiJsa::with(['user:id,name,nik,jabatan,site', 'teamLeader:id,name,jabatan'])
+        $query     = KomunikasiJsa::with(['user:id,name,nik,jabatan,site', 'teamLeader:id,name,jabatan'])
             ->latest('tanggal')
             ->latest('created_at');
+        $adminSite = $request->user()->site;
+        $site      = $this->adminSite($request);
 
-        if ($request->filled('site')) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        if ($site) {
+            $query->whereHas('user', fn ($q) => $q->where('site', $site));
         }
 
         if ($request->filled('status')) {
@@ -539,8 +575,8 @@ class AdminController extends Controller
         }
 
         $summaryQuery = KomunikasiJsa::query();
-        if ($request->filled('site')) {
-            $summaryQuery->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        if ($site) {
+            $summaryQuery->whereHas('user', fn ($q) => $q->where('site', $site));
         }
 
         $summary = [
@@ -552,10 +588,13 @@ class AdminController extends Controller
         ];
 
         return Inertia::render('admin/komunikasi-jsa', [
-            'records' => $query->paginate(20)->withQueryString(),
-            'filters' => (object) $request->only('site', 'status', 'shift', 'search', 'periode'),
-            'summary' => $summary,
-            'sites'   => Site::orderBy('label')->get(['value', 'label']),
+            'records'    => $query->paginate(20)->withQueryString(),
+            'filters'    => (object) $request->only('site', 'status', 'shift', 'search', 'periode'),
+            'summary'    => $summary,
+            'sites'      => $adminSite
+                ? Site::where('value', $adminSite)->get(['value', 'label'])
+                : Site::orderBy('label')->get(['value', 'label']),
+            'admin_site' => $adminSite,
         ]);
     }
 
@@ -904,10 +943,22 @@ class AdminController extends Controller
         return Excel::download(new InspeksiMessExport($query), 'inspeksi-mess-' . now()->format('Ymd') . '.xlsx');
     }
 
+    /**
+     * Returns the effective site scope for the authenticated admin.
+     * If the admin has a site assigned, it is always enforced regardless of request filters.
+     * If not, the request's 'site' filter is used (or null for all sites).
+     */
+    private function adminSite(Request $request): ?string
+    {
+        $adminSite = $request->user()->site;
+        return $adminSite ?: ($request->filled('site') ? $request->site : null);
+    }
+
     private function applyInspeksiFilters($query, Request $request): void
     {
-        if ($request->filled('site')) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        $site = $this->adminSite($request);
+        if ($site) {
+            $query->whereHas('user', fn ($q) => $q->where('site', $site));
         }
         if ($request->filled('search')) {
             $query->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$request->search}%")
@@ -1081,7 +1132,9 @@ class AdminController extends Controller
 
     public function users(Request $request)
     {
-        $query = User::query()->latest();
+        $query     = User::query()->latest();
+        $adminSite = $request->user()->site;
+        $site      = $this->adminSite($request);
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
@@ -1089,8 +1142,8 @@ class AdminController extends Controller
                     ->orWhere('nik', 'like', "%{$request->search}%");
             });
         }
-        if ($request->filled('site')) {
-            $query->where('site', $request->site);
+        if ($site) {
+            $query->where('site', $site);
         }
         if ($request->filled('is_admin')) {
             $query->where('is_admin', $request->is_admin === '1');
@@ -1100,9 +1153,12 @@ class AdminController extends Controller
         }
 
         return Inertia::render('admin/users', [
-            'users'   => $query->paginate(20)->withQueryString(),
-            'filters' => $request->only('search', 'site', 'is_admin', 'participation_level'),
-            'sites'   => Site::orderBy('label')->get(['value', 'label']),
+            'users'      => $query->paginate(20)->withQueryString(),
+            'filters'    => $request->only('search', 'site', 'is_admin', 'participation_level'),
+            'sites'      => $adminSite
+                ? Site::where('value', $adminSite)->get(['value', 'label'])
+                : Site::orderBy('label')->get(['value', 'label']),
+            'admin_site' => $adminSite,
         ]);
     }
 
