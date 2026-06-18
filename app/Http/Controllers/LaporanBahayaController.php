@@ -44,7 +44,7 @@ class LaporanBahayaController extends Controller
             'probabilitas'        => ['required', 'integer', 'between:1,5'],
             'frekuensi'           => ['required', 'integer', 'between:1,5'],
             'severity'            => ['required', 'integer', 'in:1,2,3,25,30'],
-            'status_tindakan'     => ['required', 'in:pending,selesai'],
+            'status_tindakan'     => ['required', 'in:pending,continue,progress,close'],
             'foto'                => ['nullable', 'image', 'max:5120'],
         ]);
 
@@ -80,11 +80,17 @@ class LaporanBahayaController extends Controller
 
         $laporanBahaya->load('user');
 
+        $backUrl = '/laporan-bahaya';
+        if ($request->user()->is_admin && $request->query('ref') === 'admin') {
+            $backUrl = '/admin/laporan-bahaya';
+        }
+
         return Inertia::render('laporan-bahaya/show', [
-            'record' => $laporanBahaya,
-            'fotoUrl' => $laporanBahaya->foto_path
+            'record'   => $laporanBahaya,
+            'fotoUrl'  => $laporanBahaya->foto_path
                 ? Storage::url($laporanBahaya->foto_path)
                 : null,
+            'back_url' => $backUrl,
         ]);
     }
 

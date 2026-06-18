@@ -66,6 +66,7 @@ class InspeksiTambangController extends Controller
             'tanggal'         => ['required', 'date'],
             'project_site'    => ['required', 'string', 'max:255'],
             'departemen'      => ['required', 'string', 'max:255'],
+            'lokasi'          => ['nullable', 'string', 'max:255'],
             'situasi_1' => $scoreRule, 'situasi_2' => $scoreRule, 'situasi_3' => $scoreRule,
             'situasi_4' => $scoreRule, 'situasi_5' => $scoreRule, 'situasi_6' => $scoreRule,
             'situasi_7' => $scoreRule, 'situasi_8' => $scoreRule, 'situasi_9' => $scoreRule,

@@ -1008,7 +1008,7 @@ class AdminController extends Controller
     public function updateStatus(Request $request, LaporanBahaya $laporanBahaya)
     {
         $request->validate([
-            'status_tindakan' => ['required', 'in:pending,selesai'],
+            'status_tindakan' => ['required', 'in:pending,continue,progress,close'],
         ]);
 
         $laporanBahaya->update(['status_tindakan' => $request->status_tindakan]);

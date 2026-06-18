@@ -79,6 +79,8 @@ class BugarSelamatController extends Controller
                 $backUrl = '/admin/bugar-selamat?view=kalender';
             } elseif ($request->query('ref') === 'monitoring') {
                 $backUrl = '/admin/bugar-selamat';
+            } elseif ($request->query('ref') === 'daftar') {
+                $backUrl = '/admin/bugar-selamat?view=daftar';
             }
         }
 

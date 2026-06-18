@@ -58,7 +58,7 @@ const CATEGORIES = [
 
 type ScoreKey = 'situasi_1'|'situasi_2'|'situasi_3'|'situasi_4'|'situasi_5'|'situasi_6'|'situasi_7'|'situasi_8'|'situasi_9'|'situasi_10'|'situasi_11'|'situasi_12'|'situasi_13'|'individu_1'|'individu_2'|'alat_1'|'alat_2'|'alat_3'|'alat_4'|'alat_5'|'alat_6'|'prosedur_1'|'prosedur_2'|'prosedur_3'|'prosedur_4'|'prosedur_5';
 type TindakanRow = { tindakan: string; pic: string; due_date: string; remark: string };
-type FormData = { re_inspektor_id: string; peserta_ids: number[]; tanggal: string; project_site: string; departemen: string } & { [K in ScoreKey]: string } & { tindakan_perbaikan: TindakanRow[]; ttd_inspektor: string; [key: string]: unknown };
+type FormData = { re_inspektor_id: string; peserta_ids: number[]; tanggal: string; project_site: string; departemen: string; lokasi: string } & { [K in ScoreKey]: string } & { tindakan_perbaikan: TindakanRow[]; ttd_inspektor: string; [key: string]: unknown };
 
 const ALL_SCORE_KEYS: ScoreKey[] = ['situasi_1','situasi_2','situasi_3','situasi_4','situasi_5','situasi_6','situasi_7','situasi_8','situasi_9','situasi_10','situasi_11','situasi_12','situasi_13','individu_1','individu_2','alat_1','alat_2','alat_3','alat_4','alat_5','alat_6','prosedur_1','prosedur_2','prosedur_3','prosedur_4','prosedur_5'];
 
@@ -74,6 +74,10 @@ function calcScore(data: FormData) {
 const SCORE_LABELS = ['', 'Sangat Kurang', 'Kurang', 'Baik', 'Sangat Baik'];
 const SCORE_COLORS = ['', 'bg-red-500', 'bg-orange-400', 'bg-yellow-400', 'bg-green-500'];
 const RISK_CFG = { L: { label: 'Baik', cls: 'bg-green-100 text-green-800' }, M: { label: 'Cukup', cls: 'bg-yellow-100 text-yellow-800' }, H: { label: 'Perhatian', cls: 'bg-orange-100 text-orange-800' }, VH: { label: 'Perlu Tindakan', cls: 'bg-red-100 text-red-800' } };
+
+function formatLokasi(val: string): string {
+    return val.split(' ').map(w => w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '').join(' ').trim();
+}
 
 function ScoreButton({ val, current, onChange }: { val: number; current: string; onChange: (v: string) => void }) {
     const isActive = current === String(val);
@@ -127,7 +131,7 @@ export default function InspeksiTambangCreate({ user, staffUsers, sites }: Props
     };
     const initialScores = Object.fromEntries(ALL_SCORE_KEYS.map(k => [k, ''])) as { [K in ScoreKey]: string };
     const defaultSite = sites.find(s => s.value === user.site)?.label ?? '';
-    const { data, setData, post, processing, errors } = useForm<FormData>({ re_inspektor_id: '', peserta_ids: [], tanggal: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }), project_site: defaultSite, departemen: user.departemen ?? '', ...initialScores, tindakan_perbaikan: [], ttd_inspektor: '' });
+    const { data, setData, post, processing, errors } = useForm<FormData>({ re_inspektor_id: '', peserta_ids: [], tanggal: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }), project_site: defaultSite, departemen: user.departemen ?? '', lokasi: '', ...initialScores, tindakan_perbaikan: [], ttd_inspektor: '' });
     const selectedRI = staffUsers.find(u => String(u.id) === data.re_inspektor_id);
     const selectedPeserta = staffUsers.filter(u => data.peserta_ids.includes(u.id));
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
@@ -192,6 +196,7 @@ export default function InspeksiTambangCreate({ user, staffUsers, sites }: Props
                                     {errors.project_site && <p className="text-sm text-destructive">{errors.project_site}</p>}
                                 </div>
                                 <div className="space-y-1.5"><Label>Departemen <span className="text-destructive">*</span></Label><Input value={data.departemen} onChange={e => setData('departemen', e.target.value)} placeholder="Nama departemen" className="h-12 text-base" /></div>
+                                <div className="space-y-1.5"><Label>Lokasi</Label><Input value={data.lokasi} onChange={e => setData('lokasi', e.target.value)} onBlur={e => setData('lokasi', formatLokasi(e.target.value))} placeholder="Contoh: Pit Alam 8-9" className="h-12 text-base" /></div>
                             </CardContent>
                         </Card>
                         <Card className="p-0 overflow-hidden">

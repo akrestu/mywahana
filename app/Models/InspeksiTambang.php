@@ -12,7 +12,7 @@ class InspeksiTambang extends Model
 
     protected $fillable = [
         'user_id', 're_inspektor_id',
-        'tanggal', 'project_site', 'departemen',
+        'tanggal', 'project_site', 'departemen', 'lokasi',
         // Situasi
         'situasi_1','situasi_2','situasi_3','situasi_4','situasi_5','situasi_6','situasi_7',
         'situasi_8','situasi_9','situasi_10','situasi_11','situasi_12','situasi_13',

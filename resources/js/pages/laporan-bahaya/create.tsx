@@ -658,8 +658,10 @@ export default function LaporanBahayaCreate({ user }: Props) {
                             <label className="text-base font-bold">📋 Status Penanganan</label>
                             <div className="grid grid-cols-2 gap-3">
                                 {[
-                                    { value: 'pending', emoji: '⏳', label: 'Belum Selesai', sub: 'Masih perlu ditangani',  selCls: 'border-amber-400 bg-amber-50 dark:bg-amber-950/30' },
-                                    { value: 'selesai', emoji: '✅', label: 'Sudah Selesai', sub: 'Bahaya sudah ditangani', selCls: 'border-green-400 bg-green-50 dark:bg-green-950/30' },
+                                    { value: 'pending',  emoji: '⏳', label: 'Pending',  sub: 'Belum ditangani',        selCls: 'border-amber-400 bg-amber-50 dark:bg-amber-950/30' },
+                                    { value: 'continue', emoji: '🔵', label: 'Continue', sub: 'Dilanjutkan penanganan',  selCls: 'border-blue-400 bg-blue-50 dark:bg-blue-950/30' },
+                                    { value: 'progress', emoji: '🟡', label: 'Progress', sub: 'Sedang dalam proses',     selCls: 'border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30' },
+                                    { value: 'close',    emoji: '✅', label: 'Close',    sub: 'Bahaya sudah ditangani',  selCls: 'border-green-400 bg-green-50 dark:bg-green-950/30' },
                                 ].map(({ value, emoji, label, sub, selCls }) => {
                                     const sel = data.status_tindakan === value;
                                     return (

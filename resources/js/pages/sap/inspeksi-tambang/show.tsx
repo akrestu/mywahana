@@ -17,6 +17,7 @@ type Record = {
     tanggal: string;
     project_site: string;
     departemen: string;
+    lokasi?: string | null;
     total_poin: number;
     max_poin: number;
     persentase: number | null;
@@ -128,7 +129,8 @@ export default function InspeksiTambangShow({ record, is_ri }: Props) {
                         <div className="flex justify-between"><span className="text-muted-foreground">Inspektor</span><span className="font-semibold">{record.user.name}</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground">Project / Site</span><span className="font-semibold">{record.project_site}</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground">Departemen</span><span className="font-semibold">{record.departemen}</span></div>
-                        {record.re_inspektor && <><Separator /><div className="flex justify-between"><span className="text-muted-foreground">Re-Inspektor</span><span className="font-semibold">{record.re_inspektor.name}</span></div></>}
+                        {record.lokasi && <><Separator /><div className="flex justify-between"><span className="text-muted-foreground">Lokasi</span><span className="font-semibold">{record.lokasi}</span></div></>}
+                        {record.re_inspektor &&<><Separator /><div className="flex justify-between"><span className="text-muted-foreground">Re-Inspektor</span><span className="font-semibold">{record.re_inspektor.name}</span></div></>}
                         {record.peserta && record.peserta.length > 0 && <><Separator /><div className="flex justify-between gap-2"><span className="text-muted-foreground">Peserta</span><div className="flex flex-col items-end gap-1">{record.peserta.map(p => <span key={p.id} className="font-semibold">{p.name}</span>)}</div></div></>}
                     </CardContent>
                 </Card>
