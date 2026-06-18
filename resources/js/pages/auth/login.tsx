@@ -76,6 +76,7 @@ type Props = {
 
 export default function Login({ status, canResetPassword }: Props) {
     const greeting = useTypingGreeting(GREETINGS);
+    const [remember, setRemember] = useState(false);
 
     return (
         <div className="flex min-h-svh items-center justify-center bg-muted/50 p-4">
@@ -159,6 +160,8 @@ export default function Login({ status, canResetPassword }: Props) {
                                         <Checkbox
                                             id="remember"
                                             name="remember"
+                                            checked={remember}
+                                            onCheckedChange={(val) => setRemember(val === true)}
                                             tabIndex={3}
                                         />
                                         <Label
