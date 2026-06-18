@@ -578,7 +578,7 @@ function DaftarView({ records, filters, summary, sites }: Extract<Props, { view:
                                         </div>
                                         {!selectMode && (
                                             <div className="flex shrink-0 items-center gap-1">
-                                                <Link href={`/bugar-selamat/${record.id}`}>
+                                                <Link href={`/bugar-selamat/${record.id}?ref=daftar`}>
                                                     <Button size="sm" variant="outline" className="h-9">Detail</Button>
                                                 </Link>
                                                 <Button

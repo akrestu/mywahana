@@ -20,7 +20,7 @@ type LaporanRecord = {
     severity: number;
     nilai_risiko: number;
     tingkat_risiko: 'AA' | 'A' | 'B' | 'C';
-    status_tindakan: 'pending' | 'selesai';
+    status_tindakan: 'pending' | 'continue' | 'progress' | 'close';
     foto_path?: string | null;
     user: {
         name: string;
@@ -30,7 +30,7 @@ type LaporanRecord = {
     };
 };
 
-type Props = { record: LaporanRecord; fotoUrl?: string | null };
+type Props = { record: LaporanRecord; fotoUrl?: string | null; back_url?: string };
 
 const RISK_CONFIG = {
     AA: {
@@ -59,7 +59,7 @@ const P_LABELS: Record<number, string> = { 1: 'Hampir tidak mungkin', 2: 'Kecil 
 const F_LABELS: Record<number, string> = { 1: 'Setahun sekali', 2: 'Sebulan sekali', 3: 'Seminggu sekali', 4: 'Setiap hari', 5: 'Berkali-kali sehari' };
 const S_LABELS: Record<number, string> = { 1: 'Sangat Ringan', 2: 'Ringan', 3: 'Sedang', 25: 'Berat', 30: 'Sangat Berat / Meninggal' };
 
-export default function LaporanBahayaShow({ record, fotoUrl }: Props) {
+export default function LaporanBahayaShow({ record, fotoUrl, back_url = '/laporan-bahaya' }: Props) {
     const rc = RISK_CONFIG[record.tingkat_risiko];
 
     return (
@@ -69,11 +69,11 @@ export default function LaporanBahayaShow({ record, fotoUrl }: Props) {
             <div className="flex flex-col gap-6">
                 {/* Back */}
                 <Link
-                    href="/laporan-bahaya"
+                    href={back_url}
                     className="flex w-fit items-center gap-2 text-base text-muted-foreground hover:text-foreground transition-colors py-1"
                 >
                     <ArrowLeft size={18} />
-                    Kembali ke Riwayat
+                    {back_url.includes('admin') ? 'Kembali ke Monitoring' : 'Kembali ke Riwayat'}
                 </Link>
 
                 {/* Risk hero */}

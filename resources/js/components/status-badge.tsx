@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 
 type Kelayakan = 'layak' | 'catatan' | 'dilarang';
-type StatusTindakan = 'pending' | 'selesai';
+type StatusTindakan = 'pending' | 'continue' | 'progress' | 'close';
 
 const kelayakanConfig: Record<Kelayakan, { label: string; className: string }> = {
     layak:    { label: 'Layak Bekerja',          className: 'bg-green-100 text-green-800 border-green-200' },
@@ -10,8 +10,10 @@ const kelayakanConfig: Record<Kelayakan, { label: string; className: string }> =
 };
 
 const tindakanConfig: Record<StatusTindakan, { label: string; className: string }> = {
-    pending: { label: 'Ditunda',  className: 'bg-orange-100 text-orange-800 border-orange-200' },
-    selesai: { label: 'Selesai',  className: 'bg-green-100 text-green-800 border-green-200' },
+    pending:  { label: 'Pending',  className: 'bg-orange-100 text-orange-800 border-orange-200' },
+    continue: { label: 'Continue', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+    progress: { label: 'Progress', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+    close:    { label: 'Close',    className: 'bg-green-100 text-green-800 border-green-200' },
 };
 
 export function KelayakanBadge({ status }: { status: Kelayakan }) {

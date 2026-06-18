@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { CheckCircle, Download, Search, Trash2, Undo2 } from 'lucide-react';
+import { Download, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { RiskBadge } from '@/components/risk-badge';
 import { TindakanBadge } from '@/components/status-badge';
@@ -20,7 +20,7 @@ type LaporanRecord = {
     lokasi: string;
     tingkat_risiko: 'AA' | 'A' | 'B' | 'C';
     nilai_risiko: number;
-    status_tindakan: 'pending' | 'selesai';
+    status_tindakan: 'pending' | 'continue' | 'progress' | 'close';
     user: { name: string; nik?: string | null; site?: string | null };
 };
 
@@ -234,8 +234,10 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites }:
                             <SelectTrigger className="text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Semua Status</SelectItem>
-                                <SelectItem value="pending">⏳ Belum Ditangani</SelectItem>
-                                <SelectItem value="selesai">✅ Sudah Selesai</SelectItem>
+                                <SelectItem value="pending">⏳ Pending</SelectItem>
+                                <SelectItem value="continue">🔵 Continue</SelectItem>
+                                <SelectItem value="progress">🟡 Progress</SelectItem>
+                                <SelectItem value="close">✅ Close</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -284,30 +286,21 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites }:
                                     <div className="flex items-center justify-between">
                                         <TindakanBadge status={record.status_tindakan} />
                                         <div className="flex gap-2">
-                                            {record.status_tindakan === 'pending' ? (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="h-9 gap-1 border-green-400 text-green-700 hover:bg-green-50"
-                                                    disabled={updatingId === record.id}
-                                                    onClick={() => handleStatusUpdate(record.id, 'selesai')}
-                                                >
-                                                    <CheckCircle size={14} />
-                                                    {updatingId === record.id ? 'Menyimpan...' : 'Tandai Selesai'}
-                                                </Button>
-                                            ) : (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="h-9 gap-1"
-                                                    disabled={updatingId === record.id}
-                                                    onClick={() => handleStatusUpdate(record.id, 'pending')}
-                                                >
-                                                    <Undo2 size={14} />
-                                                    {updatingId === record.id ? 'Menyimpan...' : 'Buka Kembali'}
-                                                </Button>
-                                            )}
-                                            <Link href={`/laporan-bahaya/${record.id}`}>
+                                            {(['pending', 'continue', 'progress', 'close'] as const)
+                                                .filter(s => s !== record.status_tindakan)
+                                                .map(s => (
+                                                    <Button
+                                                        key={s}
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-9 gap-1 capitalize"
+                                                        disabled={updatingId === record.id}
+                                                        onClick={() => handleStatusUpdate(record.id, s)}
+                                                    >
+                                                        {updatingId === record.id ? 'Menyimpan...' : s.charAt(0).toUpperCase() + s.slice(1)}
+                                                    </Button>
+                                                ))}
+                                            <Link href={`/laporan-bahaya/${record.id}?ref=admin`}>
                                                 <Button size="sm" variant="ghost" className="h-9">Detail</Button>
                                             </Link>
                                         </div>
