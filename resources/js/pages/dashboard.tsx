@@ -43,6 +43,30 @@ type RecentLaporanBahaya = {
     status_tindakan: 'pending' | 'selesai';
 };
 
+type RecentObservasi = {
+    id: number;
+    tanggal: string;
+    jenis_pekerjaan: string;
+    lokasi_kerja: string;
+    status: string;
+};
+
+type RecentInspeksi = {
+    id: number;
+    tanggal: string;
+    status: string;
+    risk_level: string | null;
+    jenis: 'Kantor' | 'Tambang' | 'Workshop' | 'Mess';
+};
+
+type RecentJsa = {
+    id: number;
+    tanggal: string;
+    lokasi: string;
+    judul_dokumen: string;
+    status: string;
+};
+
 type Stats = {
     bugar_selamat: { total: number; bulan_ini: number; layak: number; catatan: number; dilarang: number };
     laporan_bahaya: { total: number; bulan_ini: number; pending: number; selesai: number };
@@ -53,9 +77,15 @@ type LeaderboardEntry = {
     name: string;
     jabatan: string | null;
     avatar: string | null;
-    bs: number;
-    lb: number;
     skor: number;
+};
+
+type SiteLeaderboard = {
+    bugar_selamat: LeaderboardEntry[];
+    laporan_bahaya: LeaderboardEntry[];
+    observasi_keselamatan: LeaderboardEntry[];
+    komunikasi_jsa: LeaderboardEntry[];
+    inspeksi: LeaderboardEntry[];
 };
 
 type WeekInfo = { start: string; end: string; count: number; terpenuhi: boolean };
@@ -82,13 +112,20 @@ type Props = {
     stats: Stats;
     recent_bugar_selamat: RecentBugarSelamat[];
     recent_laporan_bahaya: RecentLaporanBahaya[];
+    recent_observasi?: RecentObservasi[];
+    recent_inspeksi?: RecentInspeksi[];
+    recent_jsa?: RecentJsa[];
     trend: unknown[];
     streak?: number;
-    leaderboard?: Record<string, LeaderboardEntry[]>;
+    leaderboard?: Record<string, SiteLeaderboard>;
     target?: TargetInfo;
     new_badges?: NewBadge[];
     pending_re_inspeksi?: { kantor: number; tambang: number; workshop: number; mess: number };
     pending_form_ok?: number;
+    pending_jsa_tl?: number;
+    my_pending_observasi?: number;
+    my_pending_jsa?: number;
+    my_pending_inspeksi?: number;
 };
 
 const defaultStats: Stats = {
@@ -236,19 +273,26 @@ export default function Dashboard({
     stats = defaultStats,
     recent_bugar_selamat = [],
     recent_laporan_bahaya = [],
+    recent_observasi = [],
+    recent_inspeksi = [],
+    recent_jsa = [],
     leaderboard = {},
     target,
     new_badges = [],
     streak = 0,
     pending_re_inspeksi,
     pending_form_ok = 0,
+    pending_jsa_tl = 0,
+    my_pending_observasi = 0,
+    my_pending_jsa = 0,
+    my_pending_inspeksi = 0,
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const user = auth.user;
     const tod = useTimeOfDay();
     const firstName = user.name?.split(' ')[0] ?? user.name;
     const typedGreeting = useTypingText(GREETINGS_BY_TIME[tod.period]);
-    const [riwayatTab, setRiwayatTab] = useState<'bugar' | 'laporan'>('bugar');
+    const [riwayatTab, setRiwayatTab] = useState<'bugar' | 'laporan' | 'observasi' | 'inspeksi' | 'jsa'>('bugar');
 
     const sudahIsiBugarHariIni = recent_bugar_selamat.length > 0 && isToday(recent_bugar_selamat[0].tanggal);
     const pendingCount = stats.laporan_bahaya.pending;
@@ -273,8 +317,21 @@ export default function Dashboard({
 
     const userSite = user.site ?? '';
     const leaderSites = Object.keys(leaderboard);
-    const activeLeaderEntries = leaderboard[userSite] ?? leaderboard[leaderSites[0]] ?? [];
+    const activeSiteLeader: SiteLeaderboard | undefined = leaderboard[userSite] ?? leaderboard[leaderSites[0]];
     const leaderSiteLabel = leaderboard[userSite] ? userSite : leaderSites[0];
+
+    const LEADER_TABS = [
+        { key: 'bugar_selamat' as const,         label: 'Bugar Selamat',  unit: 'kali' },
+        { key: 'laporan_bahaya' as const,         label: 'Lap. Bahaya',   unit: 'poin' },
+        { key: 'observasi_keselamatan' as const,  label: 'Observasi',     unit: 'lap.' },
+        { key: 'komunikasi_jsa' as const,         label: 'JSA',           unit: 'lap.' },
+        { key: 'inspeksi' as const,               label: 'Inspeksi',      unit: 'lap.' },
+    ] as const;
+    const [leaderTab, setLeaderTab] = useState<keyof SiteLeaderboard>('bugar_selamat');
+    const activeLeaderEntries = activeSiteLeader?.[leaderTab] ?? [];
+    const hasAnyLeader = activeSiteLeader && LEADER_TABS.some(t => (activeSiteLeader[t.key]?.length ?? 0) > 0);
+
+    const MEDALS = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
 
     return (
         <>
@@ -467,6 +524,53 @@ export default function Dashboard({
                     </Link>
                 )}
 
+                {/* ④d REMINDER JSA — sebagai Team Leader */}
+                {pending_jsa_tl > 0 && (
+                    <Link href="/komunikasi-jsa?filter=pending" className="block">
+                        <div className="flex items-center gap-3 rounded-xl border-2 border-indigo-400 bg-indigo-50 px-4 py-3 active:scale-[0.99] transition-transform dark:border-indigo-700 dark:bg-indigo-950">
+                            <BookOpen className="h-7 w-7 shrink-0 text-indigo-500" />
+                            <div className="flex-1">
+                                <p className="font-semibold text-indigo-800 dark:text-indigo-200">
+                                    📋 {pending_jsa_tl} JSA menunggu tanda tangan Anda sebagai TL
+                                </p>
+                                <p className="text-xs text-indigo-600 dark:text-indigo-400">Ketuk untuk melihat dan menandatangani →</p>
+                            </div>
+                        </div>
+                    </Link>
+                )}
+
+                {/* ④e REMINDER — form sendiri yang belum disetujui */}
+                {(my_pending_observasi + my_pending_jsa + my_pending_inspeksi) > 0 && (
+                    <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-700 dark:bg-amber-950">
+                        <p className="mb-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
+                            ⏳ Form Anda yang masih menunggu approval
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {my_pending_observasi > 0 && (
+                                <Link href="/observasi-keselamatan?filter=pending">
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-200 dark:bg-amber-800 px-3 py-1 text-xs font-semibold text-amber-900 dark:text-amber-100">
+                                        Form OK ({my_pending_observasi})
+                                    </span>
+                                </Link>
+                            )}
+                            {my_pending_inspeksi > 0 && (
+                                <Link href="/inspeksi?filter=pending">
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-200 dark:bg-amber-800 px-3 py-1 text-xs font-semibold text-amber-900 dark:text-amber-100">
+                                        Inspeksi ({my_pending_inspeksi})
+                                    </span>
+                                </Link>
+                            )}
+                            {my_pending_jsa > 0 && (
+                                <Link href="/komunikasi-jsa?filter=pending">
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-200 dark:bg-amber-800 px-3 py-1 text-xs font-semibold text-amber-900 dark:text-amber-100">
+                                        JSA ({my_pending_jsa})
+                                    </span>
+                                </Link>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* ⑤ TOMBOL AKSI UTAMA */}
                 <div className="flex flex-col gap-2">
                     <div className="grid grid-cols-2 gap-3">
@@ -563,78 +667,75 @@ export default function Dashboard({
                 </div>
 
                 {/* ⑥ TARGET PARTISIPASI */}
-                <div className="flex flex-col gap-3">
-                    {target ? (
-                        <Card>
-                            <div className="px-4 pt-4 pb-2">
-                                <p className="text-xs font-bold">Target Partisipasi Bulan Ini</p>
-                            </div>
-                            <CardContent className="pt-0 space-y-3">
-                                {/* Bugar Selamat — hijau */}
-                                <TargetMetricRow
-                                    label="Bugar Selamat"
-                                    value={`${target.bugar.hari_terpenuhi}/${target.bugar.hari_berlalu} hari`}
-                                    persen={target.bugar.persen}
-                                    barColor="bg-green-500 dark:bg-green-400"
-                                    trackColor="bg-green-100 dark:bg-green-900"
-                                    textColor="text-green-700 dark:text-green-300"
-                                />
-
-                                {/* Laporan Bahaya — merah, bar per minggu */}
-                                <WeeklyMetricRow
-                                    label="Laporan Bahaya"
-                                    metric={target.laporan}
-                                    activeColor="bg-red-500 dark:bg-red-400"
-                                    inactiveColor="bg-red-100 dark:bg-red-900"
-                                    textColor="text-red-700 dark:text-red-300"
-                                    dotColor="text-red-600 dark:text-red-300"
-                                />
-
-                                {/* Inspeksi — biru */}
-                                {target.inspeksi && (
-                                    <WeeklyMetricRow
-                                        label="Inspeksi"
-                                        metric={target.inspeksi}
-                                        activeColor="bg-blue-500 dark:bg-blue-400"
-                                        inactiveColor="bg-blue-100 dark:bg-blue-900"
-                                        textColor="text-blue-700 dark:text-blue-300"
-                                        dotColor="text-blue-600 dark:text-blue-300"
-                                    />
-                                )}
-
-                                {/* Observasi — ungu */}
-                                {target.observasi && (
-                                    <WeeklyMetricRow
-                                        label="Observasi Keselamatan"
-                                        metric={target.observasi}
-                                        activeColor="bg-violet-500 dark:bg-violet-400"
-                                        inactiveColor="bg-violet-100 dark:bg-violet-900"
-                                        textColor="text-violet-700 dark:text-violet-300"
-                                        dotColor="text-violet-600 dark:text-violet-300"
-                                    />
-                                )}
-
-                                {/* JSA — amber, per 2 minggu */}
-                                {target.jsa && (
-                                    <WeeklyMetricRow
-                                        label="Komunikasi JSA"
-                                        sublabel="1× per 2 minggu"
-                                        metric={target.jsa}
-                                        activeColor="bg-amber-500 dark:bg-amber-400"
-                                        inactiveColor="bg-amber-100 dark:bg-amber-900"
-                                        textColor="text-amber-700 dark:text-amber-300"
-                                        dotColor="text-amber-600 dark:text-amber-300"
-                                        periodLabel="P"
-                                    />
-                                )}
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center rounded-2xl border bg-muted/30 py-4 px-3 text-center">
-                            <p className="text-xs text-muted-foreground">Target belum diatur</p>
+                {target ? (
+                    <Card>
+                        <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                            <p className="text-sm font-bold">📊 Target Bulan Ini</p>
+                            <span className="text-[11px] text-muted-foreground">✅ tercapai · ⚠️ lumayan · ❗ kurang</span>
                         </div>
-                    )}
-                </div>
+                        <CardContent className="px-4 pt-0 pb-3">
+                            <TargetMetricRow
+                                label="Bugar Selamat"
+                                icon={<ClipboardCheck className="h-4 w-4" />}
+                                iconColor="text-green-600 dark:text-green-400"
+                                persen={target.bugar.persen}
+                                hariTerpenuhi={target.bugar.hari_terpenuhi}
+                                hariBerlalu={target.bugar.hari_berlalu}
+                                accentColor="bg-green-500"
+                                barColor="bg-green-500 dark:bg-green-400"
+                                trackColor="bg-green-100 dark:bg-green-900"
+                                textColor="text-green-700 dark:text-green-300"
+                            />
+                            <WeeklyMetricRow
+                                label="Laporan Bahaya"
+                                icon={<AlertTriangle className="h-4 w-4" />}
+                                iconColor="text-red-500 dark:text-red-400"
+                                metric={target.laporan}
+                                accentColor="bg-red-500"
+                                activeColor="bg-red-500 dark:bg-red-400"
+                                inactiveColor="bg-red-100 dark:bg-red-900"
+                                textColor="text-red-700 dark:text-red-300"
+                            />
+                            {target.inspeksi && (
+                                <WeeklyMetricRow
+                                    label="Inspeksi"
+                                    icon={<HardHat className="h-4 w-4" />}
+                                    iconColor="text-blue-600 dark:text-blue-400"
+                                    metric={target.inspeksi}
+                                    accentColor="bg-blue-500"
+                                    activeColor="bg-blue-500 dark:bg-blue-400"
+                                    inactiveColor="bg-blue-100 dark:bg-blue-900"
+                                    textColor="text-blue-700 dark:text-blue-300"
+                                />
+                            )}
+                            {target.observasi && (
+                                <WeeklyMetricRow
+                                    label="Observasi"
+                                    icon={<Eye className="h-4 w-4" />}
+                                    iconColor="text-violet-600 dark:text-violet-400"
+                                    metric={target.observasi}
+                                    accentColor="bg-violet-500"
+                                    activeColor="bg-violet-500 dark:bg-violet-400"
+                                    inactiveColor="bg-violet-100 dark:bg-violet-900"
+                                    textColor="text-violet-700 dark:text-violet-300"
+                                />
+                            )}
+                            {target.jsa && (
+                                <WeeklyMetricRow
+                                    label="JSA"
+                                    icon={<BookOpen className="h-4 w-4" />}
+                                    iconColor="text-amber-600 dark:text-amber-400"
+                                    metric={target.jsa}
+                                    accentColor="bg-amber-500"
+                                    activeColor="bg-amber-500 dark:bg-amber-400"
+                                    inactiveColor="bg-amber-100 dark:bg-amber-900"
+                                    textColor="text-amber-700 dark:text-amber-300"
+                                    periodLabel="P"
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+                ) : null}
 
                 {/* ⑦ PERINGATAN LAPORAN PENDING */}
                 {pendingCount > 0 && (
@@ -650,60 +751,109 @@ export default function Dashboard({
                 )}
 
                 {/* ⑧ LEADERBOARD */}
-                {activeLeaderEntries.length > 0 && (
+                {hasAnyLeader && (
                     <Card>
                         <div className="flex items-center justify-between px-4 pt-4 pb-2">
                             <p className="text-sm font-bold">🏆 Papan Peringkat</p>
                             <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize">{leaderSiteLabel}</span>
                         </div>
-                        <CardContent className="pt-0 space-y-1.5">
-                            {activeLeaderEntries.slice(0, 3).map((entry, idx) => (
-                                <div
-                                    key={entry.id}
-                                    className={`flex items-center gap-3 rounded-xl px-3 py-2 ${entry.id === user.id ? 'bg-primary/10 ring-1 ring-primary/20' : 'bg-muted/40'}`}
+                        {/* Tab navigasi kategori */}
+                        <div className="flex gap-1 overflow-x-auto px-4 pb-2 scrollbar-none">
+                            {LEADER_TABS.map(tab => (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => setLeaderTab(tab.key)}
+                                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${leaderTab === tab.key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
                                 >
-                                    <span className="text-lg leading-none w-7 shrink-0 text-center">
-                                        {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
-                                    </span>
-                                    {entry.avatar ? (
-                                        <img src={entry.avatar} alt={entry.name} className="h-8 w-8 shrink-0 rounded-full object-cover" />
-                                    ) : (
-                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                                            {entry.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
-                                        </div>
-                                    )}
-                                    <p className="flex-1 text-sm font-medium truncate">
-                                        {entry.name}
-                                        {entry.id === user.id && <span className="ml-1 text-[10px] text-primary font-semibold">(kamu)</span>}
-                                    </p>
-                                    <span className="text-sm font-bold text-primary">{entry.skor} <span className="text-[11px] font-normal text-muted-foreground">poin</span></span>
-                                </div>
+                                    {tab.label}
+                                </button>
                             ))}
-                            <p className="text-[11px] text-muted-foreground pt-1 text-center">
-                                Skor = jumlah Bugar Selamat + (2 × Laporan Bahaya) bulan ini
-                            </p>
+                        </div>
+                        <CardContent className="pt-0 space-y-1.5">
+                            {activeLeaderEntries.length === 0 ? (
+                                <p className="text-center text-xs text-muted-foreground py-3">Belum ada data bulan ini</p>
+                            ) : (
+                                activeLeaderEntries.map((entry, idx) => (
+                                    <div
+                                        key={entry.id}
+                                        className={`flex items-center gap-3 rounded-xl px-3 py-2 ${entry.id === user.id ? 'bg-primary/10 ring-1 ring-primary/20' : 'bg-muted/40'}`}
+                                    >
+                                        <span className="text-lg leading-none w-7 shrink-0 text-center">{MEDALS[idx]}</span>
+                                        {entry.avatar ? (
+                                            <img src={entry.avatar} alt={entry.name} className="h-8 w-8 shrink-0 rounded-full object-cover" />
+                                        ) : (
+                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                                                {entry.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
+                                            </div>
+                                        )}
+                                        <p className="flex-1 text-sm font-medium truncate">
+                                            {entry.name}
+                                            {entry.id === user.id && <span className="ml-1 text-[10px] text-primary font-semibold">(kamu)</span>}
+                                        </p>
+                                        <span className="text-sm font-bold text-primary">
+                                            {entry.skor}{' '}
+                                            <span className="text-[11px] font-normal text-muted-foreground">
+                                                {LEADER_TABS.find(t => t.key === leaderTab)?.unit}
+                                            </span>
+                                        </span>
+                                    </div>
+                                ))
+                            )}
+                            {leaderTab === 'laporan_bahaya' && (
+                                <p className="text-[11px] text-muted-foreground pt-1 text-center">
+                                    AA=4 · A=3 · B=2 · C=1 poin
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
                 )}
 
                 {/* ⑨ RIWAYAT */}
                 <Card>
-                    <div className="flex items-center gap-1 px-4 pt-4 pb-2">
+                    <div className="flex items-center gap-1 overflow-x-auto px-4 pt-4 pb-2 scrollbar-none">
                         <button
                             onClick={() => setRiwayatTab('bugar')}
-                            className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${riwayatTab === 'bugar' ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground'}`}
+                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${riwayatTab === 'bugar' ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground'}`}
                         >
                             Bugar Selamat
                         </button>
                         <button
                             onClick={() => setRiwayatTab('laporan')}
-                            className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${riwayatTab === 'laporan' ? 'bg-red-600 text-white' : 'bg-muted text-muted-foreground'}`}
+                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${riwayatTab === 'laporan' ? 'bg-red-600 text-white' : 'bg-muted text-muted-foreground'}`}
                         >
-                            Laporan Bahaya
+                            Lap. Bahaya
                         </button>
-                        <div className="flex-1" />
-                        <Link href={riwayatTab === 'bugar' ? '/bugar-selamat' : '/laporan-bahaya'}>
-                            <Button variant="ghost" size="sm" className="h-7 gap-0.5 text-xs px-2">
+                        {isSAPUser && (
+                            <>
+                                <button
+                                    onClick={() => setRiwayatTab('observasi')}
+                                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${riwayatTab === 'observasi' ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground'}`}
+                                >
+                                    Observasi
+                                </button>
+                                <button
+                                    onClick={() => setRiwayatTab('inspeksi')}
+                                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${riwayatTab === 'inspeksi' ? 'bg-orange-600 text-white' : 'bg-muted text-muted-foreground'}`}
+                                >
+                                    Inspeksi
+                                </button>
+                                <button
+                                    onClick={() => setRiwayatTab('jsa')}
+                                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${riwayatTab === 'jsa' ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground'}`}
+                                >
+                                    JSA
+                                </button>
+                            </>
+                        )}
+                        <div className="flex-1 shrink-0" />
+                        <Link href={
+                            riwayatTab === 'bugar' ? '/bugar-selamat' :
+                            riwayatTab === 'laporan' ? '/laporan-bahaya' :
+                            riwayatTab === 'observasi' ? '/observasi-keselamatan' :
+                            riwayatTab === 'inspeksi' ? '/inspeksi' :
+                            '/komunikasi-jsa'
+                        }>
+                            <Button variant="ghost" size="sm" className="h-7 gap-0.5 text-xs px-2 shrink-0">
                                 Semua <ChevronRight size={12} />
                             </Button>
                         </Link>
@@ -756,6 +906,72 @@ export default function Dashboard({
                                 <EmptyState message="Belum ada laporan." href="/laporan-bahaya/create" label="Laporkan Sekarang" />
                             )
                         )}
+                        {riwayatTab === 'observasi' && (
+                            recent_observasi.length > 0 ? (
+                                <div className="space-y-1">
+                                    {recent_observasi.slice(0, 3).map((r) => (
+                                        <Link key={r.id} href={`/observasi-keselamatan/${r.id}`}>
+                                            <div className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-accent transition-colors">
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-medium">{fmtDate(r.tanggal)}</p>
+                                                    <p className="truncate text-xs text-muted-foreground">{r.lokasi_kerja}</p>
+                                                </div>
+                                                <div className="ml-2 flex items-center gap-1.5 shrink-0">
+                                                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium capitalize">{r.status.replace('_', ' ')}</span>
+                                                    <ChevronRight size={12} className="text-muted-foreground" />
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            ) : (
+                                <EmptyState message="Belum ada observasi." href="/observasi-keselamatan/create" label="Buat Sekarang" />
+                            )
+                        )}
+                        {riwayatTab === 'inspeksi' && (
+                            recent_inspeksi.length > 0 ? (
+                                <div className="space-y-1">
+                                    {recent_inspeksi.slice(0, 3).map((r) => (
+                                        <div key={`${r.jenis}-${r.id}`} className="flex items-center justify-between rounded-xl px-3 py-2 bg-muted/30">
+                                            <div>
+                                                <p className="text-sm font-medium">{fmtDate(r.tanggal)}</p>
+                                                <p className="text-xs text-muted-foreground">Inspeksi {r.jenis}</p>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                {r.risk_level && (
+                                                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase">{r.risk_level}</span>
+                                                )}
+                                                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium capitalize">{r.status.replace(/_/g, ' ')}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <EmptyState message="Belum ada inspeksi." href="/inspeksi" label="Lihat Inspeksi" />
+                            )
+                        )}
+                        {riwayatTab === 'jsa' && (
+                            recent_jsa.length > 0 ? (
+                                <div className="space-y-1">
+                                    {recent_jsa.slice(0, 3).map((r) => (
+                                        <Link key={r.id} href={`/komunikasi-jsa/${r.id}`}>
+                                            <div className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-accent transition-colors">
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-medium">{fmtDate(r.tanggal)}</p>
+                                                    <p className="truncate text-xs text-muted-foreground">{r.judul_dokumen}</p>
+                                                </div>
+                                                <div className="ml-2 flex items-center gap-1.5 shrink-0">
+                                                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium capitalize">{r.status.replace(/_/g, ' ')}</span>
+                                                    <ChevronRight size={12} className="text-muted-foreground" />
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            ) : (
+                                <EmptyState message="Belum ada JSA." href="/komunikasi-jsa/create" label="Buat Sekarang" />
+                            )
+                        )}
                     </CardContent>
                 </Card>
 
@@ -780,30 +996,41 @@ export default function Dashboard({
 
 function TargetMetricRow({
     label,
-    value,
+    icon,
     persen,
+    hariTerpenuhi,
+    hariBerlalu,
+    accentColor,
     barColor,
     trackColor,
     textColor,
+    iconColor,
 }: {
     label: string;
-    value: string;
+    icon: React.ReactNode;
     persen: number;
+    hariTerpenuhi: number;
+    hariBerlalu: number;
+    accentColor: string;
     barColor: string;
     trackColor: string;
     textColor: string;
+    iconColor: string;
 }) {
+    const statusEmoji = persen >= 80 ? '✅' : persen >= 50 ? '⚠️' : '❗';
     return (
-        <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground">{label}</span>
-                <div className="flex items-center gap-2">
-                    <span className={`text-[11px] font-semibold ${textColor}`}>{value}</span>
-                    <span className={`text-[11px] font-bold ${textColor}`}>{persen}%</span>
+        <div className="flex items-center gap-2.5 py-2.5 border-b last:border-0">
+            <div className={`w-1 self-stretch rounded-full shrink-0 ${accentColor}`} />
+            <span className={`shrink-0 ${iconColor}`}>{icon}</span>
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold truncate">{label}</span>
+                    <span className={`text-xs font-bold ml-2 shrink-0 ${textColor}`}>{persen}% {statusEmoji}</span>
                 </div>
-            </div>
-            <div className={`h-2 w-full rounded-full overflow-hidden ${trackColor}`}>
-                <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${persen}%` }} />
+                <div className={`h-2 w-full rounded-full overflow-hidden ${trackColor}`}>
+                    <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${persen}%` }} />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{hariTerpenuhi} dari {hariBerlalu} hari</p>
             </div>
         </div>
     );
@@ -811,52 +1038,54 @@ function TargetMetricRow({
 
 function WeeklyMetricRow({
     label,
-    sublabel,
+    icon,
     metric,
+    accentColor,
     activeColor,
     inactiveColor,
     textColor,
-    dotColor,
+    iconColor,
     periodLabel = 'M',
 }: {
     label: string;
-    sublabel?: string;
-    metric: { weeks: { count: number; terpenuhi: boolean }[]; minggu_berlalu: number; minggu_terpenuhi: number; persen: number };
+    icon: React.ReactNode;
+    metric: { weeks: { count: number; terpenuhi: boolean }[]; minggu_berlalu: number; minggu_terpenuhi: number; persen: number; target_per_minggu: number };
+    accentColor: string;
     activeColor: string;
     inactiveColor: string;
     textColor: string;
-    dotColor: string;
+    iconColor: string;
     periodLabel?: string;
 }) {
+    const isPeriod = periodLabel !== 'M';
+    const unitLabel = isPeriod ? 'periode' : 'mgg';
+    const statusEmoji = metric.persen >= 80 ? '✅' : metric.persen >= 50 ? '⚠️' : '❗';
+
     return (
-        <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-                <div>
-                    <span className="text-[11px] text-muted-foreground">{label}</span>
-                    {sublabel && <span className="ml-1.5 text-[10px] text-muted-foreground/60">{sublabel}</span>}
+        <div className="flex items-center gap-2.5 py-2.5 border-b last:border-0">
+            <div className={`w-1 self-stretch rounded-full shrink-0 ${accentColor}`} />
+            <span className={`shrink-0 ${iconColor}`}>{icon}</span>
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-semibold truncate">{label}</span>
+                    <span className={`text-xs font-bold ml-2 shrink-0 ${textColor}`}>{metric.persen}% {statusEmoji}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className={`text-[11px] font-semibold ${textColor}`}>
-                        {metric.minggu_terpenuhi}/{metric.minggu_berlalu} {periodLabel === 'M' ? 'minggu' : 'periode'}
-                    </span>
-                    <span className={`text-[11px] font-bold ${textColor}`}>{metric.persen}%</span>
+                <div className="flex gap-1">
+                    {metric.weeks.map((w, i) => (
+                        <div
+                            key={i}
+                            title={`${isPeriod ? 'P' : 'Mg'}${i + 1}: ${w.count}×`}
+                            className={`h-5 flex-1 rounded transition-all ${
+                                i >= metric.minggu_berlalu
+                                    ? 'bg-muted/50'
+                                    : w.terpenuhi ? activeColor : inactiveColor
+                            }`}
+                        />
+                    ))}
                 </div>
-            </div>
-            <div className="flex gap-1">
-                {metric.weeks.map((w, i) => (
-                    <div
-                        key={i}
-                        title={`${periodLabel}${i + 1}: ${w.count}`}
-                        className={`h-2.5 flex-1 rounded-full transition-all ${w.terpenuhi ? activeColor : inactiveColor}`}
-                    />
-                ))}
-            </div>
-            <div className="flex gap-x-1">
-                {metric.weeks.map((w, i) => (
-                    <span key={i} className={`text-[10px] flex-1 text-center ${w.terpenuhi ? `${dotColor} font-semibold` : 'text-muted-foreground'}`}>
-                        {periodLabel}{i + 1}: {w.count}
-                    </span>
-                ))}
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {metric.minggu_terpenuhi}/{metric.minggu_berlalu} {unitLabel} · target {metric.target_per_minggu}× per {unitLabel}
+                </p>
             </div>
         </div>
     );

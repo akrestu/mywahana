@@ -48,12 +48,17 @@ class HandleInertiaRequests extends Middleware
                 ]) : null,
             ],
             'notifications' => fn () => $user
-                ? $user->unreadNotifications()->latest()->take(5)->get()->map(fn ($n) => [
-                    'id'      => $n->id,
-                    'message' => $n->data['message'],
-                    'url'     => $n->data['url'] ?? null,
+                ? $user->notifications()->latest()->take(15)->get()->map(fn ($n) => [
+                    'id'         => $n->id,
+                    'message'    => $n->data['message'],
+                    'url'        => $n->data['url'] ?? null,
+                    'read_at'    => $n->read_at,
+                    'created_at' => $n->created_at,
                 ])
                 : [],
+            'unread_notifications_count' => fn () => $user
+                ? $user->unreadNotifications()->count()
+                : 0,
             'vapidPublicKey' => config('webpush.vapid.public_key'),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'currentTeam' => fn () => $user?->currentTeam ? $user->toUserTeam($user->currentTeam) : null,

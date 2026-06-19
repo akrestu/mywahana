@@ -399,28 +399,41 @@ export default function AdminUsers({ users, filters, sites }: Props) {
                     </div>
 
                     {/* Template download */}
-                    <a
-                        href="/admin/users/import-template"
-                        className="flex items-center gap-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-4 py-3 transition-colors hover:bg-primary/10"
-                    >
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                            <Download size={16} className="text-primary" />
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-sm font-medium text-primary">Download Template Excel</p>
-                            <p className="text-xs text-muted-foreground">Format sudah disesuaikan dengan sistem</p>
-                        </div>
-                    </a>
+                    <div className="space-y-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Langkah 1 — Download template</p>
+                        <a
+                            href="/admin/users/import-template"
+                            className="flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-3 transition-colors hover:bg-muted"
+                        >
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-background border">
+                                <Download size={16} className="text-primary" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-sm font-medium">Download Template Excel</p>
+                                <p className="text-xs text-muted-foreground">Format sudah disesuaikan dengan sistem</p>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div className="relative flex items-center gap-3">
+                        <div className="h-px flex-1 bg-border" />
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Langkah 3 — Upload file</span>
+                        <div className="h-px flex-1 bg-border" />
+                    </div>
 
                     <form onSubmit={handleImport} className="space-y-3">
-                        <div className={`relative rounded-lg border-2 border-dashed transition-colors ${data.file ? 'border-primary/50 bg-primary/5' : 'border-muted-foreground/25 hover:border-muted-foreground/40'}`}>
+                        <div className={`relative overflow-hidden rounded-lg border-2 border-dashed transition-colors ${data.file ? 'border-primary/50 bg-primary/5' : 'border-muted-foreground/25 hover:border-muted-foreground/40'}`}>
                             {data.file ? (
                                 <div className="flex items-center gap-3 px-4 py-3">
                                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
                                         <FileSpreadsheet size={16} className="text-primary" />
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-medium">{data.file.name}</p>
+                                        <p className="text-sm font-medium" title={data.file.name}>
+                                            {data.file.name.length > 30
+                                                ? data.file.name.slice(0, 13) + '…' + data.file.name.slice(-12)
+                                                : data.file.name}
+                                        </p>
                                         <p className="text-xs text-muted-foreground">{(data.file.size / 1024).toFixed(1)} KB</p>
                                     </div>
                                     <button

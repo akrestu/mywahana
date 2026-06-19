@@ -1,8 +1,9 @@
 import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, GraduationCap, HeartPulse, Home, LayoutGrid, LogOut, MapPin, Mountain, ShieldCheck, Target, User, UserCheck, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, GraduationCap, HeartPulse, Home, LayoutGrid, MapPin, Mountain, ShieldCheck, Target, User, UserCheck, Users, Wrench } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
+import { NotificationBell } from '@/components/notification-bell';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { TeamSwitcher } from '@/components/team-switcher';
@@ -221,15 +222,7 @@ function MobileHeader({ title, showBack, backHref, isAdmin }: { title?: string; 
                     </Link>
                 )}
                 <AppearanceToggleButton />
-                <Link
-                    href="/logout"
-                    method="post"
-                    as="button"
-                    className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-                >
-                    <LogOut size={13} />
-                    Keluar
-                </Link>
+                <NotificationBell />
             </div>
         </header>
     );
@@ -548,7 +541,8 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                     <span className="text-sm font-medium text-muted-foreground">
                         {title ?? 'MyWahana'}
                     </span>
-                    <div className="ml-auto">
+                    <div className="ml-auto flex items-center gap-1">
+                        <NotificationBell />
                         <AppearanceToggleButton />
                     </div>
                 </header>

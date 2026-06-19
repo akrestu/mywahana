@@ -56,6 +56,31 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(ObservasiKeselamatan::class);
     }
 
+    public function komunikasiJsas()
+    {
+        return $this->hasMany(KomunikasiJsa::class);
+    }
+
+    public function inspeksiTambangs()
+    {
+        return $this->hasMany(InspeksiTambang::class);
+    }
+
+    public function inspeksiKantors()
+    {
+        return $this->hasMany(InspeksiKantor::class);
+    }
+
+    public function inspeksiMesses()
+    {
+        return $this->hasMany(InspeksiMess::class);
+    }
+
+    public function inspeksiWorkshops()
+    {
+        return $this->hasMany(InspeksiWorkshop::class);
+    }
+
     public function badges()
     {
         return $this->hasMany(UserBadge::class);

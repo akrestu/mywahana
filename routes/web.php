@@ -13,6 +13,7 @@ use App\Http\Controllers\InspeksiTambangController;
 use App\Http\Controllers\InspeksiWorkshopController;
 use App\Http\Controllers\KomunikasiJsaController;
 use App\Http\Controllers\ObservasiKeselamatanController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use Illuminate\Support\Facades\Route;
 
@@ -108,10 +109,9 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Notifications
-    Route::post('notifications/{id}/read', function (string $id) {
-        auth()->user()->notifications()->where('id', $id)->update(['read_at' => now()]);
-        return back();
-    })->name('notifications.read');
+    Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
+    Route::delete('notifications/clear-all', [NotificationController::class, 'clearAll'])->name('notifications.clear-all');
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
 
     // Push Subscriptions (Web Push / VAPID)
     Route::post('push-subscription', [\App\Http\Controllers\PushSubscriptionController::class, 'store'])->name('push-subscription.store');

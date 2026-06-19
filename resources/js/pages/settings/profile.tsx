@@ -6,6 +6,7 @@ import {
     Camera,
     ChevronDown,
     IdCard,
+    LogOut,
     Mail,
     Save,
     User,
@@ -364,6 +365,17 @@ export default function Profile({
                         )}
                     </div>
                 </div>
+
+                {/* Logout */}
+                <Link
+                    href="/logout"
+                    method="post"
+                    as="button"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                    <LogOut size={16} />
+                    Keluar dari Akun
+                </Link>
 
                 {/* Hapus Akun — hanya untuk admin */}
                 {isAdmin && <div className="rounded-lg border border-red-200 dark:border-red-900">
