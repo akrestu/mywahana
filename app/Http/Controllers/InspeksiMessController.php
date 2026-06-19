@@ -161,7 +161,10 @@ class InspeksiMessController extends Controller
     public function reInspeksi(Request $request, InspeksiMess $inspeksiMess)
     {
         abort_unless($request->user()->id === $inspeksiMess->re_inspektor_id, 403);
-        abort_if($inspeksiMess->status !== 'menunggu_re_inspeksi', 403, 'Form ini sudah diproses.');
+        if ($inspeksiMess->status !== 'menunggu_re_inspeksi') {
+            Inertia::flash('toast', ['type' => 'info', 'message' => 'Form ini sudah diproses.']);
+            return redirect()->route('sap.inspeksi-mess.show', $inspeksiMess);
+        }
 
         $inspeksiMess->load('user:id,name,nik,jabatan,site', 'reInspektor:id,name,jabatan');
 

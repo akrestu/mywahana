@@ -133,7 +133,10 @@ class KomunikasiJsaController extends Controller
     public function konfirmasi(Request $request, KomunikasiJsa $komunikasiJsa)
     {
         abort_unless($request->user()->id === $komunikasiJsa->team_leader_id, 403);
-        abort_if($komunikasiJsa->status !== 'menunggu_konfirmasi', 403, 'Form ini sudah diproses.');
+        if ($komunikasiJsa->status !== 'menunggu_konfirmasi') {
+            Inertia::flash('toast', ['type' => 'info', 'message' => 'Form ini sudah diproses.']);
+            return redirect()->route('sap.komunikasi-jsa.show', $komunikasiJsa);
+        }
 
         $komunikasiJsa->load('user:id,name,nik,jabatan,site', 'teamLeader:id,name,jabatan');
 
