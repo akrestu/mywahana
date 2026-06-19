@@ -174,7 +174,10 @@ class InspeksiWorkshopController extends Controller
     public function reInspeksi(Request $request, InspeksiWorkshop $inspeksiWorkshop)
     {
         abort_unless($request->user()->id === $inspeksiWorkshop->re_inspektor_id, 403);
-        abort_if($inspeksiWorkshop->status !== 'menunggu_re_inspeksi', 403, 'Form ini sudah diproses.');
+        if ($inspeksiWorkshop->status !== 'menunggu_re_inspeksi') {
+            Inertia::flash('toast', ['type' => 'info', 'message' => 'Form ini sudah diproses.']);
+            return redirect()->route('sap.inspeksi-workshop.show', $inspeksiWorkshop);
+        }
 
         $inspeksiWorkshop->load('user:id,name,nik,jabatan,site', 'reInspektor:id,name,jabatan');
 

@@ -175,7 +175,10 @@ class ObservasiKeselamatanController extends Controller
             403
         );
 
-        abort_if($observasiKeselamatan->status !== 'menunggu_konfirmasi', 403, 'Form ini sudah diproses.');
+        if ($observasiKeselamatan->status !== 'menunggu_konfirmasi') {
+            Inertia::flash('toast', ['type' => 'info', 'message' => 'Form ini sudah diproses.']);
+            return redirect()->route('sap.observasi-keselamatan.show', $observasiKeselamatan);
+        }
 
         $observasiKeselamatan->load('user:id,name,nik,jabatan,site', 'penanggungJawab:id,name,jabatan');
 
