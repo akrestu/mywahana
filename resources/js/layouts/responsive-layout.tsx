@@ -542,8 +542,8 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                         {title ?? 'MyWahana'}
                     </span>
                     <div className="ml-auto flex items-center gap-1">
-                        <NotificationBell />
                         <AppearanceToggleButton />
+                        <NotificationBell />
                     </div>
                 </header>
 
