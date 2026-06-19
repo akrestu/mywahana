@@ -15,6 +15,7 @@ export function PageLoader() {
 
         const offStart = router.on('start', (event) => {
             if (event.detail.visit.method.toLowerCase() !== 'get') return;
+            if (event.detail.visit.only && event.detail.visit.only.length > 0) return;
             clearAll();
             setLeaving(false);
             timeout.current = setTimeout(() => {

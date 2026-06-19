@@ -64,6 +64,31 @@ class DashboardController extends Controller
             ->limit(5)
             ->get(['id', 'tanggal', 'lokasi', 'tingkat_risiko', 'status_tindakan']);
 
+        $isStaff = in_array($user->participation_level, ['staff', 'srstaff']);
+
+        $recent_observasi = $isStaff
+            ? ObservasiKeselamatan::where('user_id', $user->id)
+                ->latest('tanggal')
+                ->limit(5)
+                ->get(['id', 'tanggal', 'jenis_pekerjaan', 'lokasi_kerja', 'status'])
+            : collect();
+
+        $recent_inspeksi = $isStaff
+            ? collect([
+                ...InspeksiKantor::where('user_id', $user->id)->latest('tanggal')->limit(5)->get(['id', 'tanggal', 'status', 'risk_level'])->map(fn($r) => array_merge($r->toArray(), ['jenis' => 'Kantor'])),
+                ...InspeksiTambang::where('user_id', $user->id)->latest('tanggal')->limit(5)->get(['id', 'tanggal', 'status', 'risk_level'])->map(fn($r) => array_merge($r->toArray(), ['jenis' => 'Tambang'])),
+                ...InspeksiWorkshop::where('user_id', $user->id)->latest('tanggal')->limit(5)->get(['id', 'tanggal', 'status', 'risk_level'])->map(fn($r) => array_merge($r->toArray(), ['jenis' => 'Workshop'])),
+                ...InspeksiMess::where('user_id', $user->id)->latest('tanggal')->limit(5)->get(['id', 'tanggal', 'status', 'risk_level'])->map(fn($r) => array_merge($r->toArray(), ['jenis' => 'Mess'])),
+              ])->sortByDesc('tanggal')->take(5)->values()
+            : collect();
+
+        $recent_jsa = $isStaff
+            ? KomunikasiJsa::where('user_id', $user->id)
+                ->latest('tanggal')
+                ->limit(5)
+                ->get(['id', 'tanggal', 'lokasi', 'judul_dokumen', 'status'])
+            : collect();
+
         $trend = $this->buildUserMonthlyTrend($user->id, $now);
 
         // Streak
@@ -89,6 +114,34 @@ class DashboardController extends Controller
             ->where('status', 'menunggu_konfirmasi')
             ->count();
 
+        // Pending JSA sebagai Team Leader (TL) yang harus sign
+        $pendingJsaTl = $isStaff
+            ? KomunikasiJsa::where('team_leader_id', $user->id)
+                ->where('user_id', '!=', $user->id)
+                ->where('status', 'menunggu_konfirmasi')
+                ->count()
+            : 0;
+
+        // Form milik user sendiri yang masih menunggu approval (sisi submitter)
+        $myPendingObservasi = $isStaff
+            ? ObservasiKeselamatan::where('user_id', $user->id)
+                ->where('status', 'menunggu_konfirmasi')
+                ->count()
+            : 0;
+
+        $myPendingJsa = $isStaff
+            ? KomunikasiJsa::where('user_id', $user->id)
+                ->where('status', 'menunggu_konfirmasi')
+                ->count()
+            : 0;
+
+        $myPendingInspeksi = $isStaff
+            ? InspeksiKantor::where('user_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count()
+              + InspeksiTambang::where('user_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count()
+              + InspeksiWorkshop::where('user_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count()
+              + InspeksiMess::where('user_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count()
+            : 0;
+
         // Badge terbaru (yang diraih dalam 7 hari terakhir)
         $new_badges = $user->badges()
             ->where('earned_at', '>=', now()->subDays(7))
@@ -105,6 +158,9 @@ class DashboardController extends Controller
             'stats'                 => $stats,
             'recent_bugar_selamat'  => $recent_bugar_selamat,
             'recent_laporan_bahaya' => $recent_laporan_bahaya,
+            'recent_observasi'      => $recent_observasi,
+            'recent_inspeksi'       => $recent_inspeksi,
+            'recent_jsa'            => $recent_jsa,
             'trend'                 => $trend,
             'streak'                => $streak,
             'leaderboard'           => $leaderboard,
@@ -112,6 +168,10 @@ class DashboardController extends Controller
             'new_badges'            => $new_badges,
             'pending_re_inspeksi'   => $pendingReInspeksi,
             'pending_form_ok'       => $pendingFormOk,
+            'pending_jsa_tl'        => $pendingJsaTl,
+            'my_pending_observasi'  => $myPendingObservasi,
+            'my_pending_jsa'        => $myPendingJsa,
+            'my_pending_inspeksi'   => $myPendingInspeksi,
         ]);
     }
 
@@ -470,30 +530,69 @@ class DashboardController extends Controller
     {
         $sites = Site::pluck('value')->all();
         $result = [];
+        $m = $now->month;
+        $y = $now->year;
+
+        $mapUser = fn ($u) => [
+            'id'      => $u->id,
+            'name'    => $u->name,
+            'jabatan' => $u->jabatan,
+            'avatar'  => $u->avatar ? asset('storage/' . $u->avatar) : null,
+        ];
 
         foreach ($sites as $site) {
-            $users = User::where('is_admin', false)
-                ->where('site', $site)
+            $base = fn () => User::where('is_admin', false)->where('site', $site);
+
+            // 1. Bugar Selamat — jumlah submission bulan ini
+            $result[$site]['bugar_selamat'] = $base()
+                ->withCount(['bugarSelamats as skor' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y)])
+                ->get(['id', 'name', 'jabatan', 'avatar'])
+                ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) $u->skor]))
+                ->filter(fn ($u) => $u['skor'] > 0)
+                ->sortByDesc('skor')->values()->take(5);
+
+            // 2. Laporan Bahaya — total poin risiko (AA=4, A=3, B=2, C=1)
+            $lbRows = LaporanBahaya::where(fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y))
+                ->selectRaw('user_id, SUM(CASE tingkat_risiko WHEN \'AA\' THEN 4 WHEN \'A\' THEN 3 WHEN \'B\' THEN 2 ELSE 1 END) as skor')
+                ->groupBy('user_id')
+                ->pluck('skor', 'user_id');
+
+            $result[$site]['laporan_bahaya'] = $base()
+                ->get(['id', 'name', 'jabatan', 'avatar'])
+                ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) ($lbRows[$u->id] ?? 0)]))
+                ->filter(fn ($u) => $u['skor'] > 0)
+                ->sortByDesc('skor')->values()->take(5);
+
+            // 3. Observasi Keselamatan — jumlah
+            $result[$site]['observasi_keselamatan'] = $base()
+                ->withCount(['observasiKeselamatans as skor' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y)])
+                ->get(['id', 'name', 'jabatan', 'avatar'])
+                ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) $u->skor]))
+                ->filter(fn ($u) => $u['skor'] > 0)
+                ->sortByDesc('skor')->values()->take(5);
+
+            // 4. Komunikasi JSA — jumlah
+            $result[$site]['komunikasi_jsa'] = $base()
+                ->withCount(['komunikasiJsas as skor' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y)])
+                ->get(['id', 'name', 'jabatan', 'avatar'])
+                ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) $u->skor]))
+                ->filter(fn ($u) => $u['skor'] > 0)
+                ->sortByDesc('skor')->values()->take(5);
+
+            // 5. Inspeksi — gabungan 4 tabel
+            $result[$site]['inspeksi'] = $base()
                 ->withCount([
-                    'bugarSelamats as bs_count' => fn ($q) => $q->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year),
-                    'laporanBahayas as lb_count' => fn ($q) => $q->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year),
+                    'inspeksiTambangs as it_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
+                    'inspeksiKantors as ik_count'  => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
+                    'inspeksiMesses as im_count'   => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
+                    'inspeksiWorkshops as iw_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
                 ])
                 ->get(['id', 'name', 'jabatan', 'avatar'])
-                ->map(fn ($u) => [
-                    'id'      => $u->id,
-                    'name'    => $u->name,
-                    'jabatan' => $u->jabatan,
-                    'avatar'  => $u->avatar ? asset('storage/' . $u->avatar) : null,
-                    'bs'      => $u->bs_count,
-                    'lb'      => $u->lb_count,
-                    'skor'    => $u->bs_count + ($u->lb_count * 2),
-                ])
+                ->map(fn ($u) => array_merge($mapUser($u), [
+                    'skor' => (int) $u->it_count + (int) $u->ik_count + (int) $u->im_count + (int) $u->iw_count,
+                ]))
                 ->filter(fn ($u) => $u['skor'] > 0)
-                ->sortByDesc('skor')
-                ->values()
-                ->take(5);
-
-            $result[$site] = $users;
+                ->sortByDesc('skor')->values()->take(5);
         }
 
         return $result;

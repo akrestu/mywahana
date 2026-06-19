@@ -17,6 +17,14 @@ declare module '@inertiajs/core' {
             sidebarOpen: boolean;
             currentTeam: Team | null;
             teams: Team[];
+            notifications: Array<{
+                id: string;
+                message: string;
+                url: string | null;
+                read_at: string | null;
+                created_at: string;
+            }>;
+            unread_notifications_count: number;
             [key: string]: unknown;
         };
     }
