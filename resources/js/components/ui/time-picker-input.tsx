@@ -78,7 +78,7 @@ export function TimePickerInput({
             </Button>
 
             <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="w-[320px] max-w-[320px]">
+                <DialogContent className="w-[320px] max-w-[320px]" aria-describedby={undefined}>
                     <DialogHeader>
                         <DialogTitle className="text-base">Pilih Waktu</DialogTitle>
                     </DialogHeader>

@@ -30,6 +30,7 @@ Route::middleware(['auth'])->group(function () {
     // Laporan Bahaya
     Route::resource('laporan-bahaya', LaporanBahayaController::class)->only(['index', 'create', 'store', 'show']);
     Route::get('laporan-bahaya/{laporanBahaya}/pdf', [LaporanBahayaController::class, 'exportPdf'])->name('laporan-bahaya.pdf');
+    Route::post('laporan-bahaya/{laporanBahaya}/review', [LaporanBahayaController::class, 'submitReview'])->name('laporan-bahaya.review');
 
     // SAP - hanya staff & sr.staff
     Route::middleware(['staff'])->prefix('sap')->name('sap.')->group(function () {

@@ -26,6 +26,7 @@ use App\Models\InductionAttendance;
 use App\Models\KomunikasiJsa;
 use App\Models\LaporanBahaya;
 use App\Models\ObservasiKeselamatan;
+use App\Notifications\LaporanBahayaPicDitugaskan;
 use App\Models\ParticipationTarget;
 use App\Models\Site;
 use App\Models\User;
@@ -1009,9 +1010,22 @@ class AdminController extends Controller
     {
         $request->validate([
             'status_tindakan' => ['required', 'in:pending,continue,progress,close'],
+            'pic_user_id'     => ['nullable', 'exists:users,id'],
         ]);
 
-        $laporanBahaya->update(['status_tindakan' => $request->status_tindakan]);
+        $oldPicId = $laporanBahaya->pic_user_id;
+
+        $laporanBahaya->update(array_filter([
+            'status_tindakan' => $request->status_tindakan,
+            'pic_user_id'     => $request->has('pic_user_id') ? $request->pic_user_id : $laporanBahaya->pic_user_id,
+        ], fn($v) => $v !== null || $request->has('pic_user_id')));
+
+        // Kirim notif ke PIC baru jika PIC berubah
+        $newPicId = $laporanBahaya->fresh()->pic_user_id;
+        if ($newPicId && $newPicId !== $oldPicId) {
+            $laporanBahaya->load('user', 'pic');
+            $laporanBahaya->pic->notify(new LaporanBahayaPicDitugaskan($laporanBahaya));
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Status tindakan berhasil diperbarui.']);
 
@@ -1085,7 +1099,7 @@ class AdminController extends Controller
 
     public function exportBugarSelamat(Request $request)
     {
-        $query = BugarSelamat::with('user')->latest('tanggal');
+        $query = BugarSelamat::with('user')->orderBy('tanggal')->orderBy('created_at');
 
         if ($request->filled('site')) {
             $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
@@ -1107,7 +1121,7 @@ class AdminController extends Controller
 
     public function exportLaporanBahaya(Request $request)
     {
-        $query = LaporanBahaya::with('user')->latest('tanggal');
+        $query = LaporanBahaya::with(['user', 'pic'])->orderBy('tanggal')->orderBy('created_at');
 
         if ($request->filled('site')) {
             $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
