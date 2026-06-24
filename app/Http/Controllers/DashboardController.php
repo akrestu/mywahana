@@ -122,6 +122,17 @@ class DashboardController extends Controller
                 ->count()
             : 0;
 
+        // Laporan bahaya di mana user ditugaskan sebagai PIC dan belum close
+        $pendingAsPic = LaporanBahaya::where('pic_user_id', $user->id)
+            ->where('status_tindakan', '!=', 'close')
+            ->count();
+
+        // Laporan bahaya milik user sendiri yang sudah ada PIC tapi belum close
+        $myOpenWithPic = LaporanBahaya::where('user_id', $user->id)
+            ->whereNotNull('pic_user_id')
+            ->where('status_tindakan', '!=', 'close')
+            ->count();
+
         // Form milik user sendiri yang masih menunggu approval (sisi submitter)
         $myPendingObservasi = $isStaff
             ? ObservasiKeselamatan::where('user_id', $user->id)
@@ -172,6 +183,8 @@ class DashboardController extends Controller
             'my_pending_observasi'  => $myPendingObservasi,
             'my_pending_jsa'        => $myPendingJsa,
             'my_pending_inspeksi'   => $myPendingInspeksi,
+            'pending_as_pic'        => $pendingAsPic,
+            'my_open_with_pic'      => $myOpenWithPic,
         ]);
     }
 

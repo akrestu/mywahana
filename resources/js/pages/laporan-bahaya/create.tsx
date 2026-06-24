@@ -22,7 +22,9 @@ type UserInfo = {
     site?: string | null;
 };
 
-type Props = { user: UserInfo };
+type PicUser = { id: number; name: string; jabatan?: string | null };
+
+type Props = { user: UserInfo; pics: PicUser[] };
 
 function computeRisk(p: number, f: number, s: number) {
     const nilai = p * f * s;
@@ -61,7 +63,43 @@ const RISK_COLORS = {
     C:  { bg: 'bg-green-50 border-green-300 dark:bg-green-950/30',  text: 'text-green-700',  desc: 'Rendah — Aman terkendali' },
 } as const;
 
-const LOKASI_OPTIONS = [
+const KLASIFIKASI_TTA = [
+    'Mengoperasikan unit tanpa wewenang',
+    'Melanggar prosedur yang ditentukan',
+    'Membuat peralatan safety tidak berfungsi',
+    'Menggunakan peralatan yang rusak',
+    'Tidak memakai APD',
+    'Pemuatan Material Tidak Sesuai Prosedur',
+    'Penempatan peralatan/unit tidak sesuai prosedur',
+    'Berada pada posisi/daerah yang tidak aman',
+    'Memperbaiki unit/alat yang sedang beroperasi',
+    'Berada di bawah pengaruh obat-obatan atau alkohol',
+    'Bercanda berlebihan atau tidak serius melakukan pekerjaan secara benar',
+    'Menggunakan peralatan yang tidak sesuai',
+    'LOTO/Barikade/Safety Cone',
+    'Lain-Lain Tindakan Tidak Aman',
+];
+
+const KLASIFIKASI_KTA = [
+    'Sarana Pelindung/Pengaman tidak memadai',
+    'APD tidak layak/rusak',
+    'Alat, peralatan dan material yang rusak',
+    'Ruang Gerak Terbatas',
+    'Bahaya kebakaran dan ledakan',
+    'Pemeliharaan yang kurang',
+    'Kondisi lingkungan yang berbahaya',
+    'Paparan kebisingan',
+    'Paparan radiasi',
+    'Paparan terhadap suhu tinggi atau rendah',
+    'Pencahayaan yang kurang',
+    'Ventilasi yang tidak memadai',
+    'Sistem Peringatan yang tidak memadai',
+    'Kondisi Ergonomi',
+    'Alat, peralatan dan material tidak sesuai',
+    'Lain-lain Kondisi Tidak Aman',
+];
+
+const LOKASI_BAU = [
     'Tambang / Pit',
     'Jalan Hauling OB',
     'Jalan Hauling COAL',
@@ -91,13 +129,51 @@ const LOKASI_OPTIONS = [
     'Container HSE &/ GA',
 ];
 
+const LOKASI_MAS = [
+    'Jalan Hauling OB',
+    'Jalan Hauling CG',
+    'Pit/Front Loading Alam 1-3',
+    'Pit/Front Loading Alam 8-9',
+    'Disposal Mudcell C',
+    'Disposal Mudcell B',
+    'Disposal Mudcell A',
+    'Pit Stop/Area Refueling',
+    'Workshop',
+    'Warehouse',
+    'TPS Limbah B3',
+    'Rumah Genset',
+    'Office Atas',
+    'Office Workshop',
+    'Stockpile',
+    'Mess',
+    'Jalan Raya',
+    'Area Vendor',
+    'Waterfill',
+    'KPL Kompartemen 1',
+    'KPL Kompartemen 2',
+    'KPL Kompartemen 3',
+    'KPL Kompartemen 4',
+    'KPL Kompartemen 5',
+    'KPL Kompartemen 6',
+    'Washing Pad',
+    'Area Pembagian Nasi',
+    'Unit/Peralatan',
+    'View Point',
+    'Fuel Storage/Maintank',
+    'Lain-Lain',
+];
+
+const LOKASI_MAP: Record<string, string[]> = { bau: LOKASI_BAU, mas: LOKASI_MAS };
+
+const toProperCase = (str: string) => str.replace(/\b\w/g, (c) => c.toUpperCase());
+
 const STEPS = [
     { label: 'Lokasi & Foto',   icon: '📷' },
     { label: 'Tingkat Bahaya',  icon: '⚠️' },
     { label: 'Tindakan',        icon: '🔧' },
 ];
 
-export default function LaporanBahayaCreate({ user }: Props) {
+export default function LaporanBahayaCreate({ user, pics }: Props) {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
     const galleryRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(null);
@@ -107,6 +183,9 @@ export default function LaporanBahayaCreate({ user }: Props) {
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     useEffect(() => { window.scrollTo(0, 0); }, [currentStep]);
     const [lokasiOpen, setLokasiOpen] = useState(false);
+    const [klasifikasiOpen, setKlasifikasiOpen] = useState(false);
+    const [picOpen, setPicOpen] = useState(false);
+    const lokasiOptions = LOKASI_MAP[user.site ?? ''] ?? LOKASI_BAU;
 
     function openPhotoSource(source: 'camera' | 'gallery') {
         setPhotoSheet(false);
@@ -118,13 +197,16 @@ export default function LaporanBahayaCreate({ user }: Props) {
         tanggal: today,
         waktu_pengamatan: '',
         kategori: '',
+        klasifikasi_bahaya: '',
         lokasi: '',
+        detail_lokasi: '',
         deskripsi_bahaya: '',
         tindakan_perbaikan: '',
         probabilitas: '',
         frekuensi: '',
         severity: '',
         status_tindakan: 'pending',
+        pic_user_id: '' as string,
         foto: null as File | null,
     });
 
@@ -133,7 +215,7 @@ export default function LaporanBahayaCreate({ user }: Props) {
     const s = parseInt(data.severity) || 0;
     const risk = (p && f && s) ? computeRisk(p, f, s) : null;
 
-    const step1Valid = !!(data.tanggal && data.waktu_pengamatan && data.kategori && data.lokasi && data.deskripsi_bahaya);
+    const step1Valid = !!(data.tanggal && data.waktu_pengamatan && data.kategori && data.klasifikasi_bahaya && data.lokasi && data.deskripsi_bahaya);
     const step2Valid = !!(data.probabilitas && data.frekuensi && data.severity);
     const step3Valid = !!data.tindakan_perbaikan;
 
@@ -314,7 +396,7 @@ export default function LaporanBahayaCreate({ user }: Props) {
                                         <button
                                             key={value}
                                             type="button"
-                                            onClick={() => setData('kategori', value)}
+                                            onClick={() => { setData('kategori', value); setData('klasifikasi_bahaya', ''); }}
                                             className={cn(
                                                 'flex flex-col items-center gap-2 rounded-2xl border-2 px-3 py-5 text-center transition-all',
                                                 sel ? selCls : 'border-border bg-card hover:border-primary/40 hover:bg-muted/40',
@@ -337,6 +419,63 @@ export default function LaporanBahayaCreate({ user }: Props) {
                             </div>
                             {errors.kategori && <p className="text-sm text-destructive">{errors.kategori}</p>}
                         </div>
+
+                        {/* Klasifikasi Bahaya */}
+                        {data.kategori && (
+                            <div className="flex flex-col gap-2">
+                                <label className="text-base font-bold">🔍 Klasifikasi Bahaya</label>
+                                <p className="text-sm text-muted-foreground -mt-1">
+                                    {data.kategori === 'TTA' ? 'Pilih jenis tindakan tidak aman yang terjadi.' : 'Pilih jenis kondisi tidak aman yang ditemukan.'}
+                                </p>
+                                <Popover open={klasifikasiOpen} onOpenChange={setKlasifikasiOpen}>
+                                    <PopoverTrigger asChild>
+                                        <button
+                                            type="button"
+                                            role="combobox"
+                                            aria-expanded={klasifikasiOpen}
+                                            className={cn(
+                                                'flex h-14 w-full items-center justify-between rounded-xl border-2 px-4 text-base transition-all',
+                                                'focus-visible:ring-ring/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:outline-none',
+                                                data.klasifikasi_bahaya
+                                                    ? 'border-orange-400 bg-orange-50 text-orange-800 dark:bg-orange-950/30 dark:text-orange-200'
+                                                    : 'border-input bg-background text-muted-foreground',
+                                            )}
+                                        >
+                                            <span className="truncate text-left">{data.klasifikasi_bahaya || 'Pilih klasifikasi...'}</span>
+                                            <ChevronsUpDown size={16} className="shrink-0 opacity-50" />
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                                        <Command>
+                                            <CommandInput placeholder="Cari klasifikasi..." className="h-11 text-base" />
+                                            <CommandList>
+                                                <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {(data.kategori === 'TTA' ? KLASIFIKASI_TTA : KLASIFIKASI_KTA).map((item) => (
+                                                        <CommandItem
+                                                            key={item}
+                                                            value={item}
+                                                            onSelect={(val) => {
+                                                                setData('klasifikasi_bahaya', val === data.klasifikasi_bahaya ? '' : val);
+                                                                setKlasifikasiOpen(false);
+                                                            }}
+                                                            className="text-sm py-3"
+                                                        >
+                                                            {item}
+                                                            <Check
+                                                                size={15}
+                                                                className={cn('ml-auto', data.klasifikasi_bahaya === item ? 'opacity-100 text-orange-600' : 'opacity-0')}
+                                                            />
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                                {errors.klasifikasi_bahaya && <p className="text-sm text-destructive">{errors.klasifikasi_bahaya}</p>}
+                            </div>
+                        )}
 
                         {/* Lokasi */}
                         <div className="flex flex-col gap-2">
@@ -369,7 +508,7 @@ export default function LaporanBahayaCreate({ user }: Props) {
                                         <CommandList>
                                             <CommandEmpty>Lokasi tidak ditemukan.</CommandEmpty>
                                             <CommandGroup>
-                                                {LOKASI_OPTIONS.map((lokasi) => (
+                                                {lokasiOptions.map((lokasi) => (
                                                     <CommandItem
                                                         key={lokasi}
                                                         value={lokasi}
@@ -392,6 +531,23 @@ export default function LaporanBahayaCreate({ user }: Props) {
                                 </PopoverContent>
                             </Popover>
                             {errors.lokasi && <p className="text-sm text-destructive">{errors.lokasi}</p>}
+                        </div>
+
+                        {/* Detail Lokasi */}
+                        <div className="flex flex-col gap-2">
+                            <label className="text-base font-bold">📌 Detail Lokasi <span className="text-sm font-normal text-muted-foreground">(opsional)</span></label>
+                            <p className="text-sm text-muted-foreground -mt-1">Tambahkan keterangan lokasi yang lebih spesifik.</p>
+                            <input
+                                type="text"
+                                value={data.detail_lokasi}
+                                onChange={(e) => setData('detail_lokasi', toProperCase(e.target.value))}
+                                placeholder="Contoh: Ruang Pantry, Lantai 2 Gedung A..."
+                                className={cn(
+                                    'border-input bg-background text-foreground h-14 w-full rounded-xl border-2 px-4 text-base shadow-xs',
+                                    'focus-visible:ring-ring/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:outline-none placeholder:text-muted-foreground',
+                                )}
+                            />
+                            {errors.detail_lokasi && <p className="text-sm text-destructive">{errors.detail_lokasi}</p>}
                         </div>
 
                         {/* Deskripsi */}
@@ -689,6 +845,68 @@ export default function LaporanBahayaCreate({ user }: Props) {
                                 })}
                             </div>
                         </div>
+
+                        {/* PIC */}
+                        {pics.length > 0 && (
+                            <div className="flex flex-col gap-2">
+                                <label className="text-base font-bold">👤 PIC <span className="text-sm font-normal text-muted-foreground">(opsional)</span></label>
+                                <p className="text-sm text-muted-foreground -mt-1">Pilih penanggung jawab tindakan perbaikan.</p>
+                                <Popover open={picOpen} onOpenChange={setPicOpen}>
+                                    <PopoverTrigger asChild>
+                                        <button
+                                            type="button"
+                                            role="combobox"
+                                            aria-expanded={picOpen}
+                                            className={cn(
+                                                'flex h-14 w-full items-center justify-between rounded-xl border-2 px-4 text-base transition-all',
+                                                'focus-visible:ring-ring/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:outline-none',
+                                                data.pic_user_id
+                                                    ? 'border-orange-400 bg-orange-50 text-orange-800 dark:bg-orange-950/30 dark:text-orange-200'
+                                                    : 'border-input bg-background text-muted-foreground',
+                                            )}
+                                        >
+                                            <span className="truncate text-left">
+                                                {data.pic_user_id
+                                                    ? (() => { const p = pics.find((p) => String(p.id) === data.pic_user_id); return p ? `${p.name}${p.jabatan ? ` — ${p.jabatan}` : ''}` : 'Pilih PIC...'; })()
+                                                    : 'Pilih PIC...'}
+                                            </span>
+                                            <ChevronsUpDown size={16} className="shrink-0 opacity-50" />
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                                        <Command>
+                                            <CommandInput placeholder="Cari nama PIC..." className="h-11 text-base" />
+                                            <CommandList>
+                                                <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {pics.map((pic) => (
+                                                        <CommandItem
+                                                            key={pic.id}
+                                                            value={`${pic.name} ${pic.jabatan ?? ''}`}
+                                                            onSelect={() => {
+                                                                setData('pic_user_id', data.pic_user_id === String(pic.id) ? '' : String(pic.id));
+                                                                setPicOpen(false);
+                                                            }}
+                                                            className="text-sm py-3"
+                                                        >
+                                                            <div>
+                                                                <p className="font-medium">{pic.name}</p>
+                                                                {pic.jabatan && <p className="text-xs text-muted-foreground">{pic.jabatan}</p>}
+                                                            </div>
+                                                            <Check
+                                                                size={15}
+                                                                className={cn('ml-auto shrink-0', data.pic_user_id === String(pic.id) ? 'opacity-100 text-orange-600' : 'opacity-0')}
+                                                            />
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                                {errors.pic_user_id && <p className="text-sm text-destructive">{errors.pic_user_id}</p>}
+                            </div>
+                        )}
 
                         <NavButtons canNext={step3Valid} />
                     </div>

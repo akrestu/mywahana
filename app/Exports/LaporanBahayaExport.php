@@ -22,15 +22,23 @@ class LaporanBahayaExport implements FromQuery, WithHeadings, WithMapping, Shoul
     {
         return [
             'No', 'Nama', 'NIK', 'Site', 'Tanggal', 'Waktu Pengamatan',
-            'Kategori', 'Lokasi', 'Deskripsi Bahaya', 'Tindakan Perbaikan',
+            'Kategori', 'Klasifikasi Bahaya', 'Lokasi', 'Detail Lokasi',
+            'Deskripsi Bahaya', 'Tindakan Perbaikan',
             'Probabilitas', 'Frekuensi', 'Severity', 'Nilai Risiko',
-            'Tingkat Risiko', 'Status Tindakan',
+            'Tingkat Risiko', 'Status Tindakan', 'PIC',
         ];
     }
 
     public function map($row): array
     {
         $this->no++;
+        $status = match ($row->status_tindakan) {
+            'pending'  => 'Pending',
+            'continue' => 'Continue',
+            'progress' => 'Progress',
+            'close'    => 'Close',
+            default    => $row->status_tindakan ?? '',
+        };
         return [
             $this->no,
             $row->user->name ?? '',
@@ -39,7 +47,9 @@ class LaporanBahayaExport implements FromQuery, WithHeadings, WithMapping, Shoul
             $row->tanggal?->format('d/m/Y') ?? '',
             $row->waktu_pengamatan ?? '',
             $row->kategori ?? '',
+            $row->klasifikasi_bahaya ?? '',
             $row->lokasi,
+            $row->detail_lokasi ?? '',
             $row->deskripsi_bahaya,
             $row->tindakan_perbaikan,
             $row->probabilitas,
@@ -47,7 +57,8 @@ class LaporanBahayaExport implements FromQuery, WithHeadings, WithMapping, Shoul
             $row->severity,
             $row->nilai_risiko,
             $row->tingkat_risiko,
-            $row->status_tindakan === 'selesai' ? 'Selesai' : 'Pending',
+            $status,
+            $row->pic?->name ?? '',
         ];
     }
 }

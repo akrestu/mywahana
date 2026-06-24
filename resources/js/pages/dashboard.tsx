@@ -126,6 +126,8 @@ type Props = {
     my_pending_observasi?: number;
     my_pending_jsa?: number;
     my_pending_inspeksi?: number;
+    pending_as_pic?: number;
+    my_open_with_pic?: number;
 };
 
 const defaultStats: Stats = {
@@ -286,6 +288,8 @@ export default function Dashboard({
     my_pending_observasi = 0,
     my_pending_jsa = 0,
     my_pending_inspeksi = 0,
+    pending_as_pic = 0,
+    my_open_with_pic = 0,
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const user = auth.user;
@@ -295,7 +299,6 @@ export default function Dashboard({
     const [riwayatTab, setRiwayatTab] = useState<'bugar' | 'laporan' | 'observasi' | 'inspeksi' | 'jsa'>('bugar');
 
     const sudahIsiBugarHariIni = recent_bugar_selamat.length > 0 && isToday(recent_bugar_selamat[0].tanggal);
-    const pendingCount = stats.laporan_bahaya.pending;
     const isSAPUser = user.participation_level === 'staff' || user.participation_level === 'srstaff';
 
     const [dismissedKeys, setDismissedKeys] = useState<string[]>([]);
@@ -342,65 +345,71 @@ export default function Dashboard({
                 {/* ① HERO — compact, tidak diubah */}
                 <div className="relative overflow-hidden rounded-2xl border" style={{ background: tod.gradientStyle }}>
                     <div className={`pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full blur-3xl ${tod.shimmer} animate-pulse`} />
-                    <div className="relative flex items-center justify-between p-4">
-                        <div className="flex items-center gap-3 min-w-0">
-                            {/* Foto Profil */}
-                            <Link href="/settings/profile" className="shrink-0">
-                                {user.avatar_url ? (
-                                    <img
-                                        src={user.avatar_url}
-                                        alt={user.name}
-                                        className="h-14 w-14 rounded-full object-cover ring-2 ring-white/40 shadow-md"
-                                    />
-                                ) : (
-                                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 ring-2 ring-white/40 shadow-md text-lg font-bold backdrop-blur-sm">
-                                        {user.name?.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
-                                    </div>
-                                )}
-                            </Link>
-                            <div className="min-w-0">
-                                <p className="flex items-center gap-1 text-xs text-foreground/60 font-medium min-h-[1.25rem]">
-                                    <span>{tod.emoji}</span>
-                                    <span>{typedGreeting}</span>
-                                    <span className="inline-block w-[2px] h-3 bg-foreground/40 animate-pulse rounded-sm" />
-                                </p>
-                                <h1 className="text-xl font-bold">{firstName}!</h1>
-                                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                                    {user.jabatan && (
-                                        <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium"
-                                            style={{
-                                                background: 'linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 100%)',
-                                                backdropFilter: 'blur(12px) saturate(1.8)',
-                                                WebkitBackdropFilter: 'blur(12px) saturate(1.8)',
-                                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.12)',
-                                                border: '1px solid rgba(255,255,255,0.5)',
-                                                color: 'rgba(0,0,0,0.65)',
-                                            }}>
-                                            <BriefcaseBusiness className="h-3 w-3 shrink-0 opacity-70" />
-                                            {user.jabatan}
-                                        </span>
+                    <div className="relative p-4 space-y-2">
+                        {/* Baris atas: avatar + sapa + jam */}
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <Link href="/settings/profile" className="shrink-0">
+                                    {user.avatar_url ? (
+                                        <img
+                                            src={user.avatar_url}
+                                            alt={user.name}
+                                            className="h-14 w-14 rounded-full object-cover ring-2 ring-white/40 shadow-md"
+                                        />
+                                    ) : (
+                                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 ring-2 ring-white/40 shadow-md text-lg font-bold backdrop-blur-sm">
+                                            {user.name?.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
+                                        </div>
                                     )}
-                                    {user.site && (
-                                        <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
-                                            style={{
-                                                background: 'linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.20) 100%)',
-                                                backdropFilter: 'blur(12px) saturate(1.8)',
-                                                WebkitBackdropFilter: 'blur(12px) saturate(1.8)',
-                                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.10)',
-                                                border: '1px solid rgba(255,255,255,0.6)',
-                                                color: 'rgba(0,0,0,0.70)',
-                                            }}>
-                                            <MapPin className="h-3 w-3 shrink-0 opacity-70" />
-                                            Site {user.site.toUpperCase()}
-                                        </span>
-                                    )}
+                                </Link>
+                                <div className="min-w-0">
+                                    <p className="flex items-center gap-1 text-xs text-foreground/60 font-medium min-h-[1.25rem]">
+                                        <span>{tod.emoji}</span>
+                                        <span>{typedGreeting}</span>
+                                        <span className="inline-block w-[2px] h-3 bg-foreground/40 animate-pulse rounded-sm" />
+                                    </p>
+                                    <h1 className="text-xl font-bold">{firstName}!</h1>
                                 </div>
                             </div>
+                            <div className="text-right shrink-0 ml-2">
+                                <p className={`font-mono text-3xl font-bold tabular-nums ${tod.clockColor}`}>{tod.timeStr}</p>
+                                <p className="text-[11px] text-muted-foreground capitalize">{tod.dateStr}</p>
+                            </div>
                         </div>
-                        <div className="text-right shrink-0 ml-2">
-                            <p className={`font-mono text-3xl font-bold tabular-nums ${tod.clockColor}`}>{tod.timeStr}</p>
-                            <p className="text-[11px] text-muted-foreground capitalize">{tod.dateStr}</p>
-                        </div>
+
+                        {/* Baris bawah: jabatan + site */}
+                        {(user.jabatan || user.site) && (
+                            <div className="flex flex-wrap gap-1.5">
+                                {user.jabatan && (
+                                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+                                        style={{
+                                            background: 'linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 100%)',
+                                            backdropFilter: 'blur(12px) saturate(1.8)',
+                                            WebkitBackdropFilter: 'blur(12px) saturate(1.8)',
+                                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.12)',
+                                            border: '1px solid rgba(255,255,255,0.5)',
+                                            color: 'rgba(0,0,0,0.65)',
+                                        }}>
+                                        <BriefcaseBusiness className="h-3 w-3 shrink-0 opacity-70" />
+                                        {user.jabatan}
+                                    </span>
+                                )}
+                                {user.site && (
+                                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                                        style={{
+                                            background: 'linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.20) 100%)',
+                                            backdropFilter: 'blur(12px) saturate(1.8)',
+                                            WebkitBackdropFilter: 'blur(12px) saturate(1.8)',
+                                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.10)',
+                                            border: '1px solid rgba(255,255,255,0.6)',
+                                            color: 'rgba(0,0,0,0.70)',
+                                        }}>
+                                        <MapPin className="h-3 w-3 shrink-0 opacity-70" />
+                                        Site {user.site.toUpperCase()}
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -737,13 +746,27 @@ export default function Dashboard({
                     </Card>
                 ) : null}
 
-                {/* ⑦ PERINGATAN LAPORAN PENDING */}
-                {pendingCount > 0 && (
+                {/* ⑦ REMINDER LAPORAN BAHAYA */}
+                {pending_as_pic > 0 && (
+                    <Link href="/laporan-bahaya?filter=pic" className="block">
+                        <div className="flex items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 dark:border-orange-800 dark:bg-orange-950">
+                            <BriefcaseBusiness className="h-5 w-5 shrink-0 text-orange-500" />
+                            <p className="flex-1 text-sm font-semibold text-orange-800 dark:text-orange-200">
+                                Anda ditugaskan sebagai PIC untuk{' '}
+                                <span className="underline underline-offset-2">{pending_as_pic} laporan bahaya</span>{' '}
+                                yang belum ditutup
+                            </p>
+                            <ChevronRight size={14} className="text-orange-400" />
+                        </div>
+                    </Link>
+                )}
+                {my_open_with_pic > 0 && (
                     <Link href="/laporan-bahaya" className="block">
                         <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
                             <Clock className="h-5 w-5 shrink-0 text-red-500" />
                             <p className="flex-1 text-sm font-semibold text-red-800 dark:text-red-200">
-                                {pendingCount} laporan bahaya menunggu tindakan
+                                <span className="underline underline-offset-2">{my_open_with_pic} laporan bahaya Anda</span>{' '}
+                                sudah ada PIC namun belum ditutup — ingatkan PIC untuk closing
                             </p>
                             <ChevronRight size={14} className="text-red-400" />
                         </div>

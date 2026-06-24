@@ -9,11 +9,11 @@ class LaporanBahaya extends Model
     protected $table = 'laporan_bahaya';
 
     protected $fillable = [
-        'user_id', 'tanggal', 'waktu_pengamatan', 'kategori', 'lokasi',
+        'user_id', 'tanggal', 'waktu_pengamatan', 'kategori', 'klasifikasi_bahaya', 'lokasi', 'detail_lokasi',
         'deskripsi_bahaya', 'tindakan_perbaikan',
         'probabilitas', 'frekuensi', 'severity',
         'nilai_risiko', 'tingkat_risiko',
-        'status_tindakan', 'foto_path',
+        'status_tindakan', 'pic_user_id', 'foto_path',
     ];
 
     protected $casts = [
@@ -45,5 +45,20 @@ class LaporanBahaya extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function pic()
+    {
+        return $this->belongsTo(User::class, 'pic_user_id');
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(LaporanBahayaReview::class);
+    }
+
+    public function latestReview()
+    {
+        return $this->hasOne(LaporanBahayaReview::class)->latestOfMany();
     }
 }
