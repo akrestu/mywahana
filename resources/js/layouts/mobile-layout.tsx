@@ -1,6 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Bell, BookOpen, ClipboardCheck, ClipboardList, Home, LogOut, TriangleAlert, User } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { usePushNotification } from '@/hooks/use-push-notification';
 import type { Auth } from '@/types';
@@ -84,6 +84,25 @@ export default function MobileLayout({ children, title, showBack, backHref }: Pr
         baseNavItems[3],
     ];
     const [showNotif, setShowNotif] = useState(false);
+    const [navVisible, setNavVisible] = useState(true);
+    const lastScrollY = useRef(0);
+
+    useEffect(() => {
+        const THRESHOLD = 8;
+        const onScroll = () => {
+            const currentY = window.scrollY;
+            if (currentY < THRESHOLD) {
+                setNavVisible(true);
+            } else if (currentY > lastScrollY.current + THRESHOLD) {
+                setNavVisible(false);
+            } else if (currentY < lastScrollY.current - THRESHOLD) {
+                setNavVisible(true);
+            }
+            lastScrollY.current = currentY;
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
 
     const isActive = (href: string) => {
         if (href === '/home') return url === '/home';
@@ -188,7 +207,7 @@ export default function MobileLayout({ children, title, showBack, backHref }: Pr
             </main>
 
             {/* Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+            <nav className={`fixed bottom-0 left-0 right-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 transition-transform duration-300 ${navVisible ? 'translate-y-0' : 'translate-y-full'}`}>
                 <div className="mx-auto flex h-[68px] max-w-lg items-center justify-around px-2">
                     {navItems.map((item) => {
                         const Icon = item.icon;

@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, GraduationCap, HeartPulse, Home, LayoutGrid, MapPin, Mountain, ShieldCheck, Target, User, UserCheck, Users, Wrench } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
 import { NotificationBell } from '@/components/notification-bell';
@@ -231,6 +231,25 @@ function MobileHeader({ title, showBack, backHref, isAdmin }: { title?: string; 
 function MobileBottomNav({ url, isAdmin, isStaff, navItems }: { url: string; isAdmin: boolean; isStaff: boolean; navItems: typeof baseUserMobileNavItems }) {
     const [sapDrawerOpen, setSapDrawerOpen] = useState(false);
     const [assessmentDrawerOpen, setAssessmentDrawerOpen] = useState(false);
+    const [navVisible, setNavVisible] = useState(true);
+    const lastScrollY = useRef(0);
+
+    useEffect(() => {
+        const THRESHOLD = 8;
+        const onScroll = () => {
+            const currentY = window.scrollY;
+            if (currentY < THRESHOLD) {
+                setNavVisible(true);
+            } else if (currentY > lastScrollY.current + THRESHOLD) {
+                setNavVisible(false);
+            } else if (currentY < lastScrollY.current - THRESHOLD) {
+                setNavVisible(true);
+            }
+            lastScrollY.current = currentY;
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
     const items = isAdmin ? adminMobileNavItems : navItems;
     const isSapActive = url.startsWith('/sap/') || url.startsWith('/laporan-bahaya') || url.startsWith('/admin/inspeksi-') || url.startsWith('/admin/observasi-keselamatan') || url.startsWith('/admin/komunikasi-jsa');
     const isAssessmentActive = url.startsWith('/assessment') || url.startsWith('/hr-assessment') || url.startsWith('/admin/assessment') || url.startsWith('/admin/hr-assessment');
@@ -264,7 +283,7 @@ function MobileBottomNav({ url, isAdmin, isStaff, navItems }: { url: string; isA
     };
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden">
+        <nav className={`fixed bottom-0 left-0 right-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden transition-transform duration-300 ${navVisible ? 'translate-y-0' : 'translate-y-full'}`}>
             <div className="flex h-[72px] items-center justify-around px-1">
                 {isAdmin ? (
                     <>
