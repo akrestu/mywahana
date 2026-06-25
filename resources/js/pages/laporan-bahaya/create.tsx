@@ -217,7 +217,7 @@ export default function LaporanBahayaCreate({ user, pics }: Props) {
 
     const step1Valid = !!(data.tanggal && data.waktu_pengamatan && data.kategori && data.klasifikasi_bahaya && data.lokasi && data.deskripsi_bahaya);
     const step2Valid = !!(data.probabilitas && data.frekuensi && data.severity);
-    const step3Valid = !!data.tindakan_perbaikan;
+    const step3Valid = !!(data.tindakan_perbaikan && data.pic_user_id);
 
     const handleFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -847,10 +847,10 @@ export default function LaporanBahayaCreate({ user, pics }: Props) {
                         </div>
 
                         {/* PIC */}
-                        {pics.length > 0 && (
-                            <div className="flex flex-col gap-2">
-                                <label className="text-base font-bold">👤 PIC <span className="text-sm font-normal text-muted-foreground">(opsional)</span></label>
-                                <p className="text-sm text-muted-foreground -mt-1">Pilih penanggung jawab tindakan perbaikan.</p>
+                        <div className="flex flex-col gap-2">
+                            <label className="text-base font-bold">👤 PIC</label>
+                            <p className="text-sm text-muted-foreground -mt-1">Pilih penanggung jawab tindakan perbaikan.</p>
+                            {pics.length > 0 ? (
                                 <Popover open={picOpen} onOpenChange={setPicOpen}>
                                     <PopoverTrigger asChild>
                                         <button
@@ -862,7 +862,7 @@ export default function LaporanBahayaCreate({ user, pics }: Props) {
                                                 'focus-visible:ring-ring/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:outline-none',
                                                 data.pic_user_id
                                                     ? 'border-orange-400 bg-orange-50 text-orange-800 dark:bg-orange-950/30 dark:text-orange-200'
-                                                    : 'border-input bg-background text-muted-foreground',
+                                                    : errors.pic_user_id ? 'border-destructive bg-background text-muted-foreground' : 'border-input bg-background text-muted-foreground',
                                             )}
                                         >
                                             <span className="truncate text-left">
@@ -904,9 +904,11 @@ export default function LaporanBahayaCreate({ user, pics }: Props) {
                                         </Command>
                                     </PopoverContent>
                                 </Popover>
-                                {errors.pic_user_id && <p className="text-sm text-destructive">{errors.pic_user_id}</p>}
-                            </div>
-                        )}
+                            ) : (
+                                <p className="text-sm text-destructive">Tidak ada PIC tersedia untuk site ini.</p>
+                            )}
+                            {errors.pic_user_id && <p className="text-sm text-destructive">{errors.pic_user_id}</p>}
+                        </div>
 
                         <NavButtons canNext={step3Valid} />
                     </div>

@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Download, Search, Trash2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Download, Search, Trash2, UserPen } from 'lucide-react';
 import { useState } from 'react';
 import { RiskBadge } from '@/components/risk-badge';
 import { TindakanBadge } from '@/components/status-badge';
@@ -7,12 +7,17 @@ import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import {
     Dialog, DialogContent, DialogDescription,
     DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+
+type PicUser = { id: number; name: string; jabatan?: string | null; site?: string | null };
 
 type LaporanRecord = {
     id: number;
@@ -21,7 +26,9 @@ type LaporanRecord = {
     tingkat_risiko: 'AA' | 'A' | 'B' | 'C';
     nilai_risiko: number;
     status_tindakan: 'pending' | 'continue' | 'progress' | 'close';
+    pic_user_id: number | null;
     user: { name: string; nik?: string | null; site?: string | null };
+    pic?: { id: number; name: string } | null;
 };
 
 type PaginatedRecords = {
@@ -34,7 +41,7 @@ type PaginatedRecords = {
 type Summary = { pending: number; aa: number; a: number; b: number; c: number; total: number };
 type Filters = { site?: string; tingkat_risiko?: string; status_tindakan?: string; search?: string; periode?: string };
 type SiteOption = { value: string; label: string };
-type Props = { records: PaginatedRecords; filters: Filters; summary: Summary; sites: SiteOption[] };
+type Props = { records: PaginatedRecords; filters: Filters; summary: Summary; sites: SiteOption[]; pics: PicUser[] };
 
 const PERIODE_OPTIONS = [
     { value: 'hari_ini',   label: 'Hari Ini' },
@@ -49,7 +56,7 @@ const cardBorder: Record<string, string> = {
     C:  'border-l-4 border-l-green-500',
 };
 
-export default function AdminLaporanBahaya({ records, filters, summary, sites }: Props) {
+export default function AdminLaporanBahaya({ records, filters, summary, sites, pics }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [toDelete, setToDelete] = useState<LaporanRecord | null>(null);
     const [deleting, setDeleting] = useState(false);
@@ -58,6 +65,10 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites }:
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [batchDeleting, setBatchDeleting] = useState(false);
     const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+    const [picDialogRecord, setPicDialogRecord] = useState<LaporanRecord | null>(null);
+    const [picDialogValue, setPicDialogValue] = useState<string>('');
+    const [picOpen, setPicOpen] = useState(false);
+    const [updatingPic, setUpdatingPic] = useState(false);
 
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
@@ -105,6 +116,23 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites }:
         setDeleting(true);
         router.delete(`/admin/laporan-bahaya/${toDelete.id}`, {
             onFinish: () => { setDeleting(false); setToDelete(null); },
+        });
+    };
+
+    const openPicDialog = (record: LaporanRecord) => {
+        setPicDialogRecord(record);
+        setPicDialogValue(record.pic_user_id ? String(record.pic_user_id) : '');
+        setPicOpen(false);
+    };
+
+    const savePic = () => {
+        if (!picDialogRecord) return;
+        setUpdatingPic(true);
+        router.patch(`/admin/laporan-bahaya/${picDialogRecord.id}/status`, {
+            status_tindakan: picDialogRecord.status_tindakan,
+            pic_user_id: picDialogValue || null,
+        }, {
+            onFinish: () => { setUpdatingPic(false); setPicDialogRecord(null); },
         });
     };
 
@@ -283,6 +311,22 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites }:
                                             )}
                                         </div>
                                     </div>
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <span className="font-medium">PIC:</span>
+                                        <span className={record.pic ? '' : 'italic text-destructive/70'}>
+                                            {record.pic ? record.pic.name : 'Belum ditugaskan'}
+                                        </span>
+                                        {!selectMode && (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                                                onClick={() => openPicDialog(record)}
+                                            >
+                                                <UserPen size={14} />
+                                            </Button>
+                                        )}
+                                    </div>
                                     <div className="flex items-center justify-between">
                                         <TindakanBadge status={record.status_tindakan} />
                                         <div className="flex gap-2">
@@ -369,6 +413,80 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites }:
                         <Button variant="outline" onClick={() => setShowBatchConfirm(false)} disabled={batchDeleting}>Batal</Button>
                         <Button variant="destructive" onClick={handleBatchDelete} disabled={batchDeleting}>
                             {batchDeleting ? 'Menghapus...' : 'Ya, Hapus Semua'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog ubah PIC */}
+            <Dialog open={!!picDialogRecord} onOpenChange={(open) => !open && setPicDialogRecord(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Ubah PIC</DialogTitle>
+                        <DialogDescription>
+                            Pilih penanggung jawab tindakan perbaikan untuk laporan dari{' '}
+                            <strong>{picDialogRecord?.user.name}</strong>.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-2">
+                        <Popover open={picOpen} onOpenChange={setPicOpen}>
+                            <PopoverTrigger asChild>
+                                <button
+                                    type="button"
+                                    role="combobox"
+                                    aria-expanded={picOpen}
+                                    className={cn(
+                                        'flex h-11 w-full items-center justify-between rounded-lg border px-3 text-sm',
+                                        'focus-visible:ring-ring/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:outline-none',
+                                        picDialogValue ? 'border-primary' : 'border-input text-muted-foreground',
+                                    )}
+                                >
+                                    <span className="truncate text-left">
+                                        {picDialogValue
+                                            ? (() => { const p = pics.find((p) => String(p.id) === picDialogValue); return p ? `${p.name}${p.jabatan ? ` — ${p.jabatan}` : ''}` : 'Pilih PIC...'; })()
+                                            : 'Pilih PIC...'}
+                                    </span>
+                                    <ChevronsUpDown size={15} className="shrink-0 opacity-50" />
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Cari nama PIC..." className="h-10 text-sm" />
+                                    <CommandList>
+                                        <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                                        <CommandGroup>
+                                            {pics.map((pic) => (
+                                                <CommandItem
+                                                    key={pic.id}
+                                                    value={`${pic.name} ${pic.jabatan ?? ''}`}
+                                                    onSelect={() => {
+                                                        setPicDialogValue(picDialogValue === String(pic.id) ? '' : String(pic.id));
+                                                        setPicOpen(false);
+                                                    }}
+                                                    className="text-sm py-2"
+                                                >
+                                                    <div>
+                                                        <p className="font-medium">{pic.name}</p>
+                                                        {pic.jabatan && <p className="text-xs text-muted-foreground">{pic.jabatan}</p>}
+                                                    </div>
+                                                    <Check
+                                                        size={14}
+                                                        className={cn('ml-auto shrink-0', picDialogValue === String(pic.id) ? 'opacity-100 text-primary' : 'opacity-0')}
+                                                    />
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setPicDialogRecord(null)} disabled={updatingPic}>
+                            Batal
+                        </Button>
+                        <Button onClick={savePic} disabled={updatingPic}>
+                            {updatingPic ? 'Menyimpan...' : 'Simpan'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

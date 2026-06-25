@@ -298,7 +298,7 @@ class AdminController extends Controller
 
     public function laporanBahaya(Request $request)
     {
-        $query     = LaporanBahaya::with('user')->latest('tanggal');
+        $query     = LaporanBahaya::with(['user', 'pic'])->latest('tanggal');
         $adminSite = $request->user()->site;
         $site      = $this->adminSite($request);
 
@@ -348,6 +348,11 @@ class AdminController extends Controller
             $query->where('status_tindakan', $request->status_tindakan);
         }
 
+        $picsQuery = \App\Models\User::whereIn('participation_level', ['staff', 'srstaff'])->orderBy('name');
+        if ($adminSite) {
+            $picsQuery->where('site', $adminSite);
+        }
+
         return Inertia::render('admin/laporan-bahaya', [
             'records'    => $query->paginate(20)->withQueryString(),
             'filters'    => $request->only('site', 'tingkat_risiko', 'status_tindakan', 'search', 'periode'),
@@ -356,6 +361,7 @@ class AdminController extends Controller
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
                 : Site::orderBy('label')->get(['value', 'label']),
             'admin_site' => $adminSite,
+            'pics'       => $picsQuery->get(['id', 'name', 'jabatan', 'site']),
         ]);
     }
 
@@ -1121,7 +1127,7 @@ class AdminController extends Controller
 
     public function exportLaporanBahaya(Request $request)
     {
-        $query = LaporanBahaya::with(['user', 'pic'])->orderBy('tanggal')->orderBy('created_at');
+        $query = LaporanBahaya::with(['user', 'pic'])->orderBy('created_at');
 
         if ($request->filled('site')) {
             $query->whereHas('user', fn ($q) => $q->where('site', $request->site));

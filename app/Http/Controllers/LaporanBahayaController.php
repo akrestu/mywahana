@@ -67,7 +67,7 @@ class LaporanBahayaController extends Controller
             'frekuensi'           => ['required', 'integer', 'between:1,5'],
             'severity'            => ['required', 'integer', 'in:1,2,3,25,30'],
             'status_tindakan'     => ['required', 'in:pending,continue,progress,close'],
-            'pic_user_id'         => ['nullable', 'exists:users,id'],
+            'pic_user_id'         => ['required', 'exists:users,id'],
             'foto'                => ['nullable', 'image', 'max:5120'],
         ]);
 
