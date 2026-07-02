@@ -1,7 +1,8 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Bell, BookOpen, ClipboardCheck, ClipboardList, Home, LogOut, TriangleAlert, User } from 'lucide-react';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Separator } from '@/components/ui/separator';
+import { useAutoHideNav } from '@/hooks/use-auto-hide-nav';
 import { usePushNotification } from '@/hooks/use-push-notification';
 import type { Auth } from '@/types';
 
@@ -84,25 +85,7 @@ export default function MobileLayout({ children, title, showBack, backHref }: Pr
         baseNavItems[3],
     ];
     const [showNotif, setShowNotif] = useState(false);
-    const [navVisible, setNavVisible] = useState(true);
-    const lastScrollY = useRef(0);
-
-    useEffect(() => {
-        const THRESHOLD = 8;
-        const onScroll = () => {
-            const currentY = window.scrollY;
-            if (currentY < THRESHOLD) {
-                setNavVisible(true);
-            } else if (currentY > lastScrollY.current + THRESHOLD) {
-                setNavVisible(false);
-            } else if (currentY < lastScrollY.current - THRESHOLD) {
-                setNavVisible(true);
-            }
-            lastScrollY.current = currentY;
-        };
-        window.addEventListener('scroll', onScroll, { passive: true });
-        return () => window.removeEventListener('scroll', onScroll);
-    }, []);
+    const navVisible = useAutoHideNav(url);
 
     const isActive = (href: string) => {
         if (href === '/home') return url === '/home';
