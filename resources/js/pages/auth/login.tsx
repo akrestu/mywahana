@@ -42,6 +42,7 @@ function useTypingGreeting(words: string[]) {
             if (!isDeleting) {
                 const next = current.slice(0, displayed.length + 1);
                 setDisplayed(next);
+
                 if (next === current) {
                     timeoutRef.current = setTimeout(() => setIsDeleting(true), PAUSE_AFTER_TYPE);
                 } else {
@@ -50,6 +51,7 @@ function useTypingGreeting(words: string[]) {
             } else {
                 const next = current.slice(0, displayed.length - 1);
                 setDisplayed(next);
+
                 if (next === '') {
                     setIsDeleting(false);
                     setWordIndex((i) => (i + 1) % words.length);
@@ -61,8 +63,11 @@ function useTypingGreeting(words: string[]) {
         };
 
         timeoutRef.current = setTimeout(tick, isDeleting ? DELETING_SPEED : TYPING_SPEED);
+
         return () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            if (timeoutRef.current) {
+clearTimeout(timeoutRef.current);
+}
         };
     }, [displayed, isDeleting, wordIndex, words]);
 

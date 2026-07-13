@@ -1,21 +1,21 @@
 ﻿import { Head, useForm } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight, Calendar, Camera, Check, ChevronsUpDown, Images, Plus, Trash2, X } from 'lucide-react';
-import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
-import { UploadOverlay } from '@/components/upload-overlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { UploadOverlay } from '@/components/upload-overlay';
 import { compressImageWithToast } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
-type StaffUser = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
+type StaffUser = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null; sites: string[] };
 type SiteOption = { value: string; label: string };
 type Props = { user: { name: string; jabatan?: string | null; departemen?: string | null; site?: string | null }; staffUsers: StaffUser[]; sites: SiteOption[] };
 
@@ -109,6 +109,7 @@ function calcScore(data: FormData) {
     const max = ALL_SCORE_KEYS.length * 4;
     const pct = filled.length > 0 ? Math.round((total / max) * 100 * 10) / 10 : 0;
     const level = pct >= 85 ? 'L' : pct >= 70 ? 'M' : pct >= 50 ? 'H' : 'VH';
+
     return { total, max, pct, level };
 }
 
@@ -118,6 +119,7 @@ const RISK_CFG = { L: { label: 'Baik', cls: 'bg-green-100 text-green-800' }, M: 
 
 function ScoreButton({ val, current, onChange }: { val: number; current: string; onChange: (v: string) => void }) {
     const isActive = current === String(val);
+
     return <button type="button" onClick={() => onChange(isActive ? '' : String(val))} className={cn('flex h-10 w-10 items-center justify-center rounded-xl border-2 text-sm font-bold transition-all', isActive ? cn(SCORE_COLORS[val], 'border-transparent text-white scale-110 shadow-md') : 'border-border bg-background text-muted-foreground hover:border-primary hover:text-primary')} title={SCORE_LABELS[val]}>{val}</button>;
 }
 
@@ -125,28 +127,55 @@ function SignaturePad({ onCapture }: { onCapture: (d: string | null) => void }) 
     const ref = useRef<HTMLCanvasElement>(null);
     const drawing = useRef(false);
     const [empty, setEmpty] = useState(true);
-    const pos = (e: MouseEvent | Touch, c: HTMLCanvasElement) => { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) }; };
+    const pos = (e: MouseEvent | Touch, c: HTMLCanvasElement) => {
+ const r = c.getBoundingClientRect();
+
+ return { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) }; 
+};
     useEffect(() => {
-        const c = ref.current; if (!c) return;
+        const c = ref.current;
+
+ if (!c) {
+return;
+}
+
         const ctx = c.getContext('2d')!; ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#0f172a'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-        const down = (e: MouseEvent | TouchEvent) => { e.preventDefault(); drawing.current = true; const p = pos('touches' in e ? e.touches[0] : e, c); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
-        const move = (e: MouseEvent | TouchEvent) => { if (!drawing.current) return; e.preventDefault(); const p = pos('touches' in e ? e.touches[0] : e, c); ctx.lineTo(p.x, p.y); ctx.stroke(); setEmpty(false); onCapture(c.toDataURL()); };
-        const up = () => { drawing.current = false; };
+        const down = (e: MouseEvent | TouchEvent) => {
+ e.preventDefault(); drawing.current = true; const p = pos('touches' in e ? e.touches[0] : e, c); ctx.beginPath(); ctx.moveTo(p.x, p.y); 
+};
+        const move = (e: MouseEvent | TouchEvent) => {
+ if (!drawing.current) {
+return;
+}
+
+ e.preventDefault(); const p = pos('touches' in e ? e.touches[0] : e, c); ctx.lineTo(p.x, p.y); ctx.stroke(); setEmpty(false); onCapture(c.toDataURL()); 
+};
+        const up = () => {
+ drawing.current = false; 
+};
         c.addEventListener('mousedown', down); c.addEventListener('mousemove', move); c.addEventListener('mouseup', up);
         c.addEventListener('touchstart', down, { passive: false }); c.addEventListener('touchmove', move, { passive: false }); c.addEventListener('touchend', up);
-        return () => { c.removeEventListener('mousedown', down); c.removeEventListener('mousemove', move); c.removeEventListener('mouseup', up); c.removeEventListener('touchstart', down); c.removeEventListener('touchmove', move); c.removeEventListener('touchend', up); };
+
+        return () => {
+ c.removeEventListener('mousedown', down); c.removeEventListener('mousemove', move); c.removeEventListener('mouseup', up); c.removeEventListener('touchstart', down); c.removeEventListener('touchmove', move); c.removeEventListener('touchend', up); 
+};
     }, [onCapture]);
+
     return (
         <div className="space-y-2">
             <div className="relative overflow-hidden rounded-2xl border-2 border-dashed border-input bg-white dark:bg-muted/20"><canvas ref={ref} width={600} height={220} className="w-full touch-none block" style={{ cursor: 'crosshair' }} />{empty && <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-muted-foreground/40 text-sm font-medium">Tanda tangan di sini</div>}</div>
-            {!empty && <button type="button" onClick={() => { ref.current?.getContext('2d')!.clearRect(0,0,600,220); setEmpty(true); onCapture(null); }} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive"><X size={14} /> Hapus &amp; Ulangi</button>}
+            {!empty && <button type="button" onClick={() => {
+ ref.current?.getContext('2d')!.clearRect(0,0,600,220); setEmpty(true); onCapture(null); 
+}} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive"><X size={14} /> Hapus &amp; Ulangi</button>}
         </div>
     );
 }
 
 export default function InspeksiWorkshopCreate({ user, staffUsers, sites }: Props) {
     const [step, setStep] = useState(1);
-    useEffect(() => { window.scrollTo(0, 0); }, [step]);
+    useEffect(() => {
+ window.scrollTo(0, 0); 
+}, [step]);
     const [riOpen, setRiOpen] = useState(false);
     const [pesertaOpen, setPesertaOpen] = useState(false);
     const [siteOpen, setSiteOpen] = useState(false);
@@ -156,11 +185,17 @@ export default function InspeksiWorkshopCreate({ user, staffUsers, sites }: Prop
     const [showCamera, setShowCamera] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const [pendingFotoKey, setPendingFotoKey] = useState<string | null>(null);
-    function openFotoPicker(key: string) { setPendingFotoKey(key); setPhotoSheet(true); }
+    function openFotoPicker(key: string) {
+ setPendingFotoKey(key); setPhotoSheet(true); 
+}
     function chooseFotoSource(source: 'camera' | 'gallery') {
         setPhotoSheet(false);
-        if (source === 'camera') setShowCamera(true);
-        else fotoGalleryRef.current?.click();
+
+        if (source === 'camera') {
+setShowCamera(true);
+} else {
+fotoGalleryRef.current?.click();
+}
     }
     const handleFotoChange = async (key: string, file: File) => {
         const compressed = await compressImageWithToast(file);
@@ -169,22 +204,30 @@ export default function InspeksiWorkshopCreate({ user, staffUsers, sites }: Prop
     const initialScores = Object.fromEntries(ALL_SCORE_KEYS.map(k => [k, ''])) as { [K in ScoreKey]: string };
     const defaultSite = sites.find(s => s.value === user.site)?.label ?? '';
     const { data, setData, post, processing, errors } = useForm<FormData>({ re_inspektor_id: '', peserta_ids: [], tanggal: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }), project_site: defaultSite, departemen: user.departemen ?? '', ...initialScores, tindakan_perbaikan: [], ttd_inspektor: '' });
-    const selectedRI = staffUsers.find(u => String(u.id) === data.re_inspektor_id);
-    const selectedPeserta = staffUsers.filter(u => data.peserta_ids.includes(u.id));
+    const selectedSiteValue = sites.find(s => s.label === data.project_site)?.value;
+    const availableStaffUsers = staffUsers.filter(u => selectedSiteValue && u.sites.includes(selectedSiteValue));
+    const selectedRI = availableStaffUsers.find(u => String(u.id) === data.re_inspektor_id);
+    const selectedPeserta = availableStaffUsers.filter(u => data.peserta_ids.includes(u.id));
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
 
     const score = calcScore(data);
     const risk = RISK_CFG[score.level as keyof typeof RISK_CFG];
     const addTindakan = () => setData('tindakan_perbaikan', [...data.tindakan_perbaikan, { tindakan: '', pic: '', due_date: '', remark: '' }]);
     const removeTindakan = (i: number) => setData('tindakan_perbaikan', data.tindakan_perbaikan.filter((_, idx) => idx !== i));
-    const updateTindakan = (i: number, field: keyof TindakanRow, val: string) => { const rows = [...data.tindakan_perbaikan]; rows[i] = { ...rows[i], [field]: val }; setData('tindakan_perbaikan', rows); };
+    const updateTindakan = (i: number, field: keyof TindakanRow, val: string) => {
+ const rows = [...data.tindakan_perbaikan]; rows[i] = { ...rows[i], [field]: val }; setData('tindakan_perbaikan', rows); 
+};
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const fd = new FormData();
         Object.entries(data).forEach(([k, v]) => {
-            if (k === 'tindakan_perbaikan') (v as TindakanRow[]).forEach((row, i) => Object.entries(row).forEach(([rk, rv]) => fd.append(`tindakan_perbaikan[${i}][${rk}]`, rv)));
-            else if (k === 'peserta_ids') (v as number[]).forEach(id => fd.append('peserta_ids[]', String(id)));
-            else fd.append(k, String(v ?? ''));
+            if (k === 'tindakan_perbaikan') {
+(v as TindakanRow[]).forEach((row, i) => Object.entries(row).forEach(([rk, rv]) => fd.append(`tindakan_perbaikan[${i}][${rk}]`, rv)));
+} else if (k === 'peserta_ids') {
+(v as number[]).forEach(id => fd.append('peserta_ids[]', String(id)));
+} else {
+fd.append(k, String(v ?? ''));
+}
         });
         Object.entries(fotoFiles).forEach(([k, f]) => fd.append(`foto[${k}]`, f));
         setUploadProgress(0);
@@ -223,7 +266,9 @@ export default function InspeksiWorkshopCreate({ user, staffUsers, sites }: Prop
                                         <PopoverContent className="w-full p-0" align="start">
                                             <Command><CommandList><CommandGroup>
                                                 {sites.map(s => (
-                                                    <CommandItem key={s.value} value={s.label} onSelect={() => { setData('project_site', s.label); setSiteOpen(false); }}>
+                                                    <CommandItem key={s.value} value={s.label} onSelect={() => {
+ setData('project_site', s.label); setData('re_inspektor_id', ''); setData('peserta_ids', []); setSiteOpen(false); 
+}}>
                                                         <Check size={14} className={cn('mr-2', data.project_site === s.label ? 'opacity-100' : 'opacity-0')} />{s.label}
                                                     </CommandItem>
                                                 ))}
@@ -242,14 +287,22 @@ export default function InspeksiWorkshopCreate({ user, staffUsers, sites }: Prop
                                     <Label>Re-Inspektor (Opsional)</Label>
                                     <Popover open={riOpen} onOpenChange={setRiOpen}>
                                         <PopoverTrigger asChild><Button variant="outline" role="combobox" className="h-12 w-full justify-between text-base">{selectedRI ? selectedRI.name : 'Pilih re-inspektor...'}<ChevronsUpDown size={16} className="ml-2 opacity-50" /></Button></PopoverTrigger>
-                                        <PopoverContent className="w-full p-0" align="start"><Command><CommandInput placeholder="Cari nama..." /><CommandList><CommandEmpty>Tidak ditemukan</CommandEmpty><CommandGroup>{data.re_inspektor_id && <CommandItem onSelect={() => { setData('re_inspektor_id', ''); setRiOpen(false); }}><X size={14} className="mr-2" /> Hapus pilihan</CommandItem>}{staffUsers.map(u => <CommandItem key={u.id} value={u.name} onSelect={() => { setData('re_inspektor_id', String(u.id)); setRiOpen(false); }}><Check size={14} className={cn('mr-2', String(u.id) === data.re_inspektor_id ? 'opacity-100' : 'opacity-0')} /><div><p className="font-semibold">{u.name}</p>{u.jabatan && <p className="text-xs text-muted-foreground">{u.jabatan}</p>}</div></CommandItem>)}</CommandGroup></CommandList></Command></PopoverContent>
+                                        <PopoverContent className="w-full p-0" align="start"><Command><CommandInput placeholder="Cari nama..." /><CommandList><CommandEmpty>Tidak ditemukan</CommandEmpty><CommandGroup>{data.re_inspektor_id && <CommandItem onSelect={() => {
+ setData('re_inspektor_id', ''); setRiOpen(false); 
+}}><X size={14} className="mr-2" /> Hapus pilihan</CommandItem>}{availableStaffUsers.map(u => <CommandItem key={u.id} value={u.name} onSelect={() => {
+ setData('re_inspektor_id', String(u.id)); setRiOpen(false); 
+}}><Check size={14} className={cn('mr-2', String(u.id) === data.re_inspektor_id ? 'opacity-100' : 'opacity-0')} /><div><p className="font-semibold">{u.name}</p>{u.jabatan && <p className="text-xs text-muted-foreground">{u.jabatan}</p>}</div></CommandItem>)}</CommandGroup></CommandList></Command></PopoverContent>
                                     </Popover>
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label>Peserta Inspeksi (Opsional)</Label>
                                     <Popover open={pesertaOpen} onOpenChange={setPesertaOpen}>
                                         <PopoverTrigger asChild><Button variant="outline" role="combobox" className="h-12 w-full justify-between text-base">{selectedPeserta.length > 0 ? `${selectedPeserta.length} peserta dipilih` : 'Tambah peserta...'}<ChevronsUpDown size={16} className="ml-2 opacity-50" /></Button></PopoverTrigger>
-                                        <PopoverContent className="w-full p-0" align="start"><Command><CommandInput placeholder="Cari nama..." /><CommandList><CommandEmpty>Tidak ditemukan</CommandEmpty><CommandGroup>{staffUsers.map(u => { const selected = data.peserta_ids.includes(u.id); return <CommandItem key={u.id} value={u.name} onSelect={() => setData('peserta_ids', selected ? data.peserta_ids.filter(id => id !== u.id) : [...data.peserta_ids, u.id])}><Check size={14} className={cn('mr-2', selected ? 'opacity-100' : 'opacity-0')} /><div><p className="font-semibold">{u.name}</p>{u.jabatan && <p className="text-xs text-muted-foreground">{u.jabatan}</p>}</div></CommandItem>; })}</CommandGroup></CommandList></Command></PopoverContent>
+                                        <PopoverContent className="w-full p-0" align="start"><Command><CommandInput placeholder="Cari nama..." /><CommandList><CommandEmpty>Tidak ditemukan</CommandEmpty><CommandGroup>{availableStaffUsers.map(u => {
+ const selected = data.peserta_ids.includes(u.id);
+
+ return <CommandItem key={u.id} value={u.name} onSelect={() => setData('peserta_ids', selected ? data.peserta_ids.filter(id => id !== u.id) : [...data.peserta_ids, u.id])}><Check size={14} className={cn('mr-2', selected ? 'opacity-100' : 'opacity-0')} /><div><p className="font-semibold">{u.name}</p>{u.jabatan && <p className="text-xs text-muted-foreground">{u.jabatan}</p>}</div></CommandItem>; 
+})}</CommandGroup></CommandList></Command></PopoverContent>
                                     </Popover>
                                     {selectedPeserta.length > 0 && <div className="flex flex-wrap gap-2 pt-1">{selectedPeserta.map(u => <div key={u.id} className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-sm">{u.name}<button type="button" onClick={() => setData('peserta_ids', data.peserta_ids.filter(id => id !== u.id))}><X size={12} className="text-muted-foreground hover:text-destructive" /></button></div>)}</div>}
                                 </div>
@@ -325,7 +378,11 @@ export default function InspeksiWorkshopCreate({ user, staffUsers, sites }: Prop
 
             <input ref={fotoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => {
                 const f = e.target.files?.[0];
-                if (f && pendingFotoKey) { handleFotoChange(pendingFotoKey, f); setPendingFotoKey(null); }
+
+                if (f && pendingFotoKey) {
+ handleFotoChange(pendingFotoKey, f); setPendingFotoKey(null); 
+}
+
                 e.target.value = '';
             }} />
             <UploadOverlay open={processing} progress={uploadProgress} label="Menyimpan inspeksi..." />
@@ -333,9 +390,14 @@ export default function InspeksiWorkshopCreate({ user, staffUsers, sites }: Prop
                 open={showCamera}
                 onCapture={(file) => {
                     setShowCamera(false);
-                    if (pendingFotoKey) { handleFotoChange(pendingFotoKey, file); setPendingFotoKey(null); }
+
+                    if (pendingFotoKey) {
+ handleFotoChange(pendingFotoKey, file); setPendingFotoKey(null); 
+}
                 }}
-                onClose={() => { setShowCamera(false); setPendingFotoKey(null); }}
+                onClose={() => {
+ setShowCamera(false); setPendingFotoKey(null); 
+}}
             />
 
             <Sheet open={photoSheet} onOpenChange={setPhotoSheet}>

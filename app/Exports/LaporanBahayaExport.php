@@ -21,7 +21,7 @@ class LaporanBahayaExport implements FromQuery, WithHeadings, WithMapping, Shoul
     public function headings(): array
     {
         return [
-            'No', 'Nama', 'NIK', 'Site', 'Tanggal', 'Waktu Pengamatan',
+            'No', 'Nama', 'NIK', 'Jabatan', 'Departemen', 'Site', 'Tanggal', 'Waktu Pengamatan',
             'Kategori', 'Klasifikasi Bahaya', 'Lokasi', 'Detail Lokasi',
             'Deskripsi Bahaya', 'Tindakan Perbaikan',
             'Probabilitas', 'Frekuensi', 'Severity', 'Nilai Risiko',
@@ -43,7 +43,9 @@ class LaporanBahayaExport implements FromQuery, WithHeadings, WithMapping, Shoul
             $this->no,
             $row->user->name ?? '',
             $row->user->nik ?? '',
-            $row->user->site ? ucfirst($row->user->site) : '',
+            $row->user->jabatan ?? '',
+            $row->user->departemen ?? '',
+            $row->site ? ucfirst($row->site) : ($row->user->site ? ucfirst($row->user->site) : ''),
             $row->tanggal?->format('d/m/Y') ?? '',
             $row->waktu_pengamatan ?? '',
             $row->kategori ?? '',

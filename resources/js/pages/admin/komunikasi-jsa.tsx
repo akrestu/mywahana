@@ -41,15 +41,30 @@ const PERIODE_OPTIONS = [
 ];
 
 function StatusBadge({ status }: { status: JsaRecord['status'] }) {
-    if (status === 'selesai')              return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">Selesai</Badge>;
-    if (status === 'dikonfirmasi')         return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">Dikonfirmasi</Badge>;
-    if (status === 'ditolak')              return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100">Ditolak</Badge>;
+    if (status === 'selesai')              {
+return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">Selesai</Badge>;
+}
+
+    if (status === 'dikonfirmasi')         {
+return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">Dikonfirmasi</Badge>;
+}
+
+    if (status === 'ditolak')              {
+return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100">Ditolak</Badge>;
+}
+
     return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-100">Menunggu Konfirmasi</Badge>;
 }
 
 function barColor(status: JsaRecord['status']) {
-    if (status === 'selesai' || status === 'dikonfirmasi') return 'border-l-green-500';
-    if (status === 'ditolak') return 'border-l-red-500';
+    if (status === 'selesai' || status === 'dikonfirmasi') {
+return 'border-l-green-500';
+}
+
+    if (status === 'ditolak') {
+return 'border-l-red-500';
+}
+
     return 'border-l-yellow-500';
 }
 
@@ -65,28 +80,43 @@ export default function AdminKomunikasiJsa({ records, filters, summary, sites }:
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
             const next = new Set(prev);
-            if (next.has(id)) next.delete(id); else next.add(id);
+
+            if (next.has(id)) {
+next.delete(id);
+} else {
+next.add(id);
+}
+
             return next;
         });
     };
     const toggleSelectAll = () => {
-        if (selectedIds.size === records.data.length) setSelectedIds(new Set());
-        else setSelectedIds(new Set(records.data.map(r => r.id)));
+        if (selectedIds.size === records.data.length) {
+setSelectedIds(new Set());
+} else {
+setSelectedIds(new Set(records.data.map(r => r.id)));
+}
     };
-    const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+    const exitSelectMode = () => {
+ setSelectMode(false); setSelectedIds(new Set()); 
+};
 
     const handleBatchDelete = () => {
         setBatchDeleting(true);
         router.delete('/admin/komunikasi-jsa/batch', {
             data: { ids: Array.from(selectedIds) },
-            onFinish: () => { setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); },
+            onFinish: () => {
+ setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); 
+},
         });
     };
 
     const applyFilters = (newFilters: Partial<Filters>) => {
         const merged = { ...filters, ...newFilters, search };
         Object.keys(merged).forEach(k => {
-            if ((merged as Record<string, unknown>)[k] === 'all') delete (merged as Record<string, unknown>)[k];
+            if ((merged as Record<string, unknown>)[k] === 'all') {
+delete (merged as Record<string, unknown>)[k];
+}
         });
         router.get('/admin/komunikasi-jsa', merged, { preserveState: true, replace: true });
     };
@@ -97,21 +127,43 @@ export default function AdminKomunikasiJsa({ records, filters, summary, sites }:
     };
 
     const confirmDelete = () => {
-        if (!toDelete) return;
+        if (!toDelete) {
+return;
+}
+
         setDeleting(true);
         router.delete(`/admin/komunikasi-jsa/${toDelete.id}`, {
-            onFinish: () => { setDeleting(false); setToDelete(null); },
+            onFinish: () => {
+ setDeleting(false); setToDelete(null); 
+},
         });
     };
 
     const exportUrl = `/admin/komunikasi-jsa/export${(() => {
         const p = new URLSearchParams();
-        if (filters.search)  p.set('search', filters.search);
-        if (filters.site)    p.set('site', filters.site);
-        if (filters.status)  p.set('status', filters.status);
-        if (filters.shift)   p.set('shift', filters.shift);
-        if (filters.periode) p.set('periode', filters.periode);
+
+        if (filters.search)  {
+p.set('search', filters.search);
+}
+
+        if (filters.site)    {
+p.set('site', filters.site);
+}
+
+        if (filters.status)  {
+p.set('status', filters.status);
+}
+
+        if (filters.shift)   {
+p.set('shift', filters.shift);
+}
+
+        if (filters.periode) {
+p.set('periode', filters.periode);
+}
+
         const qs = p.toString();
+
         return qs ? '?' + qs : '';
     })()}`;
 

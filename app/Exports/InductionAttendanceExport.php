@@ -20,7 +20,7 @@ class InductionAttendanceExport implements FromQuery, WithHeadings, WithMapping,
 
     public function headings(): array
     {
-        return ['No', 'NIK', 'Nama', 'Departemen', 'Site', 'Tanggal Absensi Induksi'];
+        return ['No', 'NIK', 'Nama', 'Jabatan', 'Departemen', 'Site', 'Tanggal Absensi Induksi'];
     }
 
     public function map($row): array
@@ -30,6 +30,7 @@ class InductionAttendanceExport implements FromQuery, WithHeadings, WithMapping,
             $this->no,
             $row->user->nik ?? '',
             $row->user->name ?? '',
+            $row->user->jabatan ?? '',
             $row->user->departemen ?? '',
             $row->user->site ? ucfirst($row->user->site) : '',
             $row->attended_at?->format('d/m/Y H:i') ?? '',

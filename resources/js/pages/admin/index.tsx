@@ -91,20 +91,42 @@ function computeActivitySummary(
         const seen = new Set<number>();
         let met = 0, total = 0;
         weeks.forEach((w, i) => {
-            if (i >= weekMetas.length) return;
+            if (i >= weekMetas.length) {
+return;
+}
+
             const period = new Date(weekMetas[i].start).getDate() <= 15 ? 1 : 2;
+
             if (!seen.has(period)) {
                 seen.add(period);
-                if (w.jsa.met !== null) { total++; if (w.jsa.met) met++; }
+
+                if (w.jsa.met !== null) {
+ total++;
+
+ if (w.jsa.met) {
+met++;
+} 
+}
             }
         });
+
         return { met, total };
     }
+
     let met = 0, total = 0;
+
     for (const w of weeks) {
         const cell = w[key];
-        if (cell.met !== null) { total++; if (cell.met) met++; }
+
+        if (cell.met !== null) {
+ total++;
+
+ if (cell.met) {
+met++;
+} 
+}
     }
+
     return { met, total };
 }
 
@@ -296,12 +318,16 @@ function ActivityCell({ summary }: { summary: ActivitySummary }) {
 // ─── ScoreBadge ───────────────────────────────────────────────────────────────
 
 function ScoreBadge({ pct }: { pct: number | null }) {
-    if (pct === null) return <span className="text-[10px] text-muted-foreground/50">—</span>;
+    if (pct === null) {
+return <span className="text-[10px] text-muted-foreground/50">—</span>;
+}
+
     const cls = pct >= 80
         ? 'bg-green-100 text-green-800 ring-1 ring-green-300 dark:bg-green-900 dark:text-green-200 dark:ring-green-700'
         : pct >= 50
         ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300 dark:bg-amber-900 dark:text-amber-200 dark:ring-amber-700'
         : 'bg-red-100 text-red-700 ring-1 ring-red-300 dark:bg-red-900 dark:text-red-300 dark:ring-red-700';
+
     return (
         <span className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${cls}`}>
             {pct}%
@@ -313,6 +339,7 @@ function ScoreBadge({ pct }: { pct: number | null }) {
 
 function DeptScoreBar({ avg }: { avg: number }) {
     const barCls = avg >= 80 ? 'bg-green-500' : avg >= 50 ? 'bg-amber-400' : 'bg-red-400';
+
     return (
         <div className="flex items-center gap-1.5 min-w-[60px]">
             <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
@@ -349,7 +376,10 @@ function EmployeeRecapTable({ recap, filter, exportRef }: {
                 summary: computeActivitySummary(emp.weeks, act.key, weeks),
             }));
             let metTotal = 0, appTotal = 0;
-            summaries.forEach(({ summary }) => { metTotal += summary.met; appTotal += summary.total; });
+            summaries.forEach(({ summary }) => {
+ metTotal += summary.met; appTotal += summary.total; 
+});
+
             return { emp, summaries, score: appTotal > 0 ? Math.round(metTotal / appTotal * 100) : null };
         }),
         [employees, weeks]
@@ -357,20 +387,37 @@ function EmployeeRecapTable({ recap, filter, exportRef }: {
 
     const deptGroups = useMemo(() => {
         const map = new Map<string, RowData[]>();
+
         for (const row of allRows) {
             const dept = row.emp.departemen ?? 'Lainnya';
-            if (!map.has(dept)) map.set(dept, []);
+
+            if (!map.has(dept)) {
+map.set(dept, []);
+}
+
             map.get(dept)!.push(row);
         }
+
         map.forEach(rows => rows.sort((a, b) => {
-            if (a.score === null && b.score === null) return 0;
-            if (a.score === null) return 1;
-            if (b.score === null) return -1;
+            if (a.score === null && b.score === null) {
+return 0;
+}
+
+            if (a.score === null) {
+return 1;
+}
+
+            if (b.score === null) {
+return -1;
+}
+
             return b.score - a.score;
         }));
+
         return [...map.entries()].sort(([a], [b]) => {
             const ai = DEPT_OPTIONS.indexOf(a);
             const bi = DEPT_OPTIONS.indexOf(b);
+
             return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
         });
     }, [allRows]);
@@ -381,16 +428,23 @@ function EmployeeRecapTable({ recap, filter, exportRef }: {
     ), [deptGroups]);
 
     // Reset to page 0 when employees change
-    useEffect(() => { setPage(0); }, [employees]);
+    useEffect(() => {
+ setPage(0); 
+}, [employees]);
 
     const totalPages = Math.ceil(flatRows.length / PAGE_SIZE);
     const pageRows   = flatRows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
     const agg = useMemo(() => {
         const valid = allRows.filter(r => r.score !== null);
-        if (valid.length === 0) return null;
+
+        if (valid.length === 0) {
+return null;
+}
+
         const avg  = Math.round(valid.reduce((s, r) => s + (r.score ?? 0), 0) / valid.length);
         const full = valid.filter(r => r.score === 100).length;
+
         return { avg, full, total: employees.length };
     }, [allRows, employees.length]);
 
@@ -550,8 +604,13 @@ function ExportButtons({ targetRef, filename }: { targetRef: React.RefObject<HTM
 
     const exportPng = useCallback(async () => {
         const el = targetRef.current;
-        if (!el) return;
+
+        if (!el) {
+return;
+}
+
         setLoading('png');
+
         try {
             const { toPng } = await import('html-to-image');
             // Expand overflow agar seluruh tabel tertangkap
@@ -592,10 +651,12 @@ function ExportButtons({ targetRef, filename }: { targetRef: React.RefObject<HTM
         wrap.id = 'print-target';
         wrap.style.cssText = 'position:fixed;top:0;left:0;width:100%;z-index:9999;background:#fff;';
         const clone = targetRef.current?.cloneNode(true) as HTMLElement | undefined;
+
         if (clone) {
             clone.style.cssText = 'overflow:visible;max-height:none;';
             wrap.appendChild(clone);
         }
+
         document.head.appendChild(style);
         document.body.appendChild(wrap);
         window.print();

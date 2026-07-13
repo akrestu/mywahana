@@ -34,19 +34,38 @@ function SignaturePad({ onCapture }: { onCapture: (d: string | null) => void }) 
 
     const pos = (e: MouseEvent | Touch, c: HTMLCanvasElement) => {
         const r = c.getBoundingClientRect();
+
         return { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) };
     };
 
     useEffect(() => {
-        const c = ref.current; if (!c) return;
+        const c = ref.current;
+
+ if (!c) {
+return;
+}
+
         const ctx = c.getContext('2d')!;
         ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#0f172a'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-        const down = (e: MouseEvent | TouchEvent) => { e.preventDefault(); drawing.current = true; const p = pos('touches' in e ? e.touches[0] : e, c); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
-        const move = (e: MouseEvent | TouchEvent) => { if (!drawing.current) return; e.preventDefault(); const p = pos('touches' in e ? e.touches[0] : e, c); ctx.lineTo(p.x, p.y); ctx.stroke(); setEmpty(false); onCapture(c.toDataURL()); };
-        const up = () => { drawing.current = false; };
+        const down = (e: MouseEvent | TouchEvent) => {
+ e.preventDefault(); drawing.current = true; const p = pos('touches' in e ? e.touches[0] : e, c); ctx.beginPath(); ctx.moveTo(p.x, p.y); 
+};
+        const move = (e: MouseEvent | TouchEvent) => {
+ if (!drawing.current) {
+return;
+}
+
+ e.preventDefault(); const p = pos('touches' in e ? e.touches[0] : e, c); ctx.lineTo(p.x, p.y); ctx.stroke(); setEmpty(false); onCapture(c.toDataURL()); 
+};
+        const up = () => {
+ drawing.current = false; 
+};
         c.addEventListener('mousedown', down); c.addEventListener('mousemove', move); c.addEventListener('mouseup', up);
         c.addEventListener('touchstart', down, { passive: false }); c.addEventListener('touchmove', move, { passive: false }); c.addEventListener('touchend', up);
-        return () => { c.removeEventListener('mousedown', down); c.removeEventListener('mousemove', move); c.removeEventListener('mouseup', up); c.removeEventListener('touchstart', down); c.removeEventListener('touchmove', move); c.removeEventListener('touchend', up); };
+
+        return () => {
+ c.removeEventListener('mousedown', down); c.removeEventListener('mousemove', move); c.removeEventListener('mouseup', up); c.removeEventListener('touchstart', down); c.removeEventListener('touchmove', move); c.removeEventListener('touchend', up); 
+};
     }, [onCapture]);
 
     return (
@@ -55,7 +74,9 @@ function SignaturePad({ onCapture }: { onCapture: (d: string | null) => void }) 
                 <canvas ref={ref} width={600} height={220} className="w-full touch-none block" style={{ cursor: 'crosshair' }} />
                 {empty && <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-muted-foreground/40 text-sm font-medium">Tanda tangan di sini</div>}
             </div>
-            {!empty && <button type="button" onClick={() => { ref.current?.getContext('2d')!.clearRect(0,0,600,220); setEmpty(true); onCapture(null); }} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive"><X size={14} /> Hapus &amp; Ulangi</button>}
+            {!empty && <button type="button" onClick={() => {
+ ref.current?.getContext('2d')!.clearRect(0,0,600,220); setEmpty(true); onCapture(null); 
+}} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive"><X size={14} /> Hapus &amp; Ulangi</button>}
         </div>
     );
 }
@@ -72,13 +93,21 @@ export default function InspeksiKantorReInspeksi({ record }: Props) {
 
     const handleSign = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!hasSig) return;
+
+        if (!hasSig) {
+return;
+}
+
         signForm.post(`/sap/inspeksi-kantor/${record.id}/re-inspeksi`);
     };
 
     const handleReject = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!rejectForm.data.alasan.trim()) return;
+
+        if (!rejectForm.data.alasan.trim()) {
+return;
+}
+
         rejectForm.post(`/sap/inspeksi-kantor/${record.id}/tolak`);
     };
 
@@ -153,7 +182,9 @@ export default function InspeksiKantorReInspeksi({ record }: Props) {
 
                         <div className="flex flex-col gap-3">
                             <p className="text-base font-bold">Tanda Tangan <span className="text-destructive">*</span></p>
-                            <SignaturePad onCapture={d => { signForm.setData('ttd_re_inspektor', d ?? ''); setHasSig(!!d); }} />
+                            <SignaturePad onCapture={d => {
+ signForm.setData('ttd_re_inspektor', d ?? ''); setHasSig(!!d); 
+}} />
                             {signForm.errors.ttd_re_inspektor && <p className="text-sm text-destructive">{signForm.errors.ttd_re_inspektor}</p>}
                         </div>
 

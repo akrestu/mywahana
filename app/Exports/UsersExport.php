@@ -15,13 +15,13 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
 
     public function query()
     {
-        return $this->query;
+        return $this->query->with('sites:id,value');
     }
 
     public function headings(): array
     {
         return [
-            'No', 'Nama', 'NIK', 'Email', 'Password (Hash)', 'Jabatan', 'Departemen', 'Site', 'Level', 'Admin', 'Terdaftar',
+            'No', 'Nama', 'NIK', 'Email', 'Password (Hash)', 'Jabatan', 'Departemen', 'Site Utama', 'Assignment Site', 'Level', 'Admin', 'Terdaftar',
         ];
     }
 
@@ -38,6 +38,7 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSiz
             $row->jabatan ?? '',
             $row->departemen ?? '',
             $row->site ? ucfirst($row->site) : '',
+            collect($row->assignedSiteValues())->map(fn ($site) => ucfirst($site))->join(', '),
             $row->participation_level ?? '',
             $row->is_admin ? 'Ya' : 'Tidak',
             $row->created_at?->format('d/m/Y') ?? '',

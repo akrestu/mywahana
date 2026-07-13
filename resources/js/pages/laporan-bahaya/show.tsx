@@ -75,14 +75,23 @@ function SignaturePad({ onSave, onClear }: { onSave: (dataUrl: string) => void; 
     function getPos(e: React.MouseEvent | React.TouchEvent) {
         const canvas = canvasRef.current!;
         const rect = canvas.getBoundingClientRect();
-        if ('touches' in e) return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+
+        if ('touches' in e) {
+return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+}
+
         return { x: (e as React.MouseEvent).clientX - rect.left, y: (e as React.MouseEvent).clientY - rect.top };
     }
 
-    function startDraw(e: React.MouseEvent | React.TouchEvent) { drawing.current = true; lastPos.current = getPos(e); }
+    function startDraw(e: React.MouseEvent | React.TouchEvent) {
+ drawing.current = true; lastPos.current = getPos(e); 
+}
 
     function draw(e: React.MouseEvent | React.TouchEvent) {
-        if (!drawing.current) return;
+        if (!drawing.current) {
+return;
+}
+
         const canvas = canvasRef.current!;
         const ctx = canvas.getContext('2d')!;
         const pos = getPos(e);
@@ -96,23 +105,50 @@ function SignaturePad({ onSave, onClear }: { onSave: (dataUrl: string) => void; 
         lastPos.current = pos;
     }
 
-    function stopDraw() { drawing.current = false; lastPos.current = null; }
+    function stopDraw() {
+ drawing.current = false; lastPos.current = null; 
+}
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
-        const getTouchPos = (e: TouchEvent) => { const r = canvas.getBoundingClientRect(); return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top }; };
-        const onTouchStart = (e: TouchEvent) => { e.preventDefault(); drawing.current = true; lastPos.current = getTouchPos(e); };
-        const onTouchMove  = (e: TouchEvent) => { e.preventDefault(); if (!drawing.current) return; const ctx = canvas.getContext('2d')!; const pos = getTouchPos(e); ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#1e293b'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(lastPos.current!.x, lastPos.current!.y); ctx.lineTo(pos.x, pos.y); ctx.stroke(); lastPos.current = pos; };
+
+        if (!canvas) {
+return;
+}
+
+        const getTouchPos = (e: TouchEvent) => {
+ const r = canvas.getBoundingClientRect();
+
+ return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top }; 
+};
+        const onTouchStart = (e: TouchEvent) => {
+ e.preventDefault(); drawing.current = true; lastPos.current = getTouchPos(e); 
+};
+        const onTouchMove  = (e: TouchEvent) => {
+ e.preventDefault();
+
+ if (!drawing.current) {
+return;
+}
+
+ const ctx = canvas.getContext('2d')!; const pos = getTouchPos(e); ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#1e293b'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(lastPos.current!.x, lastPos.current!.y); ctx.lineTo(pos.x, pos.y); ctx.stroke(); lastPos.current = pos; 
+};
         const onTouchEnd   = () => stopDraw();
         canvas.addEventListener('touchstart', onTouchStart, { passive: false });
         canvas.addEventListener('touchmove',  onTouchMove,  { passive: false });
         canvas.addEventListener('touchend',   onTouchEnd);
-        return () => { canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); };
+
+        return () => {
+ canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); 
+};
     }, []);
 
-    function clear() { canvasRef.current!.getContext('2d')!.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height); onClear(); }
-    function save() { onSave(canvasRef.current!.toDataURL('image/png')); }
+    function clear() {
+ canvasRef.current!.getContext('2d')!.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height); onClear(); 
+}
+    function save() {
+ onSave(canvasRef.current!.toDataURL('image/png')); 
+}
 
     return (
         <div className="flex flex-col gap-3">
@@ -145,11 +181,19 @@ export default function LaporanBahayaShow({ record, fotoUrl, back_url = '/lapora
     function handleSubmit() {
         const data = new FormData();
         data.append('status_tindakan', status);
-        if (comment) data.append('comment', comment);
-        if (signature) data.append('tanda_tangan', signature);
+
+        if (comment) {
+data.append('comment', comment);
+}
+
+        if (signature) {
+data.append('tanda_tangan', signature);
+}
+
         if (files) {
             Array.from(files).forEach(f => data.append('attachments[]', f));
         }
+
         setProcessing(true);
         router.post(`/laporan-bahaya/${record.id}/review`, data, {
             forceFormData: true,
@@ -312,6 +356,7 @@ export default function LaporanBahayaShow({ record, fotoUrl, back_url = '/lapora
                                                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Lampiran</p>
                                                     {(attachment_urls[review.id] ?? []).map((url, i) => {
                                                         const isImage = /\.(jpg|jpeg|png|webp)$/i.test(url);
+
                                                         return isImage ? (
                                                             <img key={i} src={url} alt={`Lampiran ${i + 1}`} className="w-full rounded-xl object-cover max-h-52" />
                                                         ) : (
@@ -426,14 +471,20 @@ export default function LaporanBahayaShow({ record, fotoUrl, back_url = '/lapora
                                         {sigSaved ? (
                                             <div className="flex flex-col gap-2">
                                                 <img src={signature} alt="TTD" className="h-24 border rounded-xl bg-white object-contain" />
-                                                <Button type="button" variant="outline" size="sm" className="self-start gap-1.5" onClick={() => { setSigSaved(false); setSignature(''); }}>
+                                                <Button type="button" variant="outline" size="sm" className="self-start gap-1.5" onClick={() => {
+ setSigSaved(false); setSignature(''); 
+}}>
                                                     <PenLine size={13} /> Ubah Tanda Tangan
                                                 </Button>
                                             </div>
                                         ) : (
                                             <SignaturePad
-                                                onSave={sig => { setSignature(sig); setSigSaved(true); }}
-                                                onClear={() => { setSignature(''); setSigSaved(false); }}
+                                                onSave={sig => {
+ setSignature(sig); setSigSaved(true); 
+}}
+                                                onClear={() => {
+ setSignature(''); setSigSaved(false); 
+}}
                                             />
                                         )}
                                     </div>

@@ -52,10 +52,14 @@ function CountUp({ target, duration = 1200 }: { target: number; duration?: numbe
             const progress = Math.min(elapsed / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
             setValue(Math.round(eased * target * 100) / 100);
-            if (progress < 1) requestAnimationFrame(tick);
+
+            if (progress < 1) {
+requestAnimationFrame(tick);
+}
         };
         requestAnimationFrame(tick);
     }, [target, duration]);
+
     return <>{value.toFixed(2)}</>;
 }
 
@@ -68,6 +72,7 @@ function CircleProgress({ percentage, passed }: { percentage: number; passed: bo
         const timer = setTimeout(() => {
             setOffset(circumference - (percentage / 100) * circumference);
         }, 100);
+
         return () => clearTimeout(timer);
     }, [percentage, circumference]);
 
@@ -140,6 +145,7 @@ function ReviewCard({ item, index }: { item: ReviewItem; index: number }) {
                         const val = i + 1;
                         const isCorrect = val === item.jawaban_benar;
                         const isUserAnswer = val === item.jawaban_user;
+
                         return (
                             <div
                                 key={val}
@@ -295,7 +301,9 @@ export default function HrAssessmentResult({ session, review, attendance, attemp
                             variant="outline"
                             className="flex-1 gap-2"
                             disabled={retrying || !can_retry}
-                            onClick={() => { setRetrying(true); router.post('/hr-assessment/start'); }}
+                            onClick={() => {
+ setRetrying(true); router.post('/hr-assessment/start'); 
+}}
                         >
                             <RotateCcw className={cn('h-4 w-4', retrying && 'animate-spin')} />
                             {retrying ? 'Memulai...' : 'Ulangi Assessment'}

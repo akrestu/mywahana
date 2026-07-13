@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type Props = {
@@ -12,6 +12,7 @@ type Props = {
 
 export function CollapsibleCard({ title, badge, children, defaultOpen = false, className }: Props) {
     const [open, setOpen] = useState(defaultOpen);
+
     return (
         <Card className={className}>
             <CardHeader

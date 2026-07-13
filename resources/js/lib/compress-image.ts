@@ -2,12 +2,15 @@ import { toast } from 'sonner';
 
 export async function compressImageWithToast(file: File, maxWidth = 1280, quality = 0.75): Promise<File> {
     const id = toast.loading('Memproses foto...');
+
     try {
         const result = await compressImage(file, maxWidth, quality);
         toast.success('Foto berhasil ditambahkan', { id });
+
         return result;
     } catch {
         toast.error('Gagal memproses foto, coba lagi', { id });
+
         throw new Error('Compress failed');
     }
 }
@@ -27,7 +30,12 @@ export function compressImage(file: File, maxWidth = 1280, quality = 0.75): Prom
             canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
             canvas.toBlob(
                 blob => {
-                    if (!blob) { reject(new Error('toBlob failed')); return; }
+                    if (!blob) {
+ reject(new Error('toBlob failed'));
+
+ return; 
+}
+
                     resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
                 },
                 'image/jpeg',

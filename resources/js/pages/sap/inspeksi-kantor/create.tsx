@@ -1,21 +1,21 @@
 ﻿import { Head, useForm } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight, Calendar, Camera, Check, ChevronsUpDown, Images, Plus, Trash2, X } from 'lucide-react';
-import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
-import { UploadOverlay } from '@/components/upload-overlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { UploadOverlay } from '@/components/upload-overlay';
 import { compressImageWithToast } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
-type StaffUser = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
+type StaffUser = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null; sites: string[] };
 type SiteOption = { value: string; label: string };
 type Props = { user: { name: string; nik?: string | null; jabatan?: string | null; departemen?: string | null; site?: string | null }; staffUsers: StaffUser[]; sites: SiteOption[] };
 
@@ -96,6 +96,7 @@ function calcScore(data: FormData) {
     const max = ALL_SCORE_KEYS.length * 4;
     const pct = filled.length > 0 ? Math.round((total / max) * 100 * 10) / 10 : 0;
     const level = pct >= 85 ? 'L' : pct >= 70 ? 'M' : pct >= 50 ? 'H' : 'VH';
+
     return { total, max, pct, level, filled: filled.length };
 }
 
@@ -110,6 +111,7 @@ const RISK_CFG = {
 
 function ScoreButton({ val, current, onChange }: { val: number; current: string; onChange: (v: string) => void }) {
     const isActive = current === String(val);
+
     return (
         <button
             type="button"
@@ -134,19 +136,38 @@ function SignaturePad({ onCapture }: { onCapture: (d: string | null) => void }) 
 
     const pos = (e: MouseEvent | Touch, c: HTMLCanvasElement) => {
         const r = c.getBoundingClientRect();
+
         return { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) };
     };
 
     useEffect(() => {
-        const c = ref.current; if (!c) return;
+        const c = ref.current;
+
+ if (!c) {
+return;
+}
+
         const ctx = c.getContext('2d')!;
         ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#0f172a'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-        const down = (e: MouseEvent | TouchEvent) => { e.preventDefault(); drawing.current = true; const p = pos('touches' in e ? e.touches[0] : e, c); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
-        const move = (e: MouseEvent | TouchEvent) => { if (!drawing.current) return; e.preventDefault(); const p = pos('touches' in e ? e.touches[0] : e, c); ctx.lineTo(p.x, p.y); ctx.stroke(); setEmpty(false); onCapture(c.toDataURL()); };
-        const up = () => { drawing.current = false; };
+        const down = (e: MouseEvent | TouchEvent) => {
+ e.preventDefault(); drawing.current = true; const p = pos('touches' in e ? e.touches[0] : e, c); ctx.beginPath(); ctx.moveTo(p.x, p.y); 
+};
+        const move = (e: MouseEvent | TouchEvent) => {
+ if (!drawing.current) {
+return;
+}
+
+ e.preventDefault(); const p = pos('touches' in e ? e.touches[0] : e, c); ctx.lineTo(p.x, p.y); ctx.stroke(); setEmpty(false); onCapture(c.toDataURL()); 
+};
+        const up = () => {
+ drawing.current = false; 
+};
         c.addEventListener('mousedown', down); c.addEventListener('mousemove', move); c.addEventListener('mouseup', up);
         c.addEventListener('touchstart', down, { passive: false }); c.addEventListener('touchmove', move, { passive: false }); c.addEventListener('touchend', up);
-        return () => { c.removeEventListener('mousedown', down); c.removeEventListener('mousemove', move); c.removeEventListener('mouseup', up); c.removeEventListener('touchstart', down); c.removeEventListener('touchmove', move); c.removeEventListener('touchend', up); };
+
+        return () => {
+ c.removeEventListener('mousedown', down); c.removeEventListener('mousemove', move); c.removeEventListener('mouseup', up); c.removeEventListener('touchstart', down); c.removeEventListener('touchmove', move); c.removeEventListener('touchend', up); 
+};
     }, [onCapture]);
 
     return (
@@ -155,14 +176,18 @@ function SignaturePad({ onCapture }: { onCapture: (d: string | null) => void }) 
                 <canvas ref={ref} width={600} height={220} className="w-full touch-none block" style={{ cursor: 'crosshair' }} />
                 {empty && <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-muted-foreground/40 text-sm font-medium">Tanda tangan di sini</div>}
             </div>
-            {!empty && <button type="button" onClick={() => { ref.current?.getContext('2d')!.clearRect(0,0,600,220); setEmpty(true); onCapture(null); }} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive"><X size={14} /> Hapus &amp; Ulangi</button>}
+            {!empty && <button type="button" onClick={() => {
+ ref.current?.getContext('2d')!.clearRect(0,0,600,220); setEmpty(true); onCapture(null); 
+}} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive"><X size={14} /> Hapus &amp; Ulangi</button>}
         </div>
     );
 }
 
 export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props) {
     const [step, setStep] = useState(1);
-    useEffect(() => { window.scrollTo(0, 0); }, [step]);
+    useEffect(() => {
+ window.scrollTo(0, 0); 
+}, [step]);
     const [riOpen, setRiOpen] = useState(false);
     const [pesertaOpen, setPesertaOpen] = useState(false);
     const [siteOpen, setSiteOpen] = useState(false);
@@ -176,11 +201,17 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
     const [showCamera, setShowCamera] = useState(false);
     const [pendingFotoKey, setPendingFotoKey] = useState<string | null>(null);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-    function openFotoPicker(key: string) { setPendingFotoKey(key); setPhotoSheet(true); }
+    function openFotoPicker(key: string) {
+ setPendingFotoKey(key); setPhotoSheet(true); 
+}
     function chooseFotoSource(source: 'camera' | 'gallery') {
         setPhotoSheet(false);
-        if (source === 'camera') setShowCamera(true);
-        else fotoGalleryRef.current?.click();
+
+        if (source === 'camera') {
+setShowCamera(true);
+} else {
+fotoGalleryRef.current?.click();
+}
     }
 
     const initialScores = Object.fromEntries(ALL_SCORE_KEYS.map(k => [k, ''])) as { [K in ScoreKey]: string };
@@ -196,8 +227,10 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
         ttd_inspektor: '',
     });
 
-    const selectedRI = staffUsers.find(u => String(u.id) === data.re_inspektor_id);
-    const selectedPeserta = staffUsers.filter(u => data.peserta_ids.includes(u.id));
+    const selectedSiteValue = sites.find(s => s.label === data.project_site)?.value;
+    const availableStaffUsers = staffUsers.filter(u => selectedSiteValue && u.sites.includes(selectedSiteValue));
+    const selectedRI = availableStaffUsers.find(u => String(u.id) === data.re_inspektor_id);
+    const selectedPeserta = availableStaffUsers.filter(u => data.peserta_ids.includes(u.id));
 
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
 
@@ -273,7 +306,9 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
                                                 <CommandList>
                                                     <CommandGroup>
                                                         {sites.map(s => (
-                                                            <CommandItem key={s.value} value={s.label} onSelect={() => { setData('project_site', s.label); setSiteOpen(false); }}>
+                                                            <CommandItem key={s.value} value={s.label} onSelect={() => {
+ setData('project_site', s.label); setData('re_inspektor_id', ''); setData('peserta_ids', []); setSiteOpen(false); 
+}}>
                                                                 <Check size={14} className={cn('mr-2', data.project_site === s.label ? 'opacity-100' : 'opacity-0')} />
                                                                 {s.label}
                                                             </CommandItem>
@@ -312,12 +347,16 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
                                                     <CommandEmpty>Tidak ditemukan</CommandEmpty>
                                                     <CommandGroup>
                                                         {data.re_inspektor_id && (
-                                                            <CommandItem onSelect={() => { setData('re_inspektor_id', ''); setRiOpen(false); }}>
+                                                            <CommandItem onSelect={() => {
+ setData('re_inspektor_id', ''); setRiOpen(false); 
+}}>
                                                                 <X size={14} className="mr-2" /> Hapus pilihan
                                                             </CommandItem>
                                                         )}
-                                                        {staffUsers.map(u => (
-                                                            <CommandItem key={u.id} value={u.name} onSelect={() => { setData('re_inspektor_id', String(u.id)); setRiOpen(false); }}>
+                                                        {availableStaffUsers.map(u => (
+                                                            <CommandItem key={u.id} value={u.name} onSelect={() => {
+ setData('re_inspektor_id', String(u.id)); setRiOpen(false); 
+}}>
                                                                 <Check size={14} className={cn('mr-2', String(u.id) === data.re_inspektor_id ? 'opacity-100' : 'opacity-0')} />
                                                                 <div>
                                                                     <p className="font-semibold">{u.name}</p>
@@ -347,8 +386,9 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
                                                 <CommandList>
                                                     <CommandEmpty>Tidak ditemukan</CommandEmpty>
                                                     <CommandGroup>
-                                                        {staffUsers.map(u => {
+                                                        {availableStaffUsers.map(u => {
                                                             const selected = data.peserta_ids.includes(u.id);
+
                                                             return (
                                                                 <CommandItem key={u.id} value={u.name} onSelect={() => {
                                                                     setData('peserta_ids', selected
@@ -511,7 +551,11 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
 
             <input ref={fotoGalleryRef} type="file" accept="image/*" className="hidden" onChange={e => {
                 const f = e.target.files?.[0];
-                if (f && pendingFotoKey) { handleFotoChange(pendingFotoKey, f); setPendingFotoKey(null); }
+
+                if (f && pendingFotoKey) {
+ handleFotoChange(pendingFotoKey, f); setPendingFotoKey(null); 
+}
+
                 e.target.value = '';
             }} />
             <UploadOverlay open={processing} progress={uploadProgress} label="Menyimpan inspeksi..." />
@@ -519,9 +563,14 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
                 open={showCamera}
                 onCapture={(file) => {
                     setShowCamera(false);
-                    if (pendingFotoKey) { handleFotoChange(pendingFotoKey, file); setPendingFotoKey(null); }
+
+                    if (pendingFotoKey) {
+ handleFotoChange(pendingFotoKey, file); setPendingFotoKey(null); 
+}
                 }}
-                onClose={() => { setShowCamera(false); setPendingFotoKey(null); }}
+                onClose={() => {
+ setShowCamera(false); setPendingFotoKey(null); 
+}}
             />
 
             <Sheet open={photoSheet} onOpenChange={setPhotoSheet}>

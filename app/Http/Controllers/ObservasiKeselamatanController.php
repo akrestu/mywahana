@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\ObservasiKeselamatan;
+use App\Models\Site;
 use App\Models\User;
 use App\Notifications\ObservasiKeselamatanKonfirmasi;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class ObservasiKeselamatanController extends Controller
@@ -46,13 +48,26 @@ class ObservasiKeselamatanController extends Controller
 
     public function create(Request $request)
     {
+        $user = $request->user()->load('sites:id,value');
+        $siteValues = $user->assignedSiteValues();
         $staffUsers = User::whereIn('participation_level', ['staff', 'srstaff'])
+            ->with('sites:id,value')
+            ->where(function ($query) use ($siteValues) {
+                $query->whereIn('site', $siteValues)
+                    ->orWhereHas('sites', fn ($sites) => $sites->whereIn('value', $siteValues));
+            })
             ->orderBy('name')
-            ->get(['id', 'name', 'nik', 'jabatan', 'site']);
+            ->get(['id', 'name', 'nik', 'jabatan', 'site'])
+            ->map(fn (User $staff) => [
+                'id' => $staff->id, 'name' => $staff->name, 'nik' => $staff->nik,
+                'jabatan' => $staff->jabatan, 'site' => $staff->site,
+                'sites' => $staff->assignedSiteValues(),
+            ]);
 
         return Inertia::render('sap/observasi-keselamatan/create', [
-            'user'       => $request->user()->only('name', 'nik', 'jabatan', 'site'),
+            'user'       => $user->only('name', 'nik', 'jabatan', 'site'),
             'staffUsers' => $staffUsers,
+            'sites'      => Site::whereIn('value', $siteValues)->orderBy('label')->get(['value', 'label', 'locations']),
         ]);
     }
 
@@ -61,6 +76,7 @@ class ObservasiKeselamatanController extends Controller
         $checklistRule = ['nullable', 'in:aman,beresiko'];
 
         $validated = $request->validate([
+            'site'                    => ['required', 'string', Rule::exists('sites', 'value')],
             'penanggung_jawab_id'   => ['nullable', 'exists:users,id'],
             'tanggal'               => ['required', 'date'],
             'jenis_pekerjaan'       => ['required', 'string', 'max:255'],
@@ -135,8 +151,18 @@ class ObservasiKeselamatanController extends Controller
             'catatan'                        => ['nullable', 'string'],
         ]);
 
+        $actor = $request->user()->load('sites:id,value');
+        abort_unless(in_array($validated['site'], $actor->assignedSiteValues(), true), 403);
+
         if (empty($validated['penanggung_jawab_id'])) {
             $validated['penanggung_jawab_id'] = $request->user()->id;
+        } elseif (! User::whereKey($validated['penanggung_jawab_id'])
+            ->whereIn('participation_level', ['staff', 'srstaff'])
+            ->assignedToSite($validated['site'])
+            ->exists()) {
+            return back()->withErrors([
+                'penanggung_jawab_id' => 'Penanggung jawab harus ditugaskan pada site yang dipilih.',
+            ]);
         }
 
         $ok = $request->user()->observasiKeselamatans()->create($validated);

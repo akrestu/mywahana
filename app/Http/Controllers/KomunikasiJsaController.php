@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\KomunikasiJsa;
+use App\Models\Site;
 use App\Models\User;
 use App\Notifications\KomunikasiJsaKonfirmasi;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class KomunikasiJsaController extends Controller
@@ -45,19 +47,33 @@ class KomunikasiJsaController extends Controller
 
     public function create(Request $request)
     {
+        $user = $request->user()->load('sites:id,value');
+        $siteValues = $user->assignedSiteValues();
         $staffUsers = User::whereIn('participation_level', ['staff', 'srstaff'])
+            ->with('sites:id,value')
+            ->where(function ($query) use ($siteValues) {
+                $query->whereIn('site', $siteValues)
+                    ->orWhereHas('sites', fn ($sites) => $sites->whereIn('value', $siteValues));
+            })
             ->orderBy('name')
-            ->get(['id', 'name', 'nik', 'jabatan', 'site']);
+            ->get(['id', 'name', 'nik', 'jabatan', 'site'])
+            ->map(fn (User $staff) => [
+                'id' => $staff->id, 'name' => $staff->name, 'nik' => $staff->nik,
+                'jabatan' => $staff->jabatan, 'site' => $staff->site,
+                'sites' => $staff->assignedSiteValues(),
+            ]);
 
         return Inertia::render('sap/komunikasi-jsa/create', [
-            'user'       => $request->user()->only('name', 'nik', 'jabatan', 'site'),
+            'user'       => $user->only('name', 'nik', 'jabatan', 'site'),
             'staffUsers' => $staffUsers,
+            'sites'      => Site::whereIn('value', $siteValues)->orderBy('label')->get(['value', 'label', 'locations']),
         ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'site'                    => ['required', 'string', Rule::exists('sites', 'value')],
             'team_leader_id'          => ['nullable', 'exists:users,id'],
             'tanggal'                 => ['required', 'date'],
             'lokasi'                  => ['required', 'string', 'max:255'],
@@ -76,8 +92,18 @@ class KomunikasiJsaController extends Controller
             'foto_dokumen'            => ['required', 'image', 'max:5120'],
         ]);
 
-        $user = $request->user();
+        $user = $request->user()->load('sites:id,value');
+        abort_unless(in_array($validated['site'], $user->assignedSiteValues(), true), 403);
         $teamLeaderId = $validated['team_leader_id'] ?? null;
+
+        if ($teamLeaderId && (int) $teamLeaderId !== $user->id && ! User::whereKey($teamLeaderId)
+            ->whereIn('participation_level', ['staff', 'srstaff'])
+            ->assignedToSite($validated['site'])
+            ->exists()) {
+            return back()->withErrors([
+                'team_leader_id' => 'Team Leader harus ditugaskan pada site yang dipilih.',
+            ]);
+        }
 
         $needsKonfirmasi = $teamLeaderId !== null && (int) $teamLeaderId !== $user->id;
         $status = $needsKonfirmasi ? 'menunggu_konfirmasi' : 'selesai';
@@ -87,6 +113,7 @@ class KomunikasiJsaController extends Controller
 
         $form = KomunikasiJsa::create([
             'user_id'              => $user->id,
+            'site'                 => $validated['site'],
             'team_leader_id'       => $teamLeaderId,
             'tanggal'              => $validated['tanggal'],
             'lokasi'               => $validated['lokasi'],

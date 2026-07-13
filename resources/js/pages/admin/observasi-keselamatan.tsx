@@ -50,28 +50,43 @@ export default function AdminObservasiKeselamatan({ records, filters, summary, s
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
             const next = new Set(prev);
-            if (next.has(id)) next.delete(id); else next.add(id);
+
+            if (next.has(id)) {
+next.delete(id);
+} else {
+next.add(id);
+}
+
             return next;
         });
     };
     const toggleSelectAll = () => {
-        if (selectedIds.size === records.data.length) setSelectedIds(new Set());
-        else setSelectedIds(new Set(records.data.map(r => r.id)));
+        if (selectedIds.size === records.data.length) {
+setSelectedIds(new Set());
+} else {
+setSelectedIds(new Set(records.data.map(r => r.id)));
+}
     };
-    const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+    const exitSelectMode = () => {
+ setSelectMode(false); setSelectedIds(new Set()); 
+};
 
     const handleBatchDelete = () => {
         setBatchDeleting(true);
         router.delete('/admin/observasi-keselamatan/batch', {
             data: { ids: Array.from(selectedIds) },
-            onFinish: () => { setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); },
+            onFinish: () => {
+ setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); 
+},
         });
     };
 
     const applyFilters = (newFilters: Partial<Filters>) => {
         const merged = { ...filters, ...newFilters, search };
         Object.keys(merged).forEach((k) => {
-            if ((merged as Record<string, unknown>)[k] === 'all') delete (merged as Record<string, unknown>)[k];
+            if ((merged as Record<string, unknown>)[k] === 'all') {
+delete (merged as Record<string, unknown>)[k];
+}
         });
         router.get('/admin/observasi-keselamatan', merged, { preserveState: true, replace: true });
     };
@@ -82,10 +97,15 @@ export default function AdminObservasiKeselamatan({ records, filters, summary, s
     };
 
     const handleDelete = () => {
-        if (!toDelete) return;
+        if (!toDelete) {
+return;
+}
+
         setDeleting(true);
         router.delete(`/admin/observasi-keselamatan/${toDelete.id}`, {
-            onFinish: () => { setDeleting(false); setToDelete(null); },
+            onFinish: () => {
+ setDeleting(false); setToDelete(null); 
+},
         });
     };
 

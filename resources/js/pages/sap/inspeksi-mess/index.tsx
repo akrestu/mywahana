@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { BedDouble, CalendarDays, ChevronRight, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -14,29 +14,47 @@ type Props = { myRecords: Paginated; pendingReInspeksi: Paginated; selesaiAsRI: 
 
 function groupByMonth(records: Rec[]) {
     const g: { [k: string]: Rec[] } = {};
-    for (const r of records) { const k = new Date(r.tanggal).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }); (g[k] ??= []).push(r); }
+
+    for (const r of records) {
+ const k = new Date(r.tanggal).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }); (g[k] ??= []).push(r); 
+}
+
     return Object.entries(g);
 }
 
 function RiskBadge({ level, pct }: { level: Rec['risk_level']; pct: number|null }) {
-    if (!level || pct === null) return null;
+    if (!level || pct === null) {
+return null;
+}
+
     const cfg = { L: { l: 'Baik', c: 'bg-green-100 text-green-700 border-green-300' }, M: { l: 'Cukup', c: 'bg-yellow-100 text-yellow-700 border-yellow-300' }, H: { l: 'Perhatian', c: 'bg-orange-100 text-orange-700 border-orange-300' }, VH: { l: 'Perlu Tindakan', c: 'bg-red-100 text-red-700 border-red-300' } };
+
     return <Badge className={cn('hover:opacity-100', cfg[level].c)}>{pct}% — {cfg[level].l}</Badge>;
 }
 function StatusBadge({ s }: { s: Rec['status'] }) {
-    if (s === 'selesai') return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">Selesai</Badge>;
-    if (s === 'ditolak') return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100">Ditolak</Badge>;
+    if (s === 'selesai') {
+return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">Selesai</Badge>;
+}
+
+    if (s === 'ditolak') {
+return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100">Ditolak</Badge>;
+}
+
     return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-100">Menunggu Re-Inspeksi</Badge>;
 }
 
 function RecordList({ records, asRI = false }: { records: Paginated; asRI?: boolean }) {
     const grouped = groupByMonth(records.data);
-    if (!records.data.length) return (
+
+    if (!records.data.length) {
+return (
         <div className="flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed py-12 text-center px-6">
             <div className="flex size-16 items-center justify-center rounded-full bg-muted"><BedDouble size={28} className="text-muted-foreground" /></div>
             <p className="text-muted-foreground text-sm">Belum ada data</p>
         </div>
     );
+}
+
     return (
         <div className="flex flex-col gap-5">
             {grouped.map(([month, items]) => (

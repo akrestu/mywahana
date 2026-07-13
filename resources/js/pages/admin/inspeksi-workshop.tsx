@@ -40,7 +40,10 @@ const PERIODE_OPTIONS = [
 ];
 
 function RiskBadge({ level, pct }: { level: InspeksiRecord['risk_level']; pct: number | null }) {
-    if (!level || pct === null) return null;
+    if (!level || pct === null) {
+return null;
+}
+
     const cfg = {
         L:  { label: 'Baik',           cls: 'bg-green-100 text-green-700 border-green-300' },
         M:  { label: 'Cukup',          cls: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
@@ -48,12 +51,19 @@ function RiskBadge({ level, pct }: { level: InspeksiRecord['risk_level']; pct: n
         VH: { label: 'Perlu Tindakan', cls: 'bg-red-100 text-red-700 border-red-300' },
     };
     const { label, cls } = cfg[level];
+
     return <Badge className={cn('hover:opacity-100', cls)}>{pct}% — {label}</Badge>;
 }
 
 function StatusBadge({ status }: { status: InspeksiRecord['status'] }) {
-    if (status === 'selesai') return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">Selesai</Badge>;
-    if (status === 'ditolak') return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100">Ditolak</Badge>;
+    if (status === 'selesai') {
+return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">Selesai</Badge>;
+}
+
+    if (status === 'ditolak') {
+return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100">Ditolak</Badge>;
+}
+
     return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-100">Menunggu Re-Inspeksi</Badge>;
 }
 
@@ -69,28 +79,43 @@ export default function AdminInspeksiWorkshop({ records, filters, summary, sites
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
             const next = new Set(prev);
-            if (next.has(id)) next.delete(id); else next.add(id);
+
+            if (next.has(id)) {
+next.delete(id);
+} else {
+next.add(id);
+}
+
             return next;
         });
     };
     const toggleSelectAll = () => {
-        if (selectedIds.size === records.data.length) setSelectedIds(new Set());
-        else setSelectedIds(new Set(records.data.map(r => r.id)));
+        if (selectedIds.size === records.data.length) {
+setSelectedIds(new Set());
+} else {
+setSelectedIds(new Set(records.data.map(r => r.id)));
+}
     };
-    const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+    const exitSelectMode = () => {
+ setSelectMode(false); setSelectedIds(new Set()); 
+};
 
     const handleBatchDelete = () => {
         setBatchDeleting(true);
         router.delete('/admin/inspeksi-workshop/batch', {
             data: { ids: Array.from(selectedIds) },
-            onFinish: () => { setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); },
+            onFinish: () => {
+ setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); 
+},
         });
     };
 
     const applyFilters = (newFilters: Partial<Filters>) => {
         const merged = { ...filters, ...newFilters, search };
         Object.keys(merged).forEach((k) => {
-            if ((merged as Record<string, unknown>)[k] === 'all') delete (merged as Record<string, unknown>)[k];
+            if ((merged as Record<string, unknown>)[k] === 'all') {
+delete (merged as Record<string, unknown>)[k];
+}
         });
         router.get('/admin/inspeksi-workshop', merged, { preserveState: true, replace: true });
     };
@@ -101,10 +126,15 @@ export default function AdminInspeksiWorkshop({ records, filters, summary, sites
     };
 
     const handleDelete = () => {
-        if (!toDelete) return;
+        if (!toDelete) {
+return;
+}
+
         setDeleting(true);
         router.delete(`/admin/inspeksi-workshop/${toDelete.id}`, {
-            onFinish: () => { setDeleting(false); setToDelete(null); },
+            onFinish: () => {
+ setDeleting(false); setToDelete(null); 
+},
         });
     };
 

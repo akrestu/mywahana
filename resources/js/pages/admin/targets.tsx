@@ -1,13 +1,13 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
 import { Search, X } from 'lucide-react';
+import { Info } from 'lucide-react';
+import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Badge } from '@/components/ui/badge';
-import { Info } from 'lucide-react';
 
 type Target = {
     level: string;
@@ -61,8 +61,14 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 function levelBadge(level: string) {
-    if (level === 'srstaff') return <Badge variant="default" className="text-xs">Sr. Staff</Badge>;
-    if (level === 'staff')   return <Badge variant="secondary" className="text-xs">Staff</Badge>;
+    if (level === 'srstaff') {
+return <Badge variant="default" className="text-xs">Sr. Staff</Badge>;
+}
+
+    if (level === 'staff')   {
+return <Badge variant="secondary" className="text-xs">Staff</Badge>;
+}
+
     return <Badge variant="outline" className="text-xs text-muted-foreground">Non-Staff</Badge>;
 }
 
@@ -136,6 +142,7 @@ export default function AdminTargets({ targets, users, filters, sites }: Props) 
                         <div className="divide-y">
                             {targets.map((t) => {
                                 const isNonStaff = t.level === 'nonstaff';
+
                                 return (
                                 <div key={t.level} className="flex flex-col gap-3 py-4">
                                     <div className="flex items-center gap-2">
@@ -393,6 +400,7 @@ export default function AdminTargets({ targets, users, filters, sites }: Props) 
                                     {/* Page window */}
                                     {users.links.slice(1, -1).filter((link) => {
                                         const p = Number(link.label);
+
                                         return p >= users.current_page - 1 && p <= users.current_page + 1;
                                     }).map((link) => (
                                         link.url && !link.active ? (

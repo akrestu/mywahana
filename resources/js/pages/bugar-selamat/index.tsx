@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
-import type React from 'react';
 import { CalendarDays, ChevronRight, ClipboardList, Clock, Moon, Plus, ShieldAlert, ShieldCheck, Sun } from 'lucide-react';
+import type React from 'react';
 import { KelayakanBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -52,10 +52,12 @@ const statusIconColor: Record<BugarRecord['status_kelayakan'], string> = {
 
 function groupByMonth(records: BugarRecord[]) {
     const groups: Record<string, BugarRecord[]> = {};
+
     for (const r of records) {
         const key = new Date(r.tanggal).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
         (groups[key] ??= []).push(r);
     }
+
     return Object.entries(groups);
 }
 
@@ -113,6 +115,7 @@ export default function BugarSelamatIndex({ records }: Props) {
                                     {items.map((record, idx) => {
                                         const IconComp = statusIcon[record.status_kelayakan];
                                         const tanggal = new Date(record.tanggal);
+
                                         return (
                                             <div key={record.id}>
                                                 <Link href={`/bugar-selamat/${record.id}`}>

@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Bell } from 'lucide-react';
-import * as notificationRoutes from '@/routes/notifications';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +20,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import * as notificationRoutes from '@/routes/notifications';
 
 export function NotificationBell() {
     const { notifications, unread_notifications_count } = usePage().props;
@@ -30,6 +30,7 @@ export function NotificationBell() {
         const interval = setInterval(() => {
             router.reload({ only: ['notifications', 'unread_notifications_count'] });
         }, 60_000);
+
         return () => clearInterval(interval);
     }, []);
 

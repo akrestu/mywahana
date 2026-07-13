@@ -250,7 +250,7 @@ class AdminController extends Controller
         $query = BugarSelamat::with('user')->latest('tanggal');
 
         if ($site) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $site));
+            $query->whereHas('user', fn ($q) => $q->assignedToSite($site));
         }
 
         if ($search) {
@@ -303,7 +303,7 @@ class AdminController extends Controller
         $site      = $this->adminSite($request);
 
         if ($site) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $site));
+            $query->where('site', $site);
         }
 
         if ($request->filled('search')) {
@@ -350,7 +350,7 @@ class AdminController extends Controller
 
         $picsQuery = \App\Models\User::whereIn('participation_level', ['staff', 'srstaff'])->orderBy('name');
         if ($adminSite) {
-            $picsQuery->where('site', $adminSite);
+            $picsQuery->assignedToSite($adminSite);
         }
 
         return Inertia::render('admin/laporan-bahaya', [
@@ -831,11 +831,11 @@ class AdminController extends Controller
 
     public function exportKomunikasiJsa(Request $request)
     {
-        $query = KomunikasiJsa::with(['user:id,name,nik,jabatan,site', 'teamLeader:id,name,jabatan'])
+        $query = KomunikasiJsa::with(['user:id,name,nik,jabatan,departemen,site', 'teamLeader:id,name,jabatan'])
             ->latest('tanggal');
 
         if ($request->filled('site')) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+            $query->where('site', $request->site);
         }
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -863,7 +863,7 @@ class AdminController extends Controller
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $headers = ['No', 'Tanggal', 'Nama', 'NIK', 'Jabatan', 'Site', 'Lokasi', 'Shift', 'Durasi (mnt)', 'Kegiatan', 'Judul JSA/SOP/IK', 'Jml Peserta', 'Peserta', 'Team Leader', 'Status', 'Catatan'];
+        $headers = ['No', 'Tanggal', 'Nama', 'NIK', 'Jabatan', 'Departemen', 'Site', 'Lokasi', 'Shift', 'Durasi (mnt)', 'Kegiatan', 'Judul JSA/SOP/IK', 'Jml Peserta', 'Peserta', 'Team Leader', 'Status', 'Catatan'];
         $sheet->fromArray([$headers], null, 'A1');
 
         $rowIndex = 2;
@@ -876,6 +876,7 @@ class AdminController extends Controller
                 $r->user?->name ?? '-',
                 $r->user?->nik ?? '-',
                 $r->user?->jabatan ?? '-',
+                $r->user?->departemen ?? '-',
                 $r->user?->site ?? '-',
                 $r->lokasi,
                 $r->shift,
@@ -891,7 +892,7 @@ class AdminController extends Controller
             $rowIndex++;
         }
 
-        foreach (range('A', 'P') as $col) {
+        foreach (range('A', 'Q') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -910,7 +911,7 @@ class AdminController extends Controller
         abort_unless(in_array($type, ['safety', 'hr']), 404);
 
         $query = InductionAttendance::where('type', $type)
-            ->with('user:id,name,nik,departemen,site')
+            ->with('user:id,name,nik,jabatan,departemen,site')
             ->latest('attended_at');
 
         $label    = $type === 'safety' ? 'safety' : 'hr';
@@ -1021,6 +1022,20 @@ class AdminController extends Controller
 
         $oldPicId = $laporanBahaya->pic_user_id;
 
+        if ($request->filled('pic_user_id')) {
+            $site = $laporanBahaya->site ?? $laporanBahaya->user?->site;
+            $picIsEligible = $site && User::whereKey($request->pic_user_id)
+                ->whereIn('participation_level', ['staff', 'srstaff'])
+                ->assignedToSite($site)
+                ->exists();
+
+            if (! $picIsEligible) {
+                return back()->withErrors([
+                    'pic_user_id' => 'PIC harus ditugaskan pada site pelaporan.',
+                ]);
+            }
+        }
+
         $laporanBahaya->update(array_filter([
             'status_tindakan' => $request->status_tindakan,
             'pic_user_id'     => $request->has('pic_user_id') ? $request->pic_user_id : $laporanBahaya->pic_user_id,
@@ -1130,7 +1145,7 @@ class AdminController extends Controller
         $query = LaporanBahaya::with(['user', 'pic'])->orderBy('created_at');
 
         if ($request->filled('site')) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+            $query->where('site', $request->site);
         }
         if ($request->filled('tingkat_risiko')) {
             $query->where('tingkat_risiko', $request->tingkat_risiko);
@@ -1163,7 +1178,7 @@ class AdminController extends Controller
             });
         }
         if ($site) {
-            $query->where('site', $site);
+            $query->assignedToSite($site);
         }
         if ($request->filled('is_admin')) {
             $query->where('is_admin', $request->is_admin === '1');
@@ -1200,11 +1215,13 @@ class AdminController extends Controller
             'jabatan'             => ['nullable', 'string', 'max:255'],
             'departemen'          => ['nullable', 'in:Production,Maintenance,Supply Chain,Engineering,HSE,HRGA,Management'],
             'site'                => ['nullable', 'string', Rule::exists('sites', 'value')],
+            'site_ids'            => ['nullable', 'array'],
+            'site_ids.*'          => ['string', Rule::exists('sites', 'value')],
             'is_admin'            => ['boolean'],
             'participation_level' => ['required', 'in:nonstaff,staff,srstaff'],
         ]);
 
-        User::create([
+        $user = User::create([
             'name'                => $request->name,
             'nik'                 => $request->nik,
             'email'               => $request->email,
@@ -1216,6 +1233,8 @@ class AdminController extends Controller
             'participation_level' => $request->participation_level,
         ]);
 
+        $this->syncUserSites($user, $request->input('site_ids', []));
+
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Pengguna berhasil ditambahkan.']);
 
         return redirect()->route('admin.users');
@@ -1225,7 +1244,10 @@ class AdminController extends Controller
     {
         return Inertia::render('admin/user-form', [
             'mode'  => 'edit',
-            'user'  => $user->only('id', 'name', 'nik', 'email', 'jabatan', 'departemen', 'site', 'is_admin', 'participation_level'),
+            'user'  => [
+                ...$user->only('id', 'name', 'nik', 'email', 'jabatan', 'departemen', 'site', 'is_admin', 'participation_level'),
+                'site_ids' => $user->sites()->pluck('sites.value')->all(),
+            ],
             'sites' => Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
@@ -1240,6 +1262,8 @@ class AdminController extends Controller
             'jabatan'             => ['nullable', 'string', 'max:255'],
             'departemen'          => ['nullable', 'in:Production,Maintenance,Supply Chain,Engineering,HSE,HRGA,Management'],
             'site'                => ['nullable', 'string', Rule::exists('sites', 'value')],
+            'site_ids'            => ['nullable', 'array'],
+            'site_ids.*'          => ['string', Rule::exists('sites', 'value')],
             'is_admin'            => ['boolean'],
             'participation_level' => ['required', 'in:nonstaff,staff,srstaff'],
         ]);
@@ -1260,6 +1284,7 @@ class AdminController extends Controller
         }
 
         $user->update($data);
+        $this->syncUserSites($user, $request->input('site_ids', []));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data pengguna berhasil diperbarui.']);
 
@@ -1275,6 +1300,20 @@ class AdminController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Pengguna berhasil dihapus.']);
 
         return back();
+    }
+
+    private function syncUserSites(User $user, array $siteIds): void
+    {
+        $validatedSiteIds = Site::whereIn('value', $siteIds)->pluck('id')->all();
+
+        if ($user->site) {
+            $primarySiteId = Site::where('value', $user->site)->value('id');
+            if ($primarySiteId) {
+                $validatedSiteIds[] = $primarySiteId;
+            }
+        }
+
+        $user->sites()->sync(array_unique($validatedSiteIds));
     }
 
     public function exportUsers(Request $request)

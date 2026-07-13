@@ -22,7 +22,10 @@ class SiteController extends Controller
         $validated = $request->validate([
             'value' => ['required', 'string', 'max:100', 'alpha_dash', 'unique:sites,value'],
             'label' => ['required', 'string', 'max:255'],
+            'locations' => ['nullable', 'string'],
         ]);
+
+        $validated['locations'] = $this->normalizeLocations($validated['locations'] ?? '');
 
         Site::create($validated);
 
@@ -36,7 +39,10 @@ class SiteController extends Controller
         $validated = $request->validate([
             'value' => ['required', 'string', 'max:100', 'alpha_dash', Rule::unique('sites', 'value')->ignore($site->id)],
             'label' => ['required', 'string', 'max:255'],
+            'locations' => ['nullable', 'string'],
         ]);
+
+        $validated['locations'] = $this->normalizeLocations($validated['locations'] ?? '');
 
         $oldValue = $site->value;
 
@@ -58,5 +64,15 @@ class SiteController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Site berhasil dihapus.']);
 
         return redirect()->route('admin.sites.index');
+    }
+
+    private function normalizeLocations(string $locations): array
+    {
+        return collect(preg_split('/\r\n|\r|\n/', $locations))
+            ->map(fn (string $location) => trim($location))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }

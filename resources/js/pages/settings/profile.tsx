@@ -102,7 +102,11 @@ export default function Profile({
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file) return;
+
+        if (!file) {
+return;
+}
+
         setAvatarPreview(URL.createObjectURL(file));
         setUploading(true);
         const data = new FormData();

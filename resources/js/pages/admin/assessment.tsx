@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
-import AssessmentMonitor, { type AssessmentConfig, type Props } from '@/components/admin/AssessmentMonitor';
+import AssessmentMonitor from '@/components/admin/AssessmentMonitor';
+import type {AssessmentConfig, Props} from '@/components/admin/AssessmentMonitor';
 
 const config: AssessmentConfig = {
     heading: 'Assessment Safety',

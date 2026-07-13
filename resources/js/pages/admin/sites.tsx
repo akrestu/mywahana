@@ -1,6 +1,7 @@
 import { Head, useForm, router } from '@inertiajs/react';
 import { Check, MapPin, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -8,13 +9,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 
-type Site = { id: number; value: string; label: string };
+type Site = { id: number; value: string; label: string; locations?: string[] | null };
 type Props = { sites: Site[] };
 
 function AddSiteForm() {
-    const { data, setData, post, processing, errors, reset } = useForm({ value: '', label: '' });
+    const { data, setData, post, processing, errors, reset } = useForm({ value: '', label: '', locations: '' });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -60,6 +61,17 @@ function AddSiteForm() {
                         />
                         {errors.label && <p className="text-sm text-destructive">{errors.label}</p>}
                     </div>
+                    <div className="space-y-1.5">
+                        <Label>Daftar Lokasi</Label>
+                        <Textarea
+                            value={data.locations}
+                            onChange={(e) => setData('locations', e.target.value)}
+                            placeholder={'Satu lokasi per baris\nContoh: Workshop\nArea Parkir'}
+                            rows={5}
+                        />
+                        <p className="text-xs text-muted-foreground">Lokasi ini akan menjadi pilihan pada form laporan untuk site tersebut.</p>
+                        {errors.locations && <p className="text-sm text-destructive">{errors.locations}</p>}
+                    </div>
                     <Button type="submit" disabled={processing} className="w-full gap-2">
                         <Plus size={15} />
                         {processing ? 'Menyimpan...' : 'Tambah Site'}
@@ -72,7 +84,11 @@ function AddSiteForm() {
 
 function SiteRow({ site, onDelete }: { site: Site; onDelete: (site: Site) => void }) {
     const [editing, setEditing] = useState(false);
-    const { data, setData, put, processing, errors } = useForm({ value: site.value, label: site.label });
+    const { data, setData, put, processing, errors } = useForm({
+        value: site.value,
+        label: site.label,
+        locations: (site.locations ?? []).join('\n'),
+    });
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
@@ -80,7 +96,7 @@ function SiteRow({ site, onDelete }: { site: Site; onDelete: (site: Site) => voi
     };
 
     const handleCancel = () => {
-        setData({ value: site.value, label: site.label });
+        setData({ value: site.value, label: site.label, locations: (site.locations ?? []).join('\n') });
         setEditing(false);
     };
 
@@ -111,6 +127,16 @@ function SiteRow({ site, onDelete }: { site: Site; onDelete: (site: Site) => voi
                                 />
                                 {errors.label && <p className="text-xs text-destructive">{errors.label}</p>}
                             </div>
+                            <div className="min-w-48 flex-[2] space-y-1">
+                                <Label className="text-xs text-muted-foreground">Daftar Lokasi</Label>
+                                <Textarea
+                                    value={data.locations}
+                                    onChange={(e) => setData('locations', e.target.value)}
+                                    className="min-h-20 text-sm"
+                                    placeholder="Satu lokasi per baris"
+                                />
+                                {errors.locations && <p className="text-xs text-destructive">{errors.locations}</p>}
+                            </div>
                             <div className="flex items-end gap-1.5 pt-5">
                                 <Button type="submit" size="sm" disabled={processing} className="h-8 gap-1.5">
                                     <Check size={13} /> Simpan
@@ -134,6 +160,7 @@ function SiteRow({ site, onDelete }: { site: Site; onDelete: (site: Site) => voi
                         <MapPin size={14} className="text-primary" />
                     </div>
                     <span className="font-medium text-sm">{site.label}</span>
+                    <span className="text-xs text-muted-foreground">{site.locations?.length ?? 0} lokasi</span>
                 </div>
             </td>
             <td className="px-4 py-3">
@@ -170,10 +197,15 @@ export default function AdminSites({ sites }: Props) {
     const [deleting, setDeleting] = useState(false);
 
     const confirmDelete = () => {
-        if (!toDelete) return;
+        if (!toDelete) {
+return;
+}
+
         setDeleting(true);
         router.delete(`/admin/sites/${toDelete.id}`, {
-            onFinish: () => { setDeleting(false); setToDelete(null); },
+            onFinish: () => {
+ setDeleting(false); setToDelete(null); 
+},
         });
     };
 

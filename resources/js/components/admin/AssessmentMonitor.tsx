@@ -1,6 +1,10 @@
 import { router } from '@inertiajs/react';
 import { CheckCircle2, ChevronDown, ChevronUp, ClipboardCheck, Download, Search, Trash2, XCircle } from 'lucide-react';
 import { useState } from 'react';
+import {
+    Bar, BarChart, CartesianGrid, Line, LineChart,
+    ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from 'recharts';
 import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,12 +13,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
-import {
-    Bar, BarChart, CartesianGrid, Line, LineChart,
-    ResponsiveContainer, Tooltip, XAxis, YAxis,
-} from 'recharts';
 import { DEPTS, fmtMonth } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -133,30 +133,51 @@ export default function AssessmentMonitor({
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
             const next = new Set(prev);
-            if (next.has(id)) next.delete(id); else next.add(id);
+
+            if (next.has(id)) {
+next.delete(id);
+} else {
+next.add(id);
+}
+
             return next;
         });
     };
     const toggleSelectAll = () => {
-        if (selectedIds.size === records.data.length) setSelectedIds(new Set());
-        else setSelectedIds(new Set(records.data.map(r => r.id)));
+        if (selectedIds.size === records.data.length) {
+setSelectedIds(new Set());
+} else {
+setSelectedIds(new Set(records.data.map(r => r.id)));
+}
     };
-    const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+    const exitSelectMode = () => {
+ setSelectMode(false); setSelectedIds(new Set()); 
+};
 
     const handleDelete = () => {
-        if (!toDelete || !config.deleteRoute) return;
+        if (!toDelete || !config.deleteRoute) {
+return;
+}
+
         setDeleting(true);
         router.delete(`${config.deleteRoute}/${toDelete.id}`, {
-            onFinish: () => { setDeleting(false); setToDelete(null); },
+            onFinish: () => {
+ setDeleting(false); setToDelete(null); 
+},
         });
     };
 
     const handleBatchDelete = () => {
-        if (!config.batchDeleteRoute) return;
+        if (!config.batchDeleteRoute) {
+return;
+}
+
         setBatchDeleting(true);
         router.delete(config.batchDeleteRoute, {
             data: { ids: Array.from(selectedIds) },
-            onFinish: () => { setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); },
+            onFinish: () => {
+ setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); 
+},
         });
     };
 
@@ -168,7 +189,9 @@ export default function AssessmentMonitor({
         router.get(config.route, cleaned, { preserveState: true, replace: true });
     };
 
-    const handleSearch = (e: React.FormEvent) => { e.preventDefault(); applyFilters({ search }); };
+    const handleSearch = (e: React.FormEvent) => {
+ e.preventDefault(); applyFilters({ search }); 
+};
 
     const openDrill = (row: SessionRecord) => {
         const userRecords = records.data.filter(r => r.user.id === row.user.id);
@@ -478,7 +501,9 @@ export default function AssessmentMonitor({
                                                 variant="ghost"
                                                 size="icon"
                                                 className="h-8 w-8 text-destructive hover:text-destructive"
-                                                onClick={(e) => { e.stopPropagation(); setToDelete(r); }}
+                                                onClick={(e) => {
+ e.stopPropagation(); setToDelete(r); 
+}}
                                             >
                                                 <Trash2 size={15} />
                                             </Button>

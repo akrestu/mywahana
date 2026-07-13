@@ -1,12 +1,11 @@
 ﻿import { Head, router } from '@inertiajs/react';
 import { BookOpen, Calendar, Camera, Check, ChevronsUpDown, Images, MapPin, PenLine, Plus, Trash2, UserCheck, X } from 'lucide-react';
-import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
-import { UploadOverlay } from '@/components/upload-overlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,42 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
+import { UploadOverlay } from '@/components/upload-overlay';
 import { compressImageWithToast } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
-const LOKASI_OPTIONS = [
-    'Tambang / Pit',
-    'Jalan Hauling OB',
-    'Jalan Hauling COAL',
-    'Disposal',
-    'Sump',
-    'Area Parkir',
-    'Pit Stop / Area Refueling',
-    'Workshop',
-    'Warehouse',
-    'Laydown B3',
-    'TPS Limbah B3',
-    'Office',
-    'Stock Room',
-    'Crusher Stock Pile',
-    'Mess',
-    'Katering',
-    'Jalan Warga / Raya',
-    'Area Vendor',
-    'Water Fill',
-    'Washing Pad',
-    'Area Pembagian Nasi',
-    'Unit/Peralatan',
-    'Sarana',
-    'Area Diversi Sungai Kungkilan',
-    'Area Akses Senapo',
-    'Container Produksi',
-    'Container HSE &/ GA',
-];
-
 type UserInfo = { name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
-type StaffUser = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
-type Props = { user: UserInfo; staffUsers: StaffUser[] };
+type StaffUser = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null; sites: string[] };
+type SiteOption = { value: string; label: string; locations?: string[] | null };
+type Props = { user: UserInfo; staffUsers: StaffUser[]; sites: SiteOption[] };
 
 type Peserta = { nama: string; jabatan: string; nik: string; tanda_tangan: string };
 
@@ -69,7 +40,11 @@ function startDraw(e: MouseEvent | TouchEvent) {
 
     function draw(e: MouseEvent | TouchEvent) {
         e.preventDefault();
-        if (!drawing.current) return;
+
+        if (!drawing.current) {
+return;
+}
+
         const canvas = canvasRef.current!;
         const ctx = canvas.getContext('2d')!;
         const pos = getPosNative(e);
@@ -86,13 +61,17 @@ function startDraw(e: MouseEvent | TouchEvent) {
     function getPosNative(e: MouseEvent | TouchEvent) {
         const canvas = canvasRef.current!;
         const rect = canvas.getBoundingClientRect();
+
         if ('touches' in e) {
             return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
         }
+
         return { x: (e as MouseEvent).clientX - rect.left, y: (e as MouseEvent).clientY - rect.top };
     }
 
-    function stopDraw() { drawing.current = false; lastPos.current = null; }
+    function stopDraw() {
+ drawing.current = false; lastPos.current = null; 
+}
 
     function clear() {
         const canvas = canvasRef.current!;
@@ -113,6 +92,7 @@ function startDraw(e: MouseEvent | TouchEvent) {
         canvas.addEventListener('touchstart', startDraw, { passive: false });
         canvas.addEventListener('touchmove', draw, { passive: false });
         canvas.addEventListener('touchend', stopDraw);
+
         return () => {
             canvas.removeEventListener('mousedown', startDraw);
             canvas.removeEventListener('mousemove', draw);
@@ -141,10 +121,11 @@ function startDraw(e: MouseEvent | TouchEvent) {
     );
 }
 
-export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
+export default function KomunikasiJsaCreate({ user, staffUsers, sites }: Props) {
     const [tlOpen, setTlOpen] = useState(false);
     const [lokasiOpen, setLokasiOpen] = useState(false);
     const [teamLeaderId, setTeamLeaderId] = useState<string>('');
+    const [site, setSite] = useState(() => sites.some((item) => item.value === user.site) ? user.site! : (sites[0]?.value ?? ''));
     const [tanggal, setTanggal] = useState(today);
     const [lokasi, setLokasi] = useState('');
     const [shift, setShift] = useState<'siang' | 'malam' | ''>('');
@@ -167,6 +148,7 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
     function choosePhotoSource(source: 'camera' | 'gallery') {
         const slot = photoSheet;
         setPhotoSheet(null);
+
         if (source === 'camera') {
             setShowCamera(slot);
         } else {
@@ -181,12 +163,18 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
     const [processing, setProcessing] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
-    const selectedTL = staffUsers.find(u => String(u.id) === teamLeaderId);
+    const availableStaffUsers = staffUsers.filter((staff) => staff.sites.includes(site));
+    const selectedTL = availableStaffUsers.find(u => String(u.id) === teamLeaderId);
+    const lokasiOptions = sites.find((item) => item.value === site)?.locations ?? [];
     const noExternalTL = !teamLeaderId;
 
     async function handleFotoChange(type: 'kelompok' | 'dokumen', file: File | null) {
-        if (!file) return;
+        if (!file) {
+return;
+}
+
         const compressed = await compressImageWithToast(file);
+
         if (type === 'kelompok') {
             setFotoKelompok(compressed);
             setFotoKelompokPreview(URL.createObjectURL(compressed));
@@ -197,7 +185,10 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
     }
 
     function addPeserta() {
-        if (peserta.length >= 10) return;
+        if (peserta.length >= 10) {
+return;
+}
+
         setPeserta(p => [...p, { nama: '', jabatan: '', nik: '', tanda_tangan: '' }]);
     }
 
@@ -210,7 +201,10 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
     }
 
     function handleTtdSave(dataUrl: string) {
-        if (ttdDialogIdx === null) return;
+        if (ttdDialogIdx === null) {
+return;
+}
+
         updatePeserta(ttdDialogIdx, 'tanda_tangan', dataUrl);
         setTtdDialogIdx(null);
     }
@@ -220,42 +214,97 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
         setErrors({});
 
         const newErrors: Record<string, string> = {};
-        if (!tanggal) newErrors.tanggal = 'Tanggal wajib diisi.';
-        if (!lokasi.trim()) newErrors.lokasi = 'Lokasi wajib diisi.';
-        if (!shift) newErrors.shift = 'Shift wajib dipilih.';
-        if (!durasi || Number(durasi) < 1) newErrors.durasi = 'Durasi wajib diisi (minimal 1 menit).';
-        if (!kegiatan.trim()) newErrors.kegiatan = 'Kegiatan wajib diisi.';
-        if (!judulDokumen.trim()) newErrors.judul_dokumen = 'Judul dokumen JSA/SOP/IK wajib diisi.';
-        if (peserta.length === 0) newErrors.peserta = 'Minimal 1 peserta harus ditambahkan.';
+
+        if (!site) {
+            newErrors.site = 'Site wajib dipilih.';
+        }
+
+        if (!tanggal) {
+newErrors.tanggal = 'Tanggal wajib diisi.';
+}
+
+        if (!lokasi.trim()) {
+newErrors.lokasi = 'Lokasi wajib diisi.';
+}
+
+        if (!shift) {
+newErrors.shift = 'Shift wajib dipilih.';
+}
+
+        if (!durasi || Number(durasi) < 1) {
+newErrors.durasi = 'Durasi wajib diisi (minimal 1 menit).';
+}
+
+        if (!kegiatan.trim()) {
+newErrors.kegiatan = 'Kegiatan wajib diisi.';
+}
+
+        if (!judulDokumen.trim()) {
+newErrors.judul_dokumen = 'Judul dokumen JSA/SOP/IK wajib diisi.';
+}
+
+        if (peserta.length === 0) {
+newErrors.peserta = 'Minimal 1 peserta harus ditambahkan.';
+}
+
         peserta.forEach((p, i) => {
-            if (!p.nama.trim()) newErrors[`peserta_${i}_nama`] = `Nama peserta ${i + 1} wajib diisi.`;
-            if (!p.tanda_tangan) newErrors[`peserta_${i}_ttd`] = `Tanda tangan peserta ${i + 1} wajib diisi.`;
+            if (!p.nama.trim()) {
+newErrors[`peserta_${i}_nama`] = `Nama peserta ${i + 1} wajib diisi.`;
+}
+
+            if (!p.tanda_tangan) {
+newErrors[`peserta_${i}_ttd`] = `Tanda tangan peserta ${i + 1} wajib diisi.`;
+}
         });
-        if (!fotoKelompok) newErrors.foto_kelompok = 'Foto kelompok wajib dilampirkan.';
-        if (!fotoDokumen) newErrors.foto_dokumen = 'Foto dokumen JSA/SOP/IK wajib dilampirkan.';
-        if (noExternalTL && !supervisorSig) newErrors.supervisor_signature = 'Tanda tangan supervisor wajib diisi.';
+
+        if (!fotoKelompok) {
+newErrors.foto_kelompok = 'Foto kelompok wajib dilampirkan.';
+}
+
+        if (!fotoDokumen) {
+newErrors.foto_dokumen = 'Foto dokumen JSA/SOP/IK wajib dilampirkan.';
+}
+
+        if (noExternalTL && !supervisorSig) {
+newErrors.supervisor_signature = 'Tanda tangan supervisor wajib diisi.';
+}
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
+
             return;
         }
 
         const formData = new FormData();
-        if (teamLeaderId) formData.append('team_leader_id', teamLeaderId);
+
+        formData.append('site', site);
+
+        if (teamLeaderId) {
+formData.append('team_leader_id', teamLeaderId);
+}
+
         formData.append('tanggal', tanggal);
         formData.append('lokasi', lokasi);
         formData.append('shift', shift!);
         formData.append('durasi', durasi);
         formData.append('kegiatan', kegiatan);
         formData.append('judul_dokumen', judulDokumen);
-        if (catatan) formData.append('catatan', catatan);
+
+        if (catatan) {
+formData.append('catatan', catatan);
+}
+
         peserta.forEach((p, i) => {
             formData.append(`peserta[${i}][nama]`, p.nama);
             formData.append(`peserta[${i}][jabatan]`, p.jabatan);
             formData.append(`peserta[${i}][nik]`, p.nik);
             formData.append(`peserta[${i}][tanda_tangan]`, p.tanda_tangan);
         });
-        if (supervisorSig) formData.append('supervisor_signature', supervisorSig);
+
+        if (supervisorSig) {
+formData.append('supervisor_signature', supervisorSig);
+}
+
         formData.append('foto_kelompok', fotoKelompok!);
         formData.append('foto_dokumen', fotoDokumen!);
 
@@ -264,8 +313,12 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
         router.post('/sap/komunikasi-jsa', formData, {
             forceFormData: true,
             onProgress: (e) => setUploadProgress(e.percentage ?? null),
-            onError: (errs) => { setErrors(errs); setProcessing(false); setUploadProgress(null); },
-            onFinish: () => { setProcessing(false); setUploadProgress(null); },
+            onError: (errs) => {
+ setErrors(errs); setProcessing(false); setUploadProgress(null); 
+},
+            onFinish: () => {
+ setProcessing(false); setUploadProgress(null); 
+},
         });
     }
 
@@ -281,6 +334,24 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
                 {/* ── Informasi Dasar ── */}
                 <Card>
                     <CardContent className="flex flex-col gap-5 pt-5">
+                        <div className="flex flex-col gap-2">
+                            <Label className="text-base font-bold">Site <span className="text-destructive">*</span></Label>
+                            <Select
+                                value={site}
+                                onValueChange={(value) => {
+                                    setSite(value);
+                                    setLokasi('');
+                                    setTeamLeaderId('');
+                                }}
+                            >
+                                <SelectTrigger className="h-12 text-base"><SelectValue placeholder="Pilih site" /></SelectTrigger>
+                                <SelectContent>
+                                    {sites.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            {errors.site && <p className="text-sm text-destructive">{errors.site}</p>}
+                        </div>
+
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="tanggal" className="text-base font-bold">Tanggal <span className="text-destructive">*</span></Label>
                             <DatePickerInput
@@ -316,11 +387,13 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
                                         <CommandList>
                                             <CommandEmpty>Tidak ditemukan.</CommandEmpty>
                                             <CommandGroup>
-                                                {LOKASI_OPTIONS.map((opt) => (
+                                                {lokasiOptions.map((opt) => (
                                                     <CommandItem
                                                         key={opt}
                                                         value={opt}
-                                                        onSelect={val => { setLokasi(val === lokasi ? '' : val); setLokasiOpen(false); }}
+                                                        onSelect={val => {
+ setLokasi(val === lokasi ? '' : val); setLokasiOpen(false); 
+}}
                                                     >
                                                         {opt}
                                                         <Check
@@ -404,16 +477,20 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
                                     <CommandEmpty>Tidak ditemukan.</CommandEmpty>
                                     <CommandGroup>
                                         {teamLeaderId && (
-                                            <CommandItem value="__clear__" onSelect={() => { setTeamLeaderId(''); setTlOpen(false); }}>
+                                            <CommandItem value="__clear__" onSelect={() => {
+ setTeamLeaderId(''); setTlOpen(false); 
+}}>
                                                 <X size={16} className="mr-2 text-destructive" />
                                                 <span className="text-muted-foreground">Hapus pilihan (saya sendiri TL)</span>
                                             </CommandItem>
                                         )}
-                                        {staffUsers.map(u => (
+                                        {availableStaffUsers.map(u => (
                                             <CommandItem
                                                 key={u.id}
                                                 value={`${u.name} ${u.nik ?? ''}`}
-                                                onSelect={() => { setTeamLeaderId(String(u.id)); setTlOpen(false); }}
+                                                onSelect={() => {
+ setTeamLeaderId(String(u.id)); setTlOpen(false); 
+}}
                                             >
                                                 <Check size={16} className={cn('mr-2', String(u.id) === teamLeaderId ? 'opacity-100' : 'opacity-0')} />
                                                 <span>{u.name}</span>
@@ -521,7 +598,9 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
                                 <div className="flex flex-col gap-2">
                                     <img src={fotoKelompokPreview} alt="Foto kelompok" className="w-full max-h-48 object-cover rounded-lg border" />
                                     <Button type="button" variant="outline" size="sm" className="gap-1.5 self-start"
-                                        onClick={() => { setFotoKelompok(null); setFotoKelompokPreview(''); }}>
+                                        onClick={() => {
+ setFotoKelompok(null); setFotoKelompokPreview(''); 
+}}>
                                         <X size={13} /> Hapus foto
                                     </Button>
                                 </div>
@@ -541,7 +620,9 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
                                 <div className="flex flex-col gap-2">
                                     <img src={fotoDokumenPreview} alt="Foto dokumen" className="w-full max-h-48 object-cover rounded-lg border" />
                                     <Button type="button" variant="outline" size="sm" className="gap-1.5 self-start"
-                                        onClick={() => { setFotoDokumen(null); setFotoDokumenPreview(''); }}>
+                                        onClick={() => {
+ setFotoDokumen(null); setFotoDokumenPreview(''); 
+}}>
                                         <X size={13} /> Hapus foto
                                     </Button>
                                 </div>
@@ -600,22 +681,33 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
 
             {/* Hidden file inputs untuk galeri */}
             <input ref={fotoKelompokGalleryRef} type="file" accept="image/*" className="hidden"
-                onChange={e => { handleFotoChange('kelompok', e.target.files?.[0] ?? null); e.target.value = ''; }} />
+                onChange={e => {
+ handleFotoChange('kelompok', e.target.files?.[0] ?? null); e.target.value = ''; 
+}} />
             <input ref={fotoDokumenGalleryRef} type="file" accept="image/*" className="hidden"
-                onChange={e => { handleFotoChange('dokumen', e.target.files?.[0] ?? null); e.target.value = ''; }} />
+                onChange={e => {
+ handleFotoChange('dokumen', e.target.files?.[0] ?? null); e.target.value = ''; 
+}} />
             <UploadOverlay open={processing} progress={uploadProgress} label="Menyimpan JSA..." />
             <CameraCapture
                 open={showCamera !== null}
                 onCapture={(file) => {
                     const slot = showCamera;
                     setShowCamera(null);
-                    if (slot) handleFotoChange(slot, file);
+
+                    if (slot) {
+handleFotoChange(slot, file);
+}
                 }}
                 onClose={() => setShowCamera(null)}
             />
 
             {/* Sheet pilihan sumber foto */}
-            <Sheet open={photoSheet !== null} onOpenChange={open => { if (!open) setPhotoSheet(null); }}>
+            <Sheet open={photoSheet !== null} onOpenChange={open => {
+ if (!open) {
+setPhotoSheet(null);
+} 
+}}>
                 <SheetContent side="bottom" className="pb-8">
                     <SheetHeader>
                         <SheetTitle>Pilih Sumber Foto</SheetTitle>
@@ -637,7 +729,9 @@ export default function KomunikasiJsaCreate({ user, staffUsers }: Props) {
                     <DialogHeader>
                         <DialogTitle>Tanda Tangan Supervisor</DialogTitle>
                     </DialogHeader>
-                    <SignaturePad onSave={sig => { setSupervisorSig(sig); setShowSupervisorSig(false); }} onCancel={() => setShowSupervisorSig(false)} />
+                    <SignaturePad onSave={sig => {
+ setSupervisorSig(sig); setShowSupervisorSig(false); 
+}} onCancel={() => setShowSupervisorSig(false)} />
                 </DialogContent>
             </Dialog>
         </>

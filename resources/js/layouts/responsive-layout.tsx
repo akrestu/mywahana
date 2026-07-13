@@ -1,11 +1,12 @@
 import { Link, usePage } from '@inertiajs/react';
 import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, GraduationCap, HeartPulse, Home, LayoutGrid, MapPin, Mountain, ShieldCheck, Target, User, UserCheck, Users, Wrench } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useState  } from 'react';
+import type {ReactNode} from 'react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
-import { NotificationBell } from '@/components/notification-bell';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
+import { NotificationBell } from '@/components/notification-bell';
 import { TeamSwitcher } from '@/components/team-switcher';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -24,12 +25,12 @@ import {
 import { useAutoHideNav } from '@/hooks/use-auto-hide-nav';
 import { index as bugarSelamatIndex } from '@/routes/bugar-selamat';
 import { index as laporanBahayaIndex } from '@/routes/laporan-bahaya';
-import { index as okIndex } from '@/routes/sap/observasi-keselamatan';
 import { index as inspeksiKantorIndex } from '@/routes/sap/inspeksi-kantor';
+import { index as inspeksiMessIndex } from '@/routes/sap/inspeksi-mess';
 import { index as inspeksiTambangIndex } from '@/routes/sap/inspeksi-tambang';
 import { index as inspeksiWorkshopIndex } from '@/routes/sap/inspeksi-workshop';
-import { index as inspeksiMessIndex } from '@/routes/sap/inspeksi-mess';
 import { index as komunikasiJsaIndex } from '@/routes/sap/komunikasi-jsa';
+import { index as okIndex } from '@/routes/sap/observasi-keselamatan';
 import type { Auth } from '@/types';
 
 type Props = {
@@ -238,13 +239,20 @@ function MobileBottomNav({ url, isAdmin, isStaff, navItems }: { url: string; isA
     const isAssessmentActive = url.startsWith('/assessment') || url.startsWith('/hr-assessment') || url.startsWith('/admin/assessment') || url.startsWith('/admin/hr-assessment');
 
     const isActive = (href: string) => {
-        if (href === '/home') return url === href || url.startsWith('/home?');
-        if (href === '/admin') return url === href;
+        if (href === '/home') {
+return url === href || url.startsWith('/home?');
+}
+
+        if (href === '/admin') {
+return url === href;
+}
+
         return url.startsWith(href);
     };
 
     const NavLink = ({ item, active }: { item: typeof baseUserMobileNavItems[number]; active: boolean }) => {
         const Icon = item.icon;
+
         return (
             <Link
                 href={item.href}
@@ -377,6 +385,7 @@ function MobileBottomNav({ url, isAdmin, isStaff, navItems }: { url: string; isA
                             {(isAdmin ? adminSapDrawerItems : sapMobileNavItems).map((item) => {
                                 const Icon = item.icon;
                                 const active = isActive(item.href);
+
                                 return (
                                     <Link
                                         key={item.href}
@@ -409,6 +418,7 @@ function MobileBottomNav({ url, isAdmin, isStaff, navItems }: { url: string; isA
                             {assessmentDrawerItems.map((item) => {
                                 const Icon = item.icon;
                                 const active = isActive(item.href);
+
                                 return (
                                     <Link
                                         key={item.href}

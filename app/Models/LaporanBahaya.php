@@ -9,7 +9,7 @@ class LaporanBahaya extends Model
     protected $table = 'laporan_bahaya';
 
     protected $fillable = [
-        'user_id', 'tanggal', 'waktu_pengamatan', 'kategori', 'klasifikasi_bahaya', 'lokasi', 'detail_lokasi',
+        'user_id', 'site', 'tanggal', 'waktu_pengamatan', 'kategori', 'klasifikasi_bahaya', 'lokasi', 'detail_lokasi',
         'deskripsi_bahaya', 'tindakan_perbaikan',
         'probabilitas', 'frekuensi', 'severity',
         'nilai_risiko', 'tingkat_risiko',
