@@ -9,6 +9,7 @@ import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { UploadOverlay } from '@/components/upload-overlay';
@@ -219,25 +220,12 @@ fd.append(k, String(v ?? ''));
                                 <div className="space-y-1.5"><Label>Tanggal <span className="text-destructive">*</span></Label><DatePickerInput value={data.tanggal} onChange={(val) => setData('tanggal', val)} max={today} error={!!errors.tanggal} />{errors.tanggal && <p className="text-sm text-destructive">{errors.tanggal}</p>}</div>
                                 <div className="space-y-1.5">
                                     <Label>Project / Site <span className="text-destructive">*</span></Label>
-                                    <Popover open={siteOpen} onOpenChange={setSiteOpen}>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" role="combobox" className="h-12 w-full justify-between text-base font-normal">
-                                                {data.project_site || <span className="text-muted-foreground">Pilih project / site...</span>}
-                                                <ChevronsUpDown size={16} className="ml-2 opacity-50" />
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-full p-0" align="start">
-                                            <Command><CommandList><CommandGroup>
-                                                {sites.map(s => (
-                                                    <CommandItem key={s.value} value={s.label} onSelect={() => {
- setData('project_site', s.label); setData('re_inspektor_id', ''); setData('peserta_ids', []); setSiteOpen(false); 
-}}>
-                                                        <Check size={14} className={cn('mr-2', data.project_site === s.label ? 'opacity-100' : 'opacity-0')} />{s.label}
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup></CommandList></Command>
-                                        </PopoverContent>
-                                    </Popover>
+                                    <Select value={data.project_site} onValueChange={(value) => {
+                                        setData('project_site', value); setData('re_inspektor_id', ''); setData('peserta_ids', []);
+                                    }}>
+                                        <SelectTrigger className="h-12! w-full rounded-xl bg-background text-base"><SelectValue placeholder="Pilih project / site" /></SelectTrigger>
+                                        <SelectContent>{sites.map(s => <SelectItem key={s.value} value={s.label}>{s.label}</SelectItem>)}</SelectContent>
+                                    </Select>
                                     {errors.project_site && <p className="text-sm text-destructive">{errors.project_site}</p>}
                                 </div>
                                 <div className="space-y-1.5"><Label>Departemen <span className="text-destructive">*</span></Label><Input value={data.departemen} onChange={e => setData('departemen', e.target.value)} placeholder="Nama departemen" className="h-12 text-base" /></div>
