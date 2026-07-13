@@ -6,6 +6,8 @@ namespace App\Models;
 use App\Concerns\HasTeams;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\Contracts\PasskeyUser;
@@ -84,6 +86,32 @@ class User extends Authenticatable implements PasskeyUser
     public function badges()
     {
         return $this->hasMany(UserBadge::class);
+    }
+
+    public function sites(): BelongsToMany
+    {
+        return $this->belongsToMany(Site::class);
+    }
+
+    public function scopeAssignedToSite(Builder $query, string $site): Builder
+    {
+        return $query->where(function (Builder $query) use ($site) {
+            $query->where('site', $site)
+                ->orWhereHas('sites', fn (Builder $sites) => $sites->where('value', $site));
+        });
+    }
+
+    public function assignedSiteValues(): array
+    {
+        $assigned = $this->relationLoaded('sites')
+            ? $this->sites->pluck('value')
+            : $this->sites()->pluck('value');
+
+        return $assigned
+            ->when($this->site, fn ($sites) => $sites->push($this->site))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     public function currentStreak(): int

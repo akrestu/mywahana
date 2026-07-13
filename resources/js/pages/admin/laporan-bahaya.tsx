@@ -1,9 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Check, ChevronsUpDown, Download, Search, Trash2, UserPen } from 'lucide-react';
 import { useState } from 'react';
+import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import { RiskBadge } from '@/components/risk-badge';
 import { TindakanBadge } from '@/components/status-badge';
-import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -73,28 +73,43 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites, p
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
             const next = new Set(prev);
-            if (next.has(id)) next.delete(id); else next.add(id);
+
+            if (next.has(id)) {
+next.delete(id);
+} else {
+next.add(id);
+}
+
             return next;
         });
     };
     const toggleSelectAll = () => {
-        if (selectedIds.size === records.data.length) setSelectedIds(new Set());
-        else setSelectedIds(new Set(records.data.map(r => r.id)));
+        if (selectedIds.size === records.data.length) {
+setSelectedIds(new Set());
+} else {
+setSelectedIds(new Set(records.data.map(r => r.id)));
+}
     };
-    const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+    const exitSelectMode = () => {
+ setSelectMode(false); setSelectedIds(new Set()); 
+};
 
     const handleBatchDelete = () => {
         setBatchDeleting(true);
         router.delete('/admin/laporan-bahaya/batch', {
             data: { ids: Array.from(selectedIds) },
-            onFinish: () => { setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); },
+            onFinish: () => {
+ setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); 
+},
         });
     };
 
     const applyFilters = (newFilters: Partial<Filters>) => {
         const merged = { ...filters, ...newFilters, search };
         Object.keys(merged).forEach((k) => {
-            if ((merged as Record<string, unknown>)[k] === 'all') delete (merged as Record<string, unknown>)[k];
+            if ((merged as Record<string, unknown>)[k] === 'all') {
+delete (merged as Record<string, unknown>)[k];
+}
         });
         router.get('/admin/laporan-bahaya', merged, { preserveState: true, replace: true });
     };
@@ -112,10 +127,15 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites, p
     };
 
     const confirmDelete = () => {
-        if (!toDelete) return;
+        if (!toDelete) {
+return;
+}
+
         setDeleting(true);
         router.delete(`/admin/laporan-bahaya/${toDelete.id}`, {
-            onFinish: () => { setDeleting(false); setToDelete(null); },
+            onFinish: () => {
+ setDeleting(false); setToDelete(null); 
+},
         });
     };
 
@@ -126,13 +146,18 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites, p
     };
 
     const savePic = () => {
-        if (!picDialogRecord) return;
+        if (!picDialogRecord) {
+return;
+}
+
         setUpdatingPic(true);
         router.patch(`/admin/laporan-bahaya/${picDialogRecord.id}/status`, {
             status_tindakan: picDialogRecord.status_tindakan,
             pic_user_id: picDialogValue || null,
         }, {
-            onFinish: () => { setUpdatingPic(false); setPicDialogRecord(null); },
+            onFinish: () => {
+ setUpdatingPic(false); setPicDialogRecord(null); 
+},
         });
     };
 
@@ -143,12 +168,29 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites, p
 
     const exportUrl = `/admin/laporan-bahaya/export${(() => {
         const p = new URLSearchParams();
-        if (filters.search) p.set('search', filters.search);
-        if (filters.site) p.set('site', filters.site);
-        if (filters.tingkat_risiko) p.set('tingkat_risiko', filters.tingkat_risiko);
-        if (filters.status_tindakan) p.set('status_tindakan', filters.status_tindakan);
-        if (filters.periode) p.set('periode', filters.periode);
+
+        if (filters.search) {
+p.set('search', filters.search);
+}
+
+        if (filters.site) {
+p.set('site', filters.site);
+}
+
+        if (filters.tingkat_risiko) {
+p.set('tingkat_risiko', filters.tingkat_risiko);
+}
+
+        if (filters.status_tindakan) {
+p.set('status_tindakan', filters.status_tindakan);
+}
+
+        if (filters.periode) {
+p.set('periode', filters.periode);
+}
+
         const qs = p.toString();
+
         return qs ? '?' + qs : '';
     })()}`;
 
@@ -443,7 +485,11 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites, p
                                 >
                                     <span className="truncate text-left">
                                         {picDialogValue
-                                            ? (() => { const p = pics.find((p) => String(p.id) === picDialogValue); return p ? `${p.name}${p.jabatan ? ` — ${p.jabatan}` : ''}` : 'Pilih PIC...'; })()
+                                            ? (() => {
+ const p = pics.find((p) => String(p.id) === picDialogValue);
+
+ return p ? `${p.name}${p.jabatan ? ` — ${p.jabatan}` : ''}` : 'Pilih PIC...'; 
+})()
                                             : 'Pilih PIC...'}
                                     </span>
                                     <ChevronsUpDown size={15} className="shrink-0 opacity-50" />

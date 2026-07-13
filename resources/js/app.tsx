@@ -1,7 +1,7 @@
 import { createInertiaApp } from '@inertiajs/react';
+import { PageLoader } from '@/components/page-loader';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { PageLoader } from '@/components/page-loader';
 import { initializeTheme } from '@/hooks/use-appearance';
 import AuthLayout from '@/layouts/auth-layout';
 import ResponsiveLayout from '@/layouts/responsive-layout';

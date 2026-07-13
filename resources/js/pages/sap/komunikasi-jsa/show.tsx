@@ -33,9 +33,18 @@ type Record = {
 type Props = { record: Record; isTeamLeader: boolean };
 
 function StatusBadge({ status }: { status: Record['status'] }) {
-    if (status === 'selesai') return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-400">Selesai</Badge>;
-    if (status === 'dikonfirmasi') return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-400">Dikonfirmasi</Badge>;
-    if (status === 'ditolak') return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400">Ditolak</Badge>;
+    if (status === 'selesai') {
+return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-400">Selesai</Badge>;
+}
+
+    if (status === 'dikonfirmasi') {
+return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-400">Dikonfirmasi</Badge>;
+}
+
+    if (status === 'ditolak') {
+return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400">Ditolak</Badge>;
+}
+
     return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-100 dark:bg-yellow-950/40 dark:text-yellow-400">Menunggu Konfirmasi</Badge>;
 }
 

@@ -33,11 +33,13 @@ type Props = {
 
 function groupByMonth(sessions: Session[]) {
     const groups: Record<string, Session[]> = {};
+
     for (const s of sessions) {
         const date = s.completed_at ?? s.started_at;
         const key = new Date(date).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
         (groups[key] ??= []).push(s);
     }
+
     return Object.entries(groups);
 }
 
@@ -60,6 +62,7 @@ export default function HrAssessmentIndex({ sessions, question_count, attempts_t
     const passedCount = sessions.data.filter(s => s.passed === true).length;
     const bestScore = sessions.data.reduce((best, s) => {
         const pct = s.percentage != null ? Number(s.percentage) : 0;
+
         return pct > best ? pct : best;
     }, 0);
 

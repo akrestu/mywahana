@@ -11,6 +11,7 @@ const config: Record<RiskLevel, { label: string; className: string }> = {
 
 export function RiskBadge({ level }: { level: RiskLevel }) {
     const { label, className } = config[level] ?? config.C;
+
     return (
         <Badge variant="outline" className={className}>
             {label}

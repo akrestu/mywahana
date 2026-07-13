@@ -9,7 +9,9 @@ interface Props {
 }
 
 export default function BatchDeleteBar({ count, onDelete, onCancel, deleting }: Props) {
-    if (count === 0) return null;
+    if (count === 0) {
+return null;
+}
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card p-4 shadow-lg">

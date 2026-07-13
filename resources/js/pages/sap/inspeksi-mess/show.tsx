@@ -82,8 +82,14 @@ const CATEGORIES = [
 ] as const;
 
 function StatusBadge({ s }: { s: string }) {
-    if (s === 'selesai') return <Badge className="bg-green-100 text-green-700 border-green-300">Selesai</Badge>;
-    if (s === 'ditolak') return <Badge className="bg-red-100 text-red-700 border-red-300">Ditolak</Badge>;
+    if (s === 'selesai') {
+return <Badge className="bg-green-100 text-green-700 border-green-300">Selesai</Badge>;
+}
+
+    if (s === 'ditolak') {
+return <Badge className="bg-red-100 text-red-700 border-red-300">Ditolak</Badge>;
+}
+
     return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300">Menunggu Re-Inspeksi</Badge>;
 }
 
@@ -141,6 +147,7 @@ export default function InspeksiMessShow({ record, is_ri }: Props) {
                             {cat.items.map((item, idx) => {
                                 const score = String(record[item.key] ?? '');
                                 const foto = record.foto_items?.[item.key];
+
                                 return (
                                     <div key={item.key}>
                                         <div className="px-4 py-3 flex flex-col gap-2">

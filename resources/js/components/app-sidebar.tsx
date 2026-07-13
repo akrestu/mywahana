@@ -3,6 +3,7 @@ import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, Graduati
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
 import { NavMain } from '@/components/nav-main';
+import type { NavGroup } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
@@ -14,18 +15,17 @@ import {
     SidebarMenuItem,
     SidebarSeparator,
 } from '@/components/ui/sidebar';
+import { index as adminIndex } from '@/routes/admin';
 import { home as dashboardRoute } from '@/routes/app';
 import { index as bugarSelamatIndex } from '@/routes/bugar-selamat';
 import { index as laporanBahayaIndex } from '@/routes/laporan-bahaya';
-import { index as adminIndex } from '@/routes/admin';
-import { index as okIndex } from '@/routes/sap/observasi-keselamatan';
 import { index as inspeksiKantorIndex } from '@/routes/sap/inspeksi-kantor';
+import { index as inspeksiMessIndex } from '@/routes/sap/inspeksi-mess';
 import { index as inspeksiTambangIndex } from '@/routes/sap/inspeksi-tambang';
 import { index as inspeksiWorkshopIndex } from '@/routes/sap/inspeksi-workshop';
-import { index as inspeksiMessIndex } from '@/routes/sap/inspeksi-mess';
 import { index as komunikasiJsaIndex } from '@/routes/sap/komunikasi-jsa';
+import { index as okIndex } from '@/routes/sap/observasi-keselamatan';
 import type { Auth } from '@/types/auth';
-import type { NavGroup } from '@/components/nav-main';
 
 export function AppSidebar() {
     const { auth } = usePage<{ auth: Auth }>().props;

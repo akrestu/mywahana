@@ -115,7 +115,10 @@ const STATUS_TEMUAN_LABELS: Record<string, string> = {
 };
 
 function ClItem({ value, label }: { value: ChecklistVal; label: string }) {
-    if (!value) return null;
+    if (!value) {
+return null;
+}
+
     return (
         <div className={cn(
             'flex items-center justify-between gap-3 px-4 py-3',
@@ -140,6 +143,7 @@ function SignaturePadCapture({ onCapture }: { onCapture: (data: string | null) =
 
     const pos = (e: MouseEvent | Touch, canvas: HTMLCanvasElement) => {
         const r = canvas.getBoundingClientRect();
+
         return {
             x: (e.clientX - r.left) * (canvas.width / r.width),
             y: (e.clientY - r.top) * (canvas.height / r.height),
@@ -148,7 +152,11 @@ function SignaturePadCapture({ onCapture }: { onCapture: (data: string | null) =
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+
+        if (!canvas) {
+return;
+}
+
         const ctx = canvas.getContext('2d')!;
         ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#0f172a';
         ctx.lineWidth = 3;
@@ -163,11 +171,15 @@ function SignaturePadCapture({ onCapture }: { onCapture: (data: string | null) =
             ctx.moveTo(p.x, p.y);
         };
         const move = (e: MouseEvent | TouchEvent) => {
-            if (!drawing.current) return;
+            if (!drawing.current) {
+return;
+}
+
             e.preventDefault();
             const p = pos('touches' in e ? e.touches[0] : e, canvas);
             ctx.lineTo(p.x, p.y);
             ctx.stroke();
+
             if (isEmpty) {
                 setIsEmpty(false);
                 onCapture(canvas.toDataURL('image/png'));
@@ -175,7 +187,9 @@ function SignaturePadCapture({ onCapture }: { onCapture: (data: string | null) =
                 onCapture(canvas.toDataURL('image/png'));
             }
         };
-        const up = () => { drawing.current = false; };
+        const up = () => {
+ drawing.current = false; 
+};
 
         canvas.addEventListener('mousedown', down);
         canvas.addEventListener('mousemove', move);
@@ -183,6 +197,7 @@ function SignaturePadCapture({ onCapture }: { onCapture: (data: string | null) =
         canvas.addEventListener('touchstart', down, { passive: false });
         canvas.addEventListener('touchmove', move, { passive: false });
         canvas.addEventListener('touchend', up);
+
         return () => {
             canvas.removeEventListener('mousedown', down);
             canvas.removeEventListener('mousemove', move);
@@ -195,7 +210,11 @@ function SignaturePadCapture({ onCapture }: { onCapture: (data: string | null) =
 
     const clear = () => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+
+        if (!canvas) {
+return;
+}
+
         canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
         setIsEmpty(true);
         onCapture(null);
@@ -250,13 +269,21 @@ export default function ObservasiKeselamatanKonfirmasi({ record }: Props) {
 
     const handleSign = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!hasSig) return;
+
+        if (!hasSig) {
+return;
+}
+
         signForm.post(`/sap/observasi-keselamatan/${record.id}/konfirmasi`);
     };
 
     const handleReject = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!rejectForm.data.alasan.trim()) return;
+
+        if (!rejectForm.data.alasan.trim()) {
+return;
+}
+
         rejectForm.post(`/sap/observasi-keselamatan/${record.id}/tolak`);
     };
 
@@ -301,14 +328,22 @@ export default function ObservasiKeselamatanKonfirmasi({ record }: Props) {
                         {/* Checklist */}
                         {CHECKLIST_CATEGORIES.map(cat => {
                             const filled = cat.items.filter(i => record[i.key]);
-                            if (filled.length === 0) return null;
+
+                            if (filled.length === 0) {
+return null;
+}
+
                             return (
                                 <Card key={cat.label} className="p-0 overflow-hidden">
                                     <div className="bg-muted/50 px-4 py-3 border-b font-bold text-sm">{cat.label}</div>
                                     <CardContent className="p-0">
                                         {cat.items.map((item, idx) => {
                                             const val = record[item.key] as ChecklistVal;
-                                            if (!val) return null;
+
+                                            if (!val) {
+return null;
+}
+
                                             return (
                                                 <Fragment key={item.key}>
                                                     <ClItem value={val} label={item.label} />
@@ -329,7 +364,11 @@ export default function ObservasiKeselamatanKonfirmasi({ record }: Props) {
                                     {[1, 2, 3, 4].map((n, idx) => {
                                         const val = record[`ll_${n}_nilai`] as ChecklistVal;
                                         const label = (record[`ll_${n}_label`] as string) || `Item ${n}`;
-                                        if (!val) return null;
+
+                                        if (!val) {
+return null;
+}
+
                                         return (
                                             <Fragment key={n}>
                                                 <ClItem value={val} label={`7.${n} ${label}`} />

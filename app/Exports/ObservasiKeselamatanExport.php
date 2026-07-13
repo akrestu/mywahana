@@ -21,7 +21,7 @@ class ObservasiKeselamatanExport implements FromQuery, WithHeadings, WithMapping
     public function headings(): array
     {
         return [
-            'No', 'Observer', 'NIK Observer', 'Site Observer',
+            'No', 'Observer', 'NIK Observer', 'Jabatan Observer', 'Departemen Observer', 'Site Observer',
             'Penanggung Jawab', 'Tanggal', 'Lokasi Kerja', 'Jenis Pekerjaan',
             'Status Konfirmasi', 'Tgl Dikonfirmasi', 'Status Temuan',
         ];
@@ -35,6 +35,8 @@ class ObservasiKeselamatanExport implements FromQuery, WithHeadings, WithMapping
             $this->no,
             $row->user->name ?? '',
             $row->user->nik ?? '',
+            $row->user->jabatan ?? '',
+            $row->user->departemen ?? '',
             $row->user->site ? ucfirst($row->user->site) : '',
             $row->penanggungJawab->name ?? '',
             $row->tanggal?->format('d/m/Y') ?? '',

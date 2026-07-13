@@ -35,16 +35,23 @@ function SignaturePad({ onSave, onClear }: { onSave: (dataUrl: string) => void; 
     function getPos(e: React.MouseEvent | React.TouchEvent) {
         const canvas = canvasRef.current!;
         const rect = canvas.getBoundingClientRect();
+
         if ('touches' in e) {
             return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
         }
+
         return { x: (e as React.MouseEvent).clientX - rect.left, y: (e as React.MouseEvent).clientY - rect.top };
     }
 
-    function startDraw(e: React.MouseEvent | React.TouchEvent) { drawing.current = true; lastPos.current = getPos(e); }
+    function startDraw(e: React.MouseEvent | React.TouchEvent) {
+ drawing.current = true; lastPos.current = getPos(e); 
+}
 
     function draw(e: React.MouseEvent | React.TouchEvent) {
-        if (!drawing.current) return;
+        if (!drawing.current) {
+return;
+}
+
         const canvas = canvasRef.current!;
         const ctx = canvas.getContext('2d')!;
         const pos = getPos(e);
@@ -58,22 +65,42 @@ function SignaturePad({ onSave, onClear }: { onSave: (dataUrl: string) => void; 
         lastPos.current = pos;
     }
 
-    function stopDraw() { drawing.current = false; lastPos.current = null; }
+    function stopDraw() {
+ drawing.current = false; lastPos.current = null; 
+}
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
-        const onTouchStart = (e: TouchEvent) => { e.preventDefault(); drawing.current = true; lastPos.current = getTouchPos(e, canvas); };
-        const onTouchMove = (e: TouchEvent) => { e.preventDefault(); if (!drawing.current) return; const ctx = canvas.getContext('2d')!; const pos = getTouchPos(e, canvas); ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#1e293b'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(lastPos.current!.x, lastPos.current!.y); ctx.lineTo(pos.x, pos.y); ctx.stroke(); lastPos.current = pos; };
+
+        if (!canvas) {
+return;
+}
+
+        const onTouchStart = (e: TouchEvent) => {
+ e.preventDefault(); drawing.current = true; lastPos.current = getTouchPos(e, canvas); 
+};
+        const onTouchMove = (e: TouchEvent) => {
+ e.preventDefault();
+
+ if (!drawing.current) {
+return;
+}
+
+ const ctx = canvas.getContext('2d')!; const pos = getTouchPos(e, canvas); ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#1e293b'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(lastPos.current!.x, lastPos.current!.y); ctx.lineTo(pos.x, pos.y); ctx.stroke(); lastPos.current = pos; 
+};
         const onTouchEnd = () => stopDraw();
         canvas.addEventListener('touchstart', onTouchStart, { passive: false });
         canvas.addEventListener('touchmove', onTouchMove, { passive: false });
         canvas.addEventListener('touchend', onTouchEnd);
-        return () => { canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); };
+
+        return () => {
+ canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); 
+};
     }, []);
 
     function getTouchPos(e: TouchEvent, canvas: HTMLCanvasElement) {
         const rect = canvas.getBoundingClientRect();
+
         return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
     }
 
@@ -82,7 +109,9 @@ function SignaturePad({ onSave, onClear }: { onSave: (dataUrl: string) => void; 
         onClear();
     }
 
-    function save() { onSave(canvasRef.current!.toDataURL('image/png')); }
+    function save() {
+ onSave(canvasRef.current!.toDataURL('image/png')); 
+}
 
     return (
         <div className="flex flex-col gap-3">
@@ -119,7 +148,10 @@ export default function KomunikasiJsaKonfirmasi({ record }: Props) {
     const [processing, setProcessing] = useState(false);
 
     function handleKonfirmasi() {
-        if (!sigSaved || !signature) return;
+        if (!sigSaved || !signature) {
+return;
+}
+
         setProcessing(true);
         router.post(`/sap/komunikasi-jsa/${record.id}/konfirmasi`, { tl_signature: signature }, {
             onFinish: () => setProcessing(false),
@@ -127,7 +159,10 @@ export default function KomunikasiJsaKonfirmasi({ record }: Props) {
     }
 
     function handleTolak() {
-        if (!confirm('Yakin ingin menolak form komunikasi JSA ini?')) return;
+        if (!confirm('Yakin ingin menolak form komunikasi JSA ini?')) {
+return;
+}
+
         setProcessing(true);
         router.post(`/sap/komunikasi-jsa/${record.id}/tolak`, {}, {
             onFinish: () => setProcessing(false),
@@ -231,8 +266,12 @@ export default function KomunikasiJsaKonfirmasi({ record }: Props) {
                         </div>
                     ) : (
                         <SignaturePad
-                            onSave={sig => { setSignature(sig); setSigSaved(true); }}
-                            onClear={() => { setSignature(''); setSigSaved(false); }}
+                            onSave={sig => {
+ setSignature(sig); setSigSaved(true); 
+}}
+                            onClear={() => {
+ setSignature(''); setSigSaved(false); 
+}}
                         />
                     )}
                 </div>

@@ -1,29 +1,23 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, ClipboardCheck, MapPin, Wrench } from 'lucide-react';
-import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Fragment, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { UploadOverlay } from '@/components/upload-overlay';
 import { cn } from '@/lib/utils';
 
 type UserInfo = { name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
-type StaffUser = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
-type Props = { user: UserInfo; staffUsers: StaffUser[] };
-
-const LOKASI_OPTIONS = [
-    'Tambang / Pit', 'Jalan Hauling OB', 'Jalan Hauling COAL', 'Disposal', 'Sump',
-    'Area Parkir', 'Pit Stop / Area Refueling', 'Workshop', 'Warehouse', 'Laydown B3',
-    'TPS Limbah B3', 'Office', 'Stock Room', 'Crusher Stock Pile', 'Mess', 'Katering',
-    'Jalan Warga / Raya', 'Area Vendor', 'Water Fill', 'Washing Pad',
-    'Area Pembagian Nasi', 'Unit/Peralatan', 'Lainnya',
-];
+type StaffUser = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null; sites: string[] };
+type SiteOption = { value: string; label: string; locations?: string[] | null };
+type Props = { user: UserInfo; staffUsers: StaffUser[]; sites: SiteOption[] };
 
 type ChecklistVal = 'aman' | 'beresiko' | '';
 
@@ -110,6 +104,7 @@ const CHECKLIST_CATEGORIES = [
 ] as const;
 
 type FormData = {
+    site: string;
     penanggung_jawab_id: string;
     tanggal: string;
     jenis_pekerjaan: string;
@@ -215,14 +210,17 @@ function ChecklistToggle({
     );
 }
 
-export default function ObservasiKeselamatanCreate({ user, staffUsers }: Props) {
+export default function ObservasiKeselamatanCreate({ user, staffUsers, sites }: Props) {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
     const [step, setStep] = useState(0);
-    useEffect(() => { window.scrollTo(0, 0); }, [step]);
+    useEffect(() => {
+ window.scrollTo(0, 0); 
+}, [step]);
     const [pjOpen, setPjOpen] = useState(false);
     const [lokasiOpen, setLokasiOpen] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm<FormData>({
+        site: sites.some(site => site.value === user.site) ? user.site! : (sites[0]?.value ?? ''),
         penanggung_jawab_id: '',
         tanggal: today,
         jenis_pekerjaan: '',
@@ -258,15 +256,21 @@ export default function ObservasiKeselamatanCreate({ user, staffUsers }: Props) 
     const filledCount = ALL_CL_KEYS.filter(k => data[k] !== '').length;
     const totalCount = ALL_CL_KEYS.length;
 
-    const step1OK = !!(data.tanggal && data.jenis_pekerjaan && data.lokasi_kerja);
+    const step1OK = !!(data.site && data.tanggal && data.jenis_pekerjaan && data.lokasi_kerja);
 
-    const selectedPj = staffUsers.find(u => String(u.id) === data.penanggung_jawab_id);
+    const availableStaffUsers = staffUsers.filter(u => u.sites.includes(data.site));
+    const selectedPj = availableStaffUsers.find(u => String(u.id) === data.penanggung_jawab_id);
+    const lokasiOptions = sites.find((site) => site.value === data.site)?.locations ?? [];
 
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!step1OK) return;
+
+        if (!step1OK) {
+return;
+}
+
         setUploadProgress(0);
         post('/sap/observasi-keselamatan', {
             onProgress: (e) => setUploadProgress(e.percentage ?? null),
@@ -331,6 +335,28 @@ export default function ObservasiKeselamatanCreate({ user, staffUsers }: Props) 
                 {/* ── STEP 1: Informasi Umum ── */}
                 {step === 0 && (
                     <div className="flex flex-col gap-5">
+                        <div className="flex flex-col gap-2">
+                            <Label className="text-base font-bold">Site Observasi <span className="text-destructive">*</span></Label>
+                            <Select
+                                value={data.site}
+                                onValueChange={(site) => {
+                                    setData('site', site);
+                                    setData('lokasi_kerja', '');
+                                    setData('penanggung_jawab_id', '');
+                                }}
+                            >
+                                <SelectTrigger className="h-12 w-full text-base">
+                                    <SelectValue placeholder="Pilih site observasi" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {sites.map((site) => (
+                                        <SelectItem key={site.value} value={site.value}>{site.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {errors.site && <p className="text-sm text-destructive">{errors.site}</p>}
+                        </div>
+
                         {/* Tanggal */}
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="tanggal" className="text-base font-bold">Tanggal <span className="text-destructive">*</span></Label>
@@ -364,11 +390,13 @@ export default function ObservasiKeselamatanCreate({ user, staffUsers }: Props) 
                                         <CommandList>
                                             <CommandEmpty>Tidak ditemukan.</CommandEmpty>
                                             <CommandGroup>
-                                                {staffUsers.map(u => (
+                                                {availableStaffUsers.map(u => (
                                                     <CommandItem
                                                         key={u.id}
                                                         value={`${u.name} ${u.nik ?? ''}`}
-                                                        onSelect={() => { setData('penanggung_jawab_id', String(u.id)); setPjOpen(false); }}
+                                                        onSelect={() => {
+ setData('penanggung_jawab_id', String(u.id)); setPjOpen(false); 
+}}
                                                     >
                                                         <Check size={16} className={cn('mr-2', String(u.id) === data.penanggung_jawab_id ? 'opacity-100' : 'opacity-0')} />
                                                         <span>{u.name}</span>
@@ -422,8 +450,10 @@ export default function ObservasiKeselamatanCreate({ user, staffUsers }: Props) 
                                         />
                                         <CommandList>
                                             <CommandGroup>
-                                                {LOKASI_OPTIONS.map(l => (
-                                                    <CommandItem key={l} value={l} onSelect={() => { setData('lokasi_kerja', l); setLokasiOpen(false); }}>
+                                                {lokasiOptions.map(l => (
+                                                    <CommandItem key={l} value={l} onSelect={() => {
+ setData('lokasi_kerja', l); setLokasiOpen(false); 
+}}>
                                                         <Check size={16} className={cn('mr-2', data.lokasi_kerja === l ? 'opacity-100' : 'opacity-0')} />
                                                         {l}
                                                     </CommandItem>
@@ -510,6 +540,7 @@ export default function ObservasiKeselamatanCreate({ user, staffUsers }: Props) 
                                 {([1, 2, 3, 4] as const).map((n, idx) => {
                                     const labelKey = `ll_${n}_label` as keyof FormData;
                                     const nilaiKey = `ll_${n}_nilai` as keyof FormData;
+
                                     return (
                                         <Fragment key={n}>
                                             <div className={cn(
@@ -569,6 +600,7 @@ export default function ObservasiKeselamatanCreate({ user, staffUsers }: Props) 
                             <div className="grid grid-cols-1 gap-2">
                                 {STATUS_TEMUAN_OPTIONS.map(({ value, label }) => {
                                     const checked = data.status_temuan.includes(value);
+
                                     return (
                                         <button
                                             key={value}

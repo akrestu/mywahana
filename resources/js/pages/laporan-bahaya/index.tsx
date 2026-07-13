@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { AlertTriangle, CalendarDays, ChevronRight, MapPin, Plus, ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
 import { RiskBadge } from '@/components/risk-badge';
 import { TindakanBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
@@ -46,10 +46,12 @@ const riskBg: Record<string, string> = {
 
 function groupByMonth(records: LaporanRecord[]) {
     const groups: Record<string, LaporanRecord[]> = {};
+
     for (const r of records) {
         const key = new Date(r.tanggal).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
         (groups[key] ??= []).push(r);
     }
+
     return Object.entries(groups);
 }
 

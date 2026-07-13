@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Bell, BookOpen, ClipboardCheck, ClipboardList, Home, LogOut, TriangleAlert, User } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import {  useState } from 'react';
+import type {ReactNode} from 'react';
 import { Separator } from '@/components/ui/separator';
 import { useAutoHideNav } from '@/hooks/use-auto-hide-nav';
 import { usePushNotification } from '@/hooks/use-push-notification';
@@ -88,7 +89,10 @@ export default function MobileLayout({ children, title, showBack, backHref }: Pr
     const navVisible = useAutoHideNav(url);
 
     const isActive = (href: string) => {
-        if (href === '/home') return url === '/home';
+        if (href === '/home') {
+return url === '/home';
+}
+
         return url.startsWith(href);
     };
 
@@ -155,8 +159,11 @@ export default function MobileLayout({ children, title, showBack, backHref }: Pr
                                                             router.post(`/notifications/${n.id}/read`, {}, {
                                                                 preserveScroll: true,
                                                                 onSuccess: () => {
-                                                                    if (n.url) router.visit(n.url);
-                                                                    else setShowNotif(false);
+                                                                    if (n.url) {
+router.visit(n.url);
+} else {
+setShowNotif(false);
+}
                                                                 },
                                                             });
                                                         }}
@@ -195,6 +202,7 @@ export default function MobileLayout({ children, title, showBack, backHref }: Pr
                     {navItems.map((item) => {
                         const Icon = item.icon;
                         const active = isActive(item.href);
+
                         return (
                             <Link
                                 key={item.href}

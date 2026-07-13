@@ -1,5 +1,5 @@
-import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 interface Props {
     open: boolean;
@@ -8,7 +8,9 @@ interface Props {
 }
 
 export function UploadOverlay({ open, progress, label = 'Menyimpan...' }: Props) {
-    if (!open) return null;
+    if (!open) {
+return null;
+}
 
     const pct = Math.min(Math.round(progress ?? 0), 100);
     const hasProgress = progress != null && progress > 0;

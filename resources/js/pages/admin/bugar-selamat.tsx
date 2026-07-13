@@ -1,8 +1,8 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Download, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { KelayakanBadge } from '@/components/status-badge';
 import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
+import { KelayakanBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -74,6 +74,7 @@ const formatTanggalShort = (iso: string) =>
 const addDays = (iso: string, n: number) => {
     const d = new Date(iso);
     d.setDate(d.getDate() + n);
+
     return d.toISOString().split('T')[0];
 };
 
@@ -81,6 +82,7 @@ const addMonths = (iso: string, n: number) => {
     const d = new Date(iso);
     d.setMonth(d.getMonth() + n);
     d.setDate(1);
+
     return d.toISOString().split('T')[0];
 };
 
@@ -188,6 +190,7 @@ function HarianView({ tanggal, users, entries, summary, filters, sites }: Extrac
                 <div className="space-y-2">
                     {users.map((user) => {
                         const entry = entries[user.id.toString()];
+
                         return (
                             <Card key={user.id} className={entry
                                 ? entry.status === 'layak'    ? 'border-l-4 border-l-green-500'
@@ -324,6 +327,7 @@ function KalenderView({ tanggal, users, dates, entries, summary, filters, sites 
                                     const dayName = d.toLocaleDateString('id-ID', { weekday: 'short' });
                                     const isSun = d.getDay() === 0;
                                     const today = isToday(date);
+
                                     return (
                                         <th
                                             key={date}
@@ -345,6 +349,7 @@ function KalenderView({ tanggal, users, dates, entries, summary, filters, sites 
                                     </td>
                                     {displayDates.map((date) => {
                                         const entry = entries[`${user.id}_${date}`];
+
                                         return (
                                             <td key={date} className={`text-center py-2 px-1 ${isToday(date) ? 'bg-primary/5' : ''}`}>
                                                 {entry ? (
@@ -381,21 +386,34 @@ function DaftarView({ records, filters, summary, sites }: Extract<Props, { view:
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
             const next = new Set(prev);
-            if (next.has(id)) next.delete(id); else next.add(id);
+
+            if (next.has(id)) {
+next.delete(id);
+} else {
+next.add(id);
+}
+
             return next;
         });
     };
     const toggleSelectAll = () => {
-        if (selectedIds.size === records.data.length) setSelectedIds(new Set());
-        else setSelectedIds(new Set(records.data.map(r => r.id)));
+        if (selectedIds.size === records.data.length) {
+setSelectedIds(new Set());
+} else {
+setSelectedIds(new Set(records.data.map(r => r.id)));
+}
     };
-    const exitSelectMode = () => { setSelectMode(false); setSelectedIds(new Set()); };
+    const exitSelectMode = () => {
+ setSelectMode(false); setSelectedIds(new Set()); 
+};
 
     const handleBatchDelete = () => {
         setBatchDeleting(true);
         router.delete('/admin/bugar-selamat/batch', {
             data: { ids: Array.from(selectedIds) },
-            onFinish: () => { setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); },
+            onFinish: () => {
+ setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); 
+},
         });
     };
 
@@ -421,20 +439,39 @@ function DaftarView({ records, filters, summary, sites }: Extract<Props, { view:
     };
 
     const confirmDelete = () => {
-        if (!toDelete) return;
+        if (!toDelete) {
+return;
+}
+
         setDeleting(true);
         router.delete(`/admin/bugar-selamat/${toDelete.id}`, {
-            onFinish: () => { setDeleting(false); setToDelete(null); },
+            onFinish: () => {
+ setDeleting(false); setToDelete(null); 
+},
         });
     };
 
     const exportUrl = `/admin/bugar-selamat/export${(() => {
         const p = new URLSearchParams();
-        if (filters.search) p.set('search', filters.search);
-        if (filters.site) p.set('site', filters.site);
-        if (filters.status) p.set('status', filters.status);
-        if (filters.periode) p.set('periode', filters.periode);
+
+        if (filters.search) {
+p.set('search', filters.search);
+}
+
+        if (filters.site) {
+p.set('site', filters.site);
+}
+
+        if (filters.status) {
+p.set('status', filters.status);
+}
+
+        if (filters.periode) {
+p.set('periode', filters.periode);
+}
+
         const qs = p.toString();
+
         return qs ? '?' + qs : '';
     })()}`;
 
@@ -679,6 +716,7 @@ export default function AdminBugarSelamat(props: Props) {
                 <div className="flex rounded-lg border bg-muted/30 p-1 gap-1">
                     {(['harian', 'kalender', 'daftar'] as const).map((v) => {
                         const labels = { harian: 'Monitoring Harian', kalender: 'Kalender', daftar: 'Riwayat' };
+
                         return (
                             <button
                                 key={v}

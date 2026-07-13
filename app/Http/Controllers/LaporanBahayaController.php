@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\LaporanBahaya;
 use App\Models\LaporanBahayaReview;
+use App\Models\Site;
+use App\Models\User;
 use App\Notifications\LaporanBahayaPicDitugaskan;
 use App\Notifications\LaporanBahayaStatusDiperbarui;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use App\Services\BadgeService;
 use Inertia\Inertia;
 
@@ -43,12 +46,26 @@ class LaporanBahayaController extends Controller
 
     public function create(Request $request)
     {
+        $user = $request->user()->load('sites:id,value');
+        $siteValues = $user->assignedSiteValues();
+
         return Inertia::render('laporan-bahaya/create', [
-            'user' => $request->user()->only('name', 'nik', 'jabatan', 'site'),
-            'pics' => \App\Models\User::where('site', $request->user()->site)
+            'user' => $user->only('name', 'nik', 'jabatan', 'site'),
+            'sites' => Site::whereIn('value', $siteValues)->orderBy('label')->get(['value', 'label', 'locations']),
+            'pics' => User::with('sites:id,value')
                 ->whereIn('participation_level', ['staff', 'srstaff'])
+                ->where(function ($query) use ($siteValues) {
+                    $query->whereIn('site', $siteValues)
+                        ->orWhereHas('sites', fn ($sites) => $sites->whereIn('value', $siteValues));
+                })
                 ->orderBy('name')
-                ->get(['id', 'name', 'jabatan']),
+                ->get(['id', 'name', 'jabatan', 'site'])
+                ->map(fn (User $pic) => [
+                    'id' => $pic->id,
+                    'name' => $pic->name,
+                    'jabatan' => $pic->jabatan,
+                    'sites' => $pic->assignedSiteValues(),
+                ]),
         ]);
     }
 
@@ -56,6 +73,7 @@ class LaporanBahayaController extends Controller
     {
         $validated = $request->validate([
             'tanggal'             => ['required', 'date'],
+            'site'                => ['required', 'string', Rule::exists('sites', 'value')],
             'waktu_pengamatan'    => ['required', 'date_format:H:i'],
             'kategori'            => ['required', 'in:KTA,TTA'],
             'klasifikasi_bahaya'  => ['required', 'string', 'max:255'],
@@ -71,6 +89,20 @@ class LaporanBahayaController extends Controller
             'foto'                => ['nullable', 'image', 'max:5120'],
         ]);
 
+        $reporter = $request->user()->load('sites:id,value');
+        abort_unless(in_array($validated['site'], $reporter->assignedSiteValues(), true), 403);
+
+        $picIsEligible = User::whereKey($validated['pic_user_id'])
+            ->whereIn('participation_level', ['staff', 'srstaff'])
+            ->assignedToSite($validated['site'])
+            ->exists();
+
+        if (! $picIsEligible) {
+            return back()->withErrors([
+                'pic_user_id' => 'PIC harus ditugaskan pada site pelaporan yang dipilih.',
+            ]);
+        }
+
         $fotoPath = null;
         if ($request->hasFile('foto')) {
             $userId = $request->user()->id;
@@ -82,7 +114,7 @@ class LaporanBahayaController extends Controller
             $fotoPath = $relativePath;
         }
 
-        $record = $request->user()->laporanBahayas()->create([
+        $record = $reporter->laporanBahayas()->create([
             ...$validated,
             'foto_path' => $fotoPath,
         ]);

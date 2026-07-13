@@ -32,6 +32,7 @@ export function NavMain({ groups, items }: { groups?: NavGroup[]; items?: NavIte
                     <SidebarMenu>
                         {group.items.map((item) => {
                             const active = isCurrentUrl(item.href);
+
                             return (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton

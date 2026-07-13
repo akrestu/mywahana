@@ -18,10 +18,12 @@ const tindakanConfig: Record<StatusTindakan, { label: string; className: string 
 
 export function KelayakanBadge({ status }: { status: Kelayakan }) {
     const { label, className } = kelayakanConfig[status] ?? kelayakanConfig.layak;
+
     return <Badge variant="outline" className={className}>{label}</Badge>;
 }
 
 export function TindakanBadge({ status }: { status: StatusTindakan }) {
     const { label, className } = tindakanConfig[status] ?? tindakanConfig.pending;
+
     return <Badge variant="outline" className={className}>{label}</Badge>;
 }

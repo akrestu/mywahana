@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { CalendarDays, ChevronRight, ClipboardCheck, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -25,10 +25,12 @@ type Props = { myRecords: Paginated; pendingKonfirmasi: Paginated; confirmedAsPJ
 
 function groupByMonth(records: OKRecord[]) {
     const groups: Record<string, OKRecord[]> = {};
+
     for (const r of records) {
         const key = new Date(r.tanggal).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
         (groups[key] ??= []).push(r);
     }
+
     return Object.entries(groups);
 }
 
@@ -36,21 +38,35 @@ function StatusBadge({ status }: { status: OKRecord['status'] }) {
     if (status === 'dikonfirmasi') {
         return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-400">Dikonfirmasi</Badge>;
     }
+
     if (status === 'ditolak') {
         return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400">Ditolak</Badge>;
     }
+
     return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-100 dark:bg-yellow-950/40 dark:text-yellow-400">Menunggu Konfirmasi</Badge>;
 }
 
 function recordBarColor(status: OKRecord['status']) {
-    if (status === 'dikonfirmasi') return 'bg-green-500';
-    if (status === 'ditolak') return 'bg-red-500';
+    if (status === 'dikonfirmasi') {
+return 'bg-green-500';
+}
+
+    if (status === 'ditolak') {
+return 'bg-red-500';
+}
+
     return 'bg-yellow-500';
 }
 
 function recordBgColor(status: OKRecord['status']) {
-    if (status === 'dikonfirmasi') return 'bg-green-50/30 dark:bg-green-950/10';
-    if (status === 'ditolak') return 'bg-red-50/30 dark:bg-red-950/10';
+    if (status === 'dikonfirmasi') {
+return 'bg-green-50/30 dark:bg-green-950/10';
+}
+
+    if (status === 'ditolak') {
+return 'bg-red-50/30 dark:bg-red-950/10';
+}
+
     return 'bg-yellow-50/30 dark:bg-yellow-950/10';
 }
 

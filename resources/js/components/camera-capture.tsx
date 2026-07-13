@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
 import { Camera, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Props {
     open: boolean;
@@ -20,9 +20,12 @@ export function CameraCapture({ open, onCapture, onClose }: Props) {
             stopStream();
             setReady(false);
             setError(null);
+
             return;
         }
+
         startCamera();
+
         return stopStream;
     }, [open]);
 
@@ -33,6 +36,7 @@ export function CameraCapture({ open, onCapture, onClose }: Props) {
                 audio: false,
             });
             streamRef.current = stream;
+
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
                 videoRef.current.onloadedmetadata = () => {
@@ -53,7 +57,11 @@ export function CameraCapture({ open, onCapture, onClose }: Props) {
     function capture() {
         const video = videoRef.current;
         const canvas = canvasRef.current;
-        if (!video || !canvas || !ready || capturing) return;
+
+        if (!video || !canvas || !ready || capturing) {
+return;
+}
+
         setCapturing(true);
         const MAX_WIDTH = 1280;
         const scale = video.videoWidth > MAX_WIDTH ? MAX_WIDTH / video.videoWidth : 1;
@@ -62,13 +70,19 @@ export function CameraCapture({ open, onCapture, onClose }: Props) {
         canvas.getContext('2d')!.drawImage(video, 0, 0, canvas.width, canvas.height);
         canvas.toBlob(blob => {
             setCapturing(false);
-            if (!blob) return;
+
+            if (!blob) {
+return;
+}
+
             const file = new File([blob], `foto_${Date.now()}.jpg`, { type: 'image/jpeg' });
             onCapture(file);
         }, 'image/jpeg', 0.82);
     }
 
-    if (!open) return null;
+    if (!open) {
+return null;
+}
 
     return (
         <div className="fixed inset-0 z-[999] bg-black flex flex-col" style={{ touchAction: 'none' }}>

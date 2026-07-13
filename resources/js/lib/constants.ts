@@ -32,5 +32,6 @@ export const TREND_SERIES = [
 
 export function fmtMonth(month: string): string {
     const [y, m] = month.split('-');
+
     return new Date(Number(y), Number(m) - 1).toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
 }

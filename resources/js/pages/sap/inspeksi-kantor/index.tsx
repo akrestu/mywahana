@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { Building2, CalendarDays, ChevronRight, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -27,15 +27,20 @@ type Props = { myRecords: Paginated; pendingReInspeksi: Paginated; selesaiAsRI: 
 
 function groupByMonth(records: Record[]) {
     const groups: { [k: string]: Record[] } = {};
+
     for (const r of records) {
         const key = new Date(r.tanggal).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
         (groups[key] ??= []).push(r);
     }
+
     return Object.entries(groups);
 }
 
 function RiskBadge({ level, pct }: { level: Record['risk_level']; pct: number | null }) {
-    if (!level || pct === null) return null;
+    if (!level || pct === null) {
+return null;
+}
+
     const cfg = {
         L:  { label: 'Baik',         cls: 'bg-green-100 text-green-700 border-green-300' },
         M:  { label: 'Cukup',        cls: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
@@ -43,6 +48,7 @@ function RiskBadge({ level, pct }: { level: Record['risk_level']; pct: number | 
         VH: { label: 'Perlu Tindakan', cls: 'bg-red-100 text-red-700 border-red-300' },
     };
     const { label, cls } = cfg[level];
+
     return (
         <Badge className={cn('hover:opacity-100', cls)}>
             {pct}% — {label}
@@ -51,19 +57,32 @@ function RiskBadge({ level, pct }: { level: Record['risk_level']; pct: number | 
 }
 
 function StatusBadge({ status }: { status: Record['status'] }) {
-    if (status === 'selesai') return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">Selesai</Badge>;
-    if (status === 'ditolak') return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100">Ditolak</Badge>;
+    if (status === 'selesai') {
+return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">Selesai</Badge>;
+}
+
+    if (status === 'ditolak') {
+return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100">Ditolak</Badge>;
+}
+
     return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-100">Menunggu Re-Inspeksi</Badge>;
 }
 
 function barColor(status: Record['status']) {
-    if (status === 'selesai') return 'bg-green-500';
-    if (status === 'ditolak') return 'bg-red-500';
+    if (status === 'selesai') {
+return 'bg-green-500';
+}
+
+    if (status === 'ditolak') {
+return 'bg-red-500';
+}
+
     return 'bg-yellow-500';
 }
 
 function RecordList({ records, asRI = false }: { records: Paginated; asRI?: boolean }) {
     const grouped = groupByMonth(records.data);
+
     if (records.data.length === 0) {
         return (
             <div className="flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed py-12 text-center px-6">
@@ -74,6 +93,7 @@ function RecordList({ records, asRI = false }: { records: Paginated; asRI?: bool
             </div>
         );
     }
+
     return (
         <div className="flex flex-col gap-5">
             {grouped.map(([month, items]) => (

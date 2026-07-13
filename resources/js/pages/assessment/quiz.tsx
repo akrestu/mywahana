@@ -1,8 +1,8 @@
 import { Head, router } from '@inertiajs/react';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const DURATION_SECONDS = 45 * 60;
@@ -36,15 +36,20 @@ const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 export default function AssessmentQuiz({ session, questions }: Props) {
     const [answers, setAnswers] = useState<Record<number, number>>(() => {
         const init: Record<number, number> = {};
+
         for (const q of questions) {
-            if (q.jawaban_user != null) init[q.session_question_id] = q.jawaban_user;
+            if (q.jawaban_user != null) {
+init[q.session_question_id] = q.jawaban_user;
+}
         }
+
         return init;
     });
     const [submitting, setSubmitting] = useState(false);
 
     const calcRemaining = useCallback(() => {
         const elapsed = Math.floor((Date.now() - new Date(session.started_at).getTime()) / 1000);
+
         return Math.max(0, DURATION_SECONDS - elapsed);
     }, [session.started_at]);
 
@@ -55,6 +60,7 @@ export default function AssessmentQuiz({ session, questions }: Props) {
         const tick = setInterval(() => {
             const secs = calcRemaining();
             setRemaining(secs);
+
             if (secs === 0 && !submittingRef.current) {
                 submittingRef.current = true;
                 setSubmitting(true);
@@ -64,11 +70,14 @@ export default function AssessmentQuiz({ session, questions }: Props) {
                 clearInterval(tick);
             }
         }, 1000);
+
         return () => clearInterval(tick);
     }, [calcRemaining, session.id]);
 
     const answersRef = useRef(answers);
-    useEffect(() => { answersRef.current = answers; }, [answers]);
+    useEffect(() => {
+ answersRef.current = answers; 
+}, [answers]);
 
     const answeredCount = Object.keys(answers).length;
     const total = session.total_questions;
@@ -79,8 +88,11 @@ export default function AssessmentQuiz({ session, questions }: Props) {
 
     function handleSubmit() {
         if (answeredCount < total) {
-            if (!confirm(`Masih ada ${total - answeredCount} soal yang belum dijawab. Lanjutkan submit?`)) return;
+            if (!confirm(`Masih ada ${total - answeredCount} soal yang belum dijawab. Lanjutkan submit?`)) {
+return;
+}
         }
+
         setSubmitting(true);
         router.post(`/assessment/${session.id}/submit`, { answers }, {
             onFinish: () => setSubmitting(false),
@@ -123,6 +135,7 @@ export default function AssessmentQuiz({ session, questions }: Props) {
                 {/* Questions */}
                 {questions.map((q, idx) => {
                     const options = [q.jawaban_1, q.jawaban_2, q.jawaban_3, q.jawaban_4];
+
                     return (
                         <Card key={q.session_question_id} className="p-4 space-y-3">
                             <p className="text-sm font-medium leading-snug">
@@ -133,6 +146,7 @@ export default function AssessmentQuiz({ session, questions }: Props) {
                                 {options.map((opt, i) => {
                                     const val = i + 1;
                                     const selected = answers[q.session_question_id] === val;
+
                                     return (
                                         <button
                                             key={val}

@@ -21,7 +21,7 @@ class InspeksiWorkshopExport implements FromQuery, WithHeadings, WithMapping, Sh
     public function headings(): array
     {
         return [
-            'No', 'Inspektor', 'NIK', 'Site',
+            'No', 'Inspektor', 'NIK', 'Jabatan Inspektor', 'Departemen Inspektor', 'Site',
             'Re-Inspektor', 'Tanggal', 'Project Site', 'Departemen',
             'Persentase', 'Risk Level', 'Status', 'Peserta Inspeksi', 'Tindakan Perbaikan',
         ];
@@ -47,6 +47,8 @@ class InspeksiWorkshopExport implements FromQuery, WithHeadings, WithMapping, Sh
             $this->no,
             $row->user->name ?? '',
             $row->user->nik ?? '',
+            $row->user->jabatan ?? '',
+            $row->user->departemen ?? '',
             $row->user->site ? ucfirst($row->user->site) : '',
             $row->reInspektor->name ?? '',
             $row->tanggal?->format('d/m/Y') ?? '',

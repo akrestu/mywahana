@@ -10,9 +10,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Textarea } from '@/components/ui/textarea';
 import { UploadOverlay } from '@/components/upload-overlay';
 import { cn } from '@/lib/utils';
@@ -42,15 +42,25 @@ type FormData = {
 
 // Boolean fields sent as '1'/'0' — required by Laravel boolean validation
 function computeStatus(data: FormData) {
-    if (!data.jam_tidur) return null;
+    if (!data.jam_tidur) {
+return null;
+}
+
     const danger =
         data.kondisi_sakit    === '1' ||
         data.minum_obat       === '1' ||
         data.masalah_pribadi  === '1' ||
         data.pengaruh_alkohol === '1' ||
         data.siap_bekerja     === '0';
-    if (data.jam_tidur === '<5' || danger) return 'dilarang' as const;
-    if (data.jam_tidur === '5-6') return 'catatan' as const;
+
+    if (data.jam_tidur === '<5' || danger) {
+return 'dilarang' as const;
+}
+
+    if (data.jam_tidur === '5-6') {
+return 'catatan' as const;
+}
+
     return 'layak' as const;
 }
 
@@ -111,6 +121,7 @@ function SignaturePad({ onChange }: { onChange: (filled: boolean) => void }) {
 
     const pos = (e: MouseEvent | Touch, canvas: HTMLCanvasElement) => {
         const r = canvas.getBoundingClientRect();
+
         return {
             x: (e.clientX - r.left) * (canvas.width / r.width),
             y: (e.clientY - r.top) * (canvas.height / r.height),
@@ -119,7 +130,11 @@ function SignaturePad({ onChange }: { onChange: (filled: boolean) => void }) {
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+
+        if (!canvas) {
+return;
+}
+
         const ctx = canvas.getContext('2d')!;
         ctx.strokeStyle = document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#0f172a';
         ctx.lineWidth = 3;
@@ -134,14 +149,22 @@ function SignaturePad({ onChange }: { onChange: (filled: boolean) => void }) {
             ctx.moveTo(p.x, p.y);
         };
         const move = (e: MouseEvent | TouchEvent) => {
-            if (!drawing.current) return;
+            if (!drawing.current) {
+return;
+}
+
             e.preventDefault();
             const p = pos('touches' in e ? e.touches[0] : e, canvas);
             ctx.lineTo(p.x, p.y);
             ctx.stroke();
-            if (isEmpty) { setIsEmpty(false); onChange(true); }
+
+            if (isEmpty) {
+ setIsEmpty(false); onChange(true); 
+}
         };
-        const up = () => { drawing.current = false; };
+        const up = () => {
+ drawing.current = false; 
+};
 
         canvas.addEventListener('mousedown', down);
         canvas.addEventListener('mousemove', move);
@@ -149,6 +172,7 @@ function SignaturePad({ onChange }: { onChange: (filled: boolean) => void }) {
         canvas.addEventListener('touchstart', down, { passive: false });
         canvas.addEventListener('touchmove', move, { passive: false });
         canvas.addEventListener('touchend', up);
+
         return () => {
             canvas.removeEventListener('mousedown', down);
             canvas.removeEventListener('mousemove', move);
@@ -161,7 +185,11 @@ function SignaturePad({ onChange }: { onChange: (filled: boolean) => void }) {
 
     const clear = () => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+
+        if (!canvas) {
+return;
+}
+
         canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
         setIsEmpty(true);
         onChange(false);
@@ -201,7 +229,9 @@ function SignaturePad({ onChange }: { onChange: (filled: boolean) => void }) {
 export default function BugarSelamatCreate({ user }: Props) {
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
     const [step, setStep] = useState(0);
-    useEffect(() => { window.scrollTo(0, 0); }, [step]);
+    useEffect(() => {
+ window.scrollTo(0, 0); 
+}, [step]);
     const [hasSig, setHasSig] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm<FormData>({
@@ -223,7 +253,11 @@ export default function BugarSelamatCreate({ user }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!step1OK || !step2OK || !hasSig) return;
+
+        if (!step1OK || !step2OK || !hasSig) {
+return;
+}
+
         post('/bugar-selamat', {
             onProgress: () => {},
             onFinish: () => {},
@@ -357,6 +391,7 @@ export default function BugarSelamatCreate({ user }: Props) {
                                     { value: 'Malam', label: 'Shift II', Icon: Moon, iconCls: 'text-indigo-500' },
                                 ].map(({ value, label, sub, Icon, iconCls }) => {
                                     const selected = data.shift === value;
+
                                     return (
                                         <button
                                             key={value} type="button"
@@ -389,6 +424,7 @@ export default function BugarSelamatCreate({ user }: Props) {
                             <div className="grid grid-cols-7 gap-2">
                                 {Array.from({ length: 14 }, (_, i) => i + 1).map((n) => {
                                     const sel = data.hari_ke === String(n);
+
                                     return (
                                         <button
                                             key={n} type="button"
@@ -439,6 +475,7 @@ export default function BugarSelamatCreate({ user }: Props) {
                                     { value: '>6',  label: '> 6 jam', sub: 'Optimal', selCls: 'border-green-400 bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300 shadow-sm' },
                                 ].map(({ value, label, sub, selCls }) => {
                                     const sel = data.jam_tidur === value;
+
                                     return (
                                         <button
                                             key={value} type="button"
@@ -462,6 +499,7 @@ export default function BugarSelamatCreate({ user }: Props) {
                         <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Pertanyaan Kondisi</p>
                         {QUESTIONS.map(({ key, label, hint, Icon, dangerOn }) => {
                             const val = data[key];
+
                             return (
                                 <div key={key} className={cn(
                                     'rounded-2xl border-2 p-4 transition-all',
@@ -482,6 +520,7 @@ export default function BugarSelamatCreate({ user }: Props) {
                                         {(['1', '0'] as const).map((v) => {
                                             const isDanger = dangerOn === v;
                                             const sel = val === v;
+
                                             return (
                                                 <button
                                                     key={v} type="button"
@@ -520,6 +559,7 @@ export default function BugarSelamatCreate({ user }: Props) {
                         {status && (() => {
                             const cfg = STATUS_CFG[status];
                             const SIcon = cfg.Icon;
+
                             return (
                                 <div className={cn('flex flex-col items-center gap-4 rounded-2xl border-2 py-8 text-center', cfg.bg)}>
                                     <div className="flex size-16 items-center justify-center rounded-full bg-white shadow-sm dark:bg-background">

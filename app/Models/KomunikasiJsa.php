@@ -11,6 +11,7 @@ class KomunikasiJsa extends Model
 
     protected $fillable = [
         'user_id',
+        'site',
         'team_leader_id',
         'tanggal',
         'lokasi',

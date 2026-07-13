@@ -11,6 +11,7 @@ class ObservasiKeselamatan extends Model
 
     protected $fillable = [
         'user_id',
+        'site',
         'penanggung_jawab_id',
         'tanggal',
         'jenis_pekerjaan',

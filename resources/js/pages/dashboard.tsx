@@ -15,8 +15,8 @@ import {
     X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { KelayakanBadge } from '@/components/status-badge';
 import { RiskBadge } from '@/components/risk-badge';
+import { KelayakanBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -181,6 +181,7 @@ function useTypingText(words: string[]) {
             if (!isDeleting) {
                 const next = current.slice(0, displayed.length + 1);
                 setDisplayed(next);
+
                 if (next === current) {
                     timeoutRef.current = setTimeout(() => setIsDeleting(true), 2000);
                 } else {
@@ -189,6 +190,7 @@ function useTypingText(words: string[]) {
             } else {
                 const next = current.slice(0, displayed.length - 1);
                 setDisplayed(next);
+
                 if (next === '') {
                     setIsDeleting(false);
                     setWordIndex(i => i + 1);
@@ -199,7 +201,12 @@ function useTypingText(words: string[]) {
             }
         };
         timeoutRef.current = setTimeout(tick, isDeleting ? 35 : 65);
-        return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+
+        return () => {
+ if (timeoutRef.current) {
+clearTimeout(timeoutRef.current);
+} 
+};
     }, [displayed, isDeleting, wordIndex, words]);
 
     return displayed;
@@ -208,12 +215,18 @@ function useTypingText(words: string[]) {
 type TimeOfDay = { greeting: string; emoji: string; gradientStyle: string; shimmer: string; clockColor: string; period: 'pagi' | 'siang' | 'sore' | 'malam' };
 
 function getTimeOfDay(hour: number): TimeOfDay {
-    if (hour >= 4 && hour < 11)
-        return { greeting: 'Selamat Pagi', emoji: '🌅', gradientStyle: 'linear-gradient(135deg, rgba(255,183,77,0.45) 0%, rgba(255,213,120,0.30) 35%, rgba(100,195,230,0.30) 70%, rgba(56,189,248,0.20) 100%)', shimmer: 'bg-[#FFB74D]/25', clockColor: 'text-[#92400E] dark:text-[#FDE68A]', period: 'pagi' };
-    if (hour >= 11 && hour < 15)
-        return { greeting: 'Selamat Siang', emoji: '☀️', gradientStyle: 'linear-gradient(135deg, rgba(30,136,229,0.35) 0%, rgba(79,195,247,0.28) 45%, rgba(224,247,254,0.25) 100%)', shimmer: 'bg-[#29B6F6]/20', clockColor: 'text-[#075985] dark:text-[#7DD3FC]', period: 'siang' };
-    if (hour >= 15 && hour < 19)
-        return { greeting: 'Selamat Sore', emoji: '🌇', gradientStyle: 'linear-gradient(135deg, rgba(255,111,0,0.45) 0%, rgba(255,160,0,0.35) 35%, rgba(255,213,79,0.25) 65%, rgba(251,140,0,0.15) 100%)', shimmer: 'bg-[#FF6F00]/25', clockColor: 'text-[#9A3412] dark:text-[#FED7AA]', period: 'sore' };
+    if (hour >= 4 && hour < 11) {
+return { greeting: 'Selamat Pagi', emoji: '🌅', gradientStyle: 'linear-gradient(135deg, rgba(255,183,77,0.45) 0%, rgba(255,213,120,0.30) 35%, rgba(100,195,230,0.30) 70%, rgba(56,189,248,0.20) 100%)', shimmer: 'bg-[#FFB74D]/25', clockColor: 'text-[#92400E] dark:text-[#FDE68A]', period: 'pagi' };
+}
+
+    if (hour >= 11 && hour < 15) {
+return { greeting: 'Selamat Siang', emoji: '☀️', gradientStyle: 'linear-gradient(135deg, rgba(30,136,229,0.35) 0%, rgba(79,195,247,0.28) 45%, rgba(224,247,254,0.25) 100%)', shimmer: 'bg-[#29B6F6]/20', clockColor: 'text-[#075985] dark:text-[#7DD3FC]', period: 'siang' };
+}
+
+    if (hour >= 15 && hour < 19) {
+return { greeting: 'Selamat Sore', emoji: '🌇', gradientStyle: 'linear-gradient(135deg, rgba(255,111,0,0.45) 0%, rgba(255,160,0,0.35) 35%, rgba(255,213,79,0.25) 65%, rgba(251,140,0,0.15) 100%)', shimmer: 'bg-[#FF6F00]/25', clockColor: 'text-[#9A3412] dark:text-[#FED7AA]', period: 'sore' };
+}
+
     return { greeting: 'Selamat Malam', emoji: '🌙', gradientStyle: 'linear-gradient(135deg, rgba(10,14,50,0.60) 0%, rgba(26,35,126,0.45) 45%, rgba(49,27,146,0.35) 75%, rgba(13,20,80,0.40) 100%)', shimmer: 'bg-[#3949AB]/20', clockColor: 'text-[#1E3A8A] dark:text-[#BAE6FD]', period: 'malam' };
 }
 
@@ -226,14 +239,17 @@ function useTimeOfDay() {
         const t1 = setTimeout(() => {
             tick();
             const interval = setInterval(tick, 1000);
+
             return () => clearInterval(interval);
         }, delay);
+
         return () => clearTimeout(t1);
     }, []);
     const hour = now?.getHours() ?? 8;
     const tod = useMemo(() => getTimeOfDay(hour), [hour]);
     const timeStr = now?.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) ?? '--:--';
     const dateStr = now?.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) ?? '';
+
     return { ...tod, timeStr, dateStr };
 }
 
@@ -303,8 +319,9 @@ export default function Dashboard({
 
     const [dismissedKeys, setDismissedKeys] = useState<string[]>([]);
     useEffect(() => {
-        try { setDismissedKeys(JSON.parse(localStorage.getItem('dismissed_badges') ?? '[]')); }
-        catch { /* ignore */ }
+        try {
+ setDismissedKeys(JSON.parse(localStorage.getItem('dismissed_badges') ?? '[]')); 
+} catch { /* ignore */ }
     }, []);
     const visibleBadges = new_badges.filter((b) => !dismissedKeys.includes(b.key));
     const dismissBadges = () => {
@@ -444,6 +461,7 @@ export default function Dashboard({
                 {sudahIsiBugarHariIni ? (() => {
                     const kelayakan = recent_bugar_selamat[0].status_kelayakan;
                     const colors = kelayakanAlertColors[kelayakan];
+
                     return (
                         <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${colors.wrapper}`}>
                             <ShieldCheck className={`h-7 w-7 shrink-0 ${colors.icon}`} />
@@ -497,6 +515,7 @@ export default function Dashboard({
                         { label: 'Workshop', href: '/sap/inspeksi-workshop', count: pending_re_inspeksi.workshop },
                         { label: 'Mess', href: '/sap/inspeksi-mess', count: pending_re_inspeksi.mess },
                     ].filter(l => l.count > 0);
+
                     return (
                         <div className="rounded-xl border-2 border-blue-400 bg-blue-50 px-4 py-3 dark:border-blue-700 dark:bg-blue-950">
                             <div className="flex items-center gap-3">
@@ -1041,6 +1060,7 @@ function TargetMetricRow({
     iconColor: string;
 }) {
     const statusEmoji = persen >= 80 ? '✅' : persen >= 50 ? '⚠️' : '❗';
+
     return (
         <div className="flex items-center gap-2.5 py-2.5 border-b last:border-0">
             <div className={`w-1 self-stretch rounded-full shrink-0 ${accentColor}`} />

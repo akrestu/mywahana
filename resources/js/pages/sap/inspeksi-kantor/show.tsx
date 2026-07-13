@@ -155,15 +155,24 @@ export default function InspeksiKantorShow({ record, is_ri }: Props) {
                 {/* Checklist */}
                 {CATEGORIES.map(cat => {
                     const filled = cat.items.filter(i => record[i.key] !== null && record[i.key] !== undefined);
-                    if (filled.length === 0) return null;
+
+                    if (filled.length === 0) {
+return null;
+}
+
                     return (
                         <Card key={cat.key} className="p-0 overflow-hidden">
                             <div className="bg-muted/50 px-4 py-3 border-b font-bold text-sm">{cat.label}</div>
                             <CardContent className="p-0">
                                 {cat.items.map((item, idx) => {
                                     const score = record[item.key] as number | null;
-                                    if (score === null || score === undefined) return null;
+
+                                    if (score === null || score === undefined) {
+return null;
+}
+
                                     const foto = record.foto_items?.[item.key];
+
                                     return (
                                         <Fragment key={item.key}>
                                             <div className={cn('px-4 py-3', SCORE_BG[score])}>

@@ -1,13 +1,13 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { CheckCircle2, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, Upload, UserCheck, Users, X } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -47,8 +47,14 @@ type SiteOption = { value: string; label: string };
 type Props = { users: PaginatedUsers; filters: Filters; sites: SiteOption[] };
 
 function levelBadge(level: string | null) {
-    if (level === 'srstaff') return <Badge variant="default" className="text-xs">Sr. Staff</Badge>;
-    if (level === 'staff')   return <Badge variant="secondary" className="text-xs">Staff</Badge>;
+    if (level === 'srstaff') {
+return <Badge variant="default" className="text-xs">Sr. Staff</Badge>;
+}
+
+    if (level === 'staff')   {
+return <Badge variant="secondary" className="text-xs">Staff</Badge>;
+}
+
     return <Badge variant="outline" className="text-xs text-muted-foreground">Non-Staff</Badge>;
 }
 
@@ -71,7 +77,9 @@ export default function AdminUsers({ users, filters, sites }: Props) {
     const applyFilters = (newFilters: Partial<Filters>) => {
         const merged = { ...filters, ...newFilters, search };
         Object.keys(merged).forEach((k) => {
-            if ((merged as Record<string, unknown>)[k] === 'all') delete (merged as Record<string, unknown>)[k];
+            if ((merged as Record<string, unknown>)[k] === 'all') {
+delete (merged as Record<string, unknown>)[k];
+}
         });
         router.get('/admin/users', merged, { preserveState: true, replace: true });
     };
@@ -82,10 +90,15 @@ export default function AdminUsers({ users, filters, sites }: Props) {
     };
 
     const confirmDelete = () => {
-        if (!toDelete) return;
+        if (!toDelete) {
+return;
+}
+
         setDeleting(true);
         router.delete(`/admin/users/${toDelete.id}`, {
-            onFinish: () => { setDeleting(false); setToDelete(null); },
+            onFinish: () => {
+ setDeleting(false); setToDelete(null); 
+},
         });
     };
 
@@ -96,11 +109,25 @@ export default function AdminUsers({ users, filters, sites }: Props) {
 
     const exportUrl = () => {
         const params = new URLSearchParams();
-        if (filters.search)              params.set('search', filters.search);
-        if (filters.site)                params.set('site', filters.site);
-        if (filters.is_admin)            params.set('is_admin', filters.is_admin);
-        if (filters.participation_level) params.set('participation_level', filters.participation_level);
+
+        if (filters.search)              {
+params.set('search', filters.search);
+}
+
+        if (filters.site)                {
+params.set('site', filters.site);
+}
+
+        if (filters.is_admin)            {
+params.set('is_admin', filters.is_admin);
+}
+
+        if (filters.participation_level) {
+params.set('participation_level', filters.participation_level);
+}
+
         const qs = params.toString();
+
         return `/admin/users/export${qs ? '?' + qs : ''}`;
     };
 
@@ -299,6 +326,7 @@ export default function AdminUsers({ users, filters, sites }: Props) {
                             {/* Page window: prev, current, next */}
                             {users.links.slice(1, -1).filter((link) => {
                                 const p = Number(link.label);
+
                                 return p >= users.current_page - 1 && p <= users.current_page + 1;
                             }).map((link) => (
                                 link.url ? (
@@ -372,7 +400,11 @@ export default function AdminUsers({ users, filters, sites }: Props) {
             </Dialog>
 
             {/* ── Dialog: Import Excel ── */}
-            <Dialog open={importOpen} onOpenChange={(open) => { if (!processing) setImportOpen(open); }}>
+            <Dialog open={importOpen} onOpenChange={(open) => {
+ if (!processing) {
+setImportOpen(open);
+} 
+}}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
@@ -438,7 +470,13 @@ export default function AdminUsers({ users, filters, sites }: Props) {
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => { setData('file', null); if (fileRef.current) fileRef.current.value = ''; }}
+                                        onClick={() => {
+ setData('file', null);
+
+ if (fileRef.current) {
+fileRef.current.value = '';
+} 
+}}
                                         className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                                     >
                                         <X size={14} />

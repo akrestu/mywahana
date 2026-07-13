@@ -43,15 +43,27 @@ class InspeksiMessController extends Controller
 
     public function create(Request $request)
     {
+        $user = $request->user()->load('sites:id,value');
+        $siteValues = $user->assignedSiteValues();
         $staffUsers = User::whereIn('participation_level', ['staff', 'srstaff'])
             ->where('id', '!=', $request->user()->id)
+            ->with('sites:id,value')
+            ->where(function ($query) use ($siteValues) {
+                $query->whereIn('site', $siteValues)
+                    ->orWhereHas('sites', fn ($sites) => $sites->whereIn('value', $siteValues));
+            })
             ->orderBy('name')
-            ->get(['id', 'name', 'nik', 'jabatan', 'site']);
+            ->get(['id', 'name', 'nik', 'jabatan', 'site'])
+            ->map(fn (User $staff) => [
+                'id' => $staff->id, 'name' => $staff->name, 'nik' => $staff->nik,
+                'jabatan' => $staff->jabatan, 'site' => $staff->site,
+                'sites' => $staff->assignedSiteValues(),
+            ]);
 
         return Inertia::render('sap/inspeksi-mess/create', [
-            'user'       => $request->user()->only('name', 'nik', 'jabatan', 'site'),
+            'user'       => $user->only('name', 'nik', 'jabatan', 'site'),
             'staffUsers' => $staffUsers,
-            'sites'      => Site::orderBy('label')->get(['value', 'label']),
+            'sites'      => Site::whereIn('value', $siteValues)->orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -90,6 +102,19 @@ class InspeksiMessController extends Controller
             'foto.*' => ['nullable', 'image', 'max:5120'],
             'ttd_inspektor' => ['nullable', 'string'],
         ]);
+
+        $actor = $request->user()->load('sites:id,value');
+        $site = Site::whereIn('value', $actor->assignedSiteValues())
+            ->where('label', $validated['project_site'])->first();
+        abort_unless($site, 403);
+
+        $assigneeIds = array_filter(array_merge(
+            [$validated['re_inspektor_id'] ?? null], $validated['peserta_ids'] ?? []
+        ));
+        $eligibleAssignees = User::whereIn('id', $assigneeIds)
+            ->whereIn('participation_level', ['staff', 'srstaff'])
+            ->assignedToSite($site->value)->count();
+        abort_unless($eligibleAssignees === count(array_unique($assigneeIds)), 403);
 
         $scores = collect(InspeksiMess::$scoreKeys)
             ->map(fn($k) => $validated[$k] ?? null)->filter(fn($v) => $v !== null);

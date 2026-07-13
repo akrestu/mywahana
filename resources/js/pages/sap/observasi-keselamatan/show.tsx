@@ -121,7 +121,10 @@ const STATUS_TEMUAN_LABELS: Record<string, string> = {
 };
 
 function ClItem({ value, label }: { value: ChecklistVal; label: string }) {
-    if (!value) return null;
+    if (!value) {
+return null;
+}
+
     return (
         <div className={cn(
             'flex items-center justify-between gap-3 px-4 py-3',
@@ -233,14 +236,22 @@ export default function ObservasiKeselamatanShow({ record, is_pj }: Props) {
                 {/* Checklist */}
                 {CHECKLIST_CATEGORIES.map(cat => {
                     const filled = cat.items.filter(i => record[i.key] != null && record[i.key] !== '');
-                    if (filled.length === 0) return null;
+
+                    if (filled.length === 0) {
+return null;
+}
+
                     return (
                         <Card key={cat.label} className="p-0 overflow-hidden">
                             <div className="bg-muted/50 px-4 py-3 border-b font-bold text-sm">{cat.label}</div>
                             <CardContent className="p-0">
                                 {cat.items.map((item, idx) => {
                                     const val = record[item.key] as ChecklistVal;
-                                    if (!val) return null;
+
+                                    if (!val) {
+return null;
+}
+
                                     return (
                                         <Fragment key={item.key}>
                                             <ClItem value={val} label={item.label} />
@@ -261,7 +272,11 @@ export default function ObservasiKeselamatanShow({ record, is_pj }: Props) {
                             {[1, 2, 3, 4].map((n, idx) => {
                                 const val = record[`ll_${n}_nilai`] as ChecklistVal;
                                 const label = (record[`ll_${n}_label`] as string) || `Item ${n}`;
-                                if (!val) return null;
+
+                                if (!val) {
+return null;
+}
+
                                 return (
                                     <Fragment key={n}>
                                         <ClItem value={val} label={`7.${n} ${label}`} />

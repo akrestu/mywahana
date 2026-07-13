@@ -5,11 +5,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
 const DEPARTEMEN_OPTIONS = [
-    'Production', 'Maintenance', 'Supply Chain', 'Engineering', 'HSE', 'HRGA', 'Management',
+    'Production',
+    'Maintenance',
+    'Supply Chain',
+    'Engineering',
+    'HSE',
+    'HRGA',
+    'Management',
 ] as const;
 
 type UserData = {
@@ -20,6 +32,7 @@ type UserData = {
     jabatan: string | null;
     departemen: string | null;
     site: string | null;
+    site_ids: string[];
     is_admin: boolean;
     participation_level: string;
 };
@@ -41,6 +54,7 @@ type FormFields = {
     jabatan: string;
     departemen: string;
     site: string;
+    site_ids: string[];
     is_admin: boolean;
     participation_level: string;
 };
@@ -50,21 +64,24 @@ export default function UserForm({ mode, user, sites }: Props) {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
 
-    const { data, setData, post, put, processing, errors } = useForm<FormFields>({
-        name: user?.name ?? '',
-        nik: user?.nik ?? '',
-        email: user?.email ?? '',
-        password: '',
-        password_confirmation: '',
-        jabatan: user?.jabatan ?? '',
-        departemen: user?.departemen ?? '',
-        site: user?.site ?? '',
-        is_admin: user?.is_admin ?? false,
-        participation_level: user?.participation_level ?? 'nonstaff',
-    });
+    const { data, setData, post, put, processing, errors } =
+        useForm<FormFields>({
+            name: user?.name ?? '',
+            nik: user?.nik ?? '',
+            email: user?.email ?? '',
+            password: '',
+            password_confirmation: '',
+            jabatan: user?.jabatan ?? '',
+            departemen: user?.departemen ?? '',
+            site: user?.site ?? '',
+            site_ids: user?.site_ids ?? [],
+            is_admin: user?.is_admin ?? false,
+            participation_level: user?.participation_level ?? 'nonstaff',
+        });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
         if (isEdit && user) {
             put(`/admin/users/${user.id}`);
         } else {
@@ -80,16 +97,24 @@ export default function UserForm({ mode, user, sites }: Props) {
                 {/* Back + Title */}
                 <div className="flex items-center gap-3">
                     <Link href="/admin/users">
-                        <Button size="sm" variant="ghost" className="h-9 gap-1.5">
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-9 gap-1.5"
+                        >
                             <ArrowLeft size={15} /> Kembali
                         </Button>
                     </Link>
                     <div>
                         <h2 className="text-lg font-bold">
-                            {isEdit ? `Edit: ${user?.name}` : 'Tambah Pengguna Baru'}
+                            {isEdit
+                                ? `Edit: ${user?.name}`
+                                : 'Tambah Pengguna Baru'}
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                            {isEdit ? 'Ubah data akun karyawan' : 'Isi data untuk membuat akun karyawan'}
+                            {isEdit
+                                ? 'Ubah data akun karyawan'
+                                : 'Isi data untuk membuat akun karyawan'}
                         </p>
                     </div>
                 </div>
@@ -97,152 +122,339 @@ export default function UserForm({ mode, user, sites }: Props) {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Section 1: Data Diri */}
                     <Card>
-                        <CardHeader className="pb-3 pt-4">
-                            <CardTitle className="text-base">Data Diri Karyawan</CardTitle>
+                        <CardHeader className="pt-4 pb-3">
+                            <CardTitle className="text-base">
+                                Data Diri Karyawan
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-1.5">
-                                <Label htmlFor="name" className="text-sm font-medium">
-                                    Nama Lengkap <span className="text-destructive">*</span>
+                                <Label
+                                    htmlFor="name"
+                                    className="text-sm font-medium"
+                                >
+                                    Nama Lengkap{' '}
+                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="name"
                                     value={data.name}
-                                    onChange={(e) => setData('name', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('name', e.target.value)
+                                    }
                                     placeholder="Contoh: Budi Santoso"
                                     className="h-10"
                                 />
-                                {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+                                {errors.name && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.name}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label htmlFor="nik" className="text-sm font-medium">
-                                    NIK (Nomor Induk Karyawan) <span className="text-destructive">*</span>
+                                <Label
+                                    htmlFor="nik"
+                                    className="text-sm font-medium"
+                                >
+                                    NIK (Nomor Induk Karyawan){' '}
+                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="nik"
                                     value={data.nik}
-                                    onChange={(e) => setData('nik', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('nik', e.target.value)
+                                    }
                                     placeholder="Contoh: 12345"
                                     className="h-10"
                                 />
-                                {errors.nik && <p className="text-sm text-destructive">{errors.nik}</p>}
+                                {errors.nik && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.nik}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label htmlFor="jabatan" className="text-sm font-medium">Jabatan / Posisi</Label>
+                                <Label
+                                    htmlFor="jabatan"
+                                    className="text-sm font-medium"
+                                >
+                                    Jabatan / Posisi
+                                </Label>
                                 <Input
                                     id="jabatan"
                                     value={data.jabatan}
-                                    onChange={(e) => setData('jabatan', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('jabatan', e.target.value)
+                                    }
                                     placeholder="Contoh: Operator Alat Berat"
                                     className="h-10"
                                 />
-                                {errors.jabatan && <p className="text-sm text-destructive">{errors.jabatan}</p>}
+                                {errors.jabatan && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.jabatan}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-sm font-medium">Departemen</Label>
-                                <Select value={data.departemen || 'none'} onValueChange={(v) => setData('departemen', v === 'none' ? '' : v)}>
+                                <Label className="text-sm font-medium">
+                                    Departemen
+                                </Label>
+                                <Select
+                                    value={data.departemen || 'none'}
+                                    onValueChange={(v) =>
+                                        setData(
+                                            'departemen',
+                                            v === 'none' ? '' : v,
+                                        )
+                                    }
+                                >
                                     <SelectTrigger className="h-10">
                                         <SelectValue placeholder="Pilih departemen" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="none">— Belum dipilih —</SelectItem>
-                                        {DEPARTEMEN_OPTIONS.map(d => (
-                                            <SelectItem key={d} value={d}>{d}</SelectItem>
+                                        <SelectItem value="none">
+                                            — Belum dipilih —
+                                        </SelectItem>
+                                        {DEPARTEMEN_OPTIONS.map((d) => (
+                                            <SelectItem key={d} value={d}>
+                                                {d}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {errors.departemen && <p className="text-sm text-destructive">{errors.departemen}</p>}
+                                {errors.departemen && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.departemen}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">Site Kerja</Label>
-                                    <Select value={data.site || 'none'} onValueChange={(v) => setData('site', v === 'none' ? '' : v)}>
+                                    <Label className="text-sm font-medium">
+                                        Site Kerja
+                                    </Label>
+                                    <Select
+                                        value={data.site || 'none'}
+                                        onValueChange={(v) =>
+                                            setData(
+                                                'site',
+                                                v === 'none' ? '' : v,
+                                            )
+                                        }
+                                    >
                                         <SelectTrigger className="h-10">
                                             <SelectValue placeholder="Pilih site" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">— Belum dipilih —</SelectItem>
-                                            {sites.map(s => (
-                                                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                            <SelectItem value="none">
+                                                — Belum dipilih —
+                                            </SelectItem>
+                                            {sites.map((s) => (
+                                                <SelectItem
+                                                    key={s.value}
+                                                    value={s.value}
+                                                >
+                                                    {s.label}
+                                                </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {errors.site && <p className="text-sm text-destructive">{errors.site}</p>}
+                                    {errors.site && (
+                                        <p className="text-sm text-destructive">
+                                            {errors.site}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">
-                                        Level Partisipasi <span className="text-destructive">*</span>
+                                        Level Partisipasi{' '}
+                                        <span className="text-destructive">
+                                            *
+                                        </span>
                                     </Label>
-                                    <Select value={data.participation_level} onValueChange={(v) => setData('participation_level', v)}>
+                                    <Select
+                                        value={data.participation_level}
+                                        onValueChange={(v) =>
+                                            setData('participation_level', v)
+                                        }
+                                    >
                                         <SelectTrigger className="h-10">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="nonstaff">Non-Staff</SelectItem>
-                                            <SelectItem value="staff">Staff</SelectItem>
-                                            <SelectItem value="srstaff">Sr. Staff</SelectItem>
+                                            <SelectItem value="nonstaff">
+                                                Non-Staff
+                                            </SelectItem>
+                                            <SelectItem value="staff">
+                                                Staff
+                                            </SelectItem>
+                                            <SelectItem value="srstaff">
+                                                Sr. Staff
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    {errors.participation_level && <p className="text-sm text-destructive">{errors.participation_level}</p>}
+                                    {errors.participation_level && (
+                                        <p className="text-sm text-destructive">
+                                            {errors.participation_level}
+                                        </p>
+                                    )}
                                 </div>
+                            </div>
+
+                            <div className="space-y-2 rounded-lg border border-border p-3">
+                                <div>
+                                    <Label className="text-sm font-medium">
+                                        Assignment Site Tambahan
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        Pengguna dan PIC dapat ditugaskan ke
+                                        lebih dari satu site.
+                                    </p>
+                                </div>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                    {sites.map((site) => {
+                                        const checked = data.site_ids.includes(
+                                            site.value,
+                                        );
+
+                                        return (
+                                            <label
+                                                key={site.value}
+                                                className="flex cursor-pointer items-center gap-2 text-sm"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={checked}
+                                                    onChange={() =>
+                                                        setData(
+                                                            'site_ids',
+                                                            checked
+                                                                ? data.site_ids.filter(
+                                                                      (id) =>
+                                                                          id !==
+                                                                          site.value,
+                                                                  )
+                                                                : [
+                                                                      ...data.site_ids,
+                                                                      site.value,
+                                                                  ],
+                                                        )
+                                                    }
+                                                    className="size-4 accent-primary"
+                                                />
+                                                {site.label}
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                                {errors.site_ids && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.site_ids}
+                                    </p>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Section 2: Login */}
                     <Card>
-                        <CardHeader className="pb-3 pt-4">
-                            <CardTitle className="text-base">Akses Login</CardTitle>
+                        <CardHeader className="pt-4 pb-3">
+                            <CardTitle className="text-base">
+                                Akses Login
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-1.5">
-                                <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                                <Label
+                                    htmlFor="email"
+                                    className="text-sm font-medium"
+                                >
+                                    Email
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
                                     value={data.email}
-                                    onChange={(e) => setData('email', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('email', e.target.value)
+                                    }
                                     placeholder="email@perusahaan.com (opsional)"
                                     className="h-10"
                                 />
-                                {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                                {errors.email && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.email}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label htmlFor="password" className="text-sm font-medium">
+                                <Label
+                                    htmlFor="password"
+                                    className="text-sm font-medium"
+                                >
                                     Password{' '}
-                                    {!isEdit && <span className="text-destructive">*</span>}
+                                    {!isEdit && (
+                                        <span className="text-destructive">
+                                            *
+                                        </span>
+                                    )}
                                     {isEdit && (
-                                        <span className="font-normal text-muted-foreground"> — kosongkan jika tidak diubah</span>
+                                        <span className="font-normal text-muted-foreground">
+                                            {' '}
+                                            — kosongkan jika tidak diubah
+                                        </span>
                                     )}
                                 </Label>
                                 <div className="relative">
                                     <Input
                                         id="password"
-                                        type={showPassword ? 'text' : 'password'}
+                                        type={
+                                            showPassword ? 'text' : 'password'
+                                        }
                                         value={data.password}
-                                        onChange={(e) => setData('password', e.target.value)}
-                                        placeholder={isEdit ? 'Kosongkan jika tidak diubah' : 'Minimal 8 karakter'}
+                                        onChange={(e) =>
+                                            setData('password', e.target.value)
+                                        }
+                                        placeholder={
+                                            isEdit
+                                                ? 'Kosongkan jika tidak diubah'
+                                                : 'Minimal 8 karakter'
+                                        }
                                         className="h-10 pr-10"
                                     />
                                     <button
                                         type="button"
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                        onClick={() => setShowPassword((v) => !v)}
+                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        onClick={() =>
+                                            setShowPassword((v) => !v)
+                                        }
                                     >
-                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        {showPassword ? (
+                                            <EyeOff size={16} />
+                                        ) : (
+                                            <Eye size={16} />
+                                        )}
                                     </button>
                                 </div>
-                                {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                                {errors.password && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.password}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label htmlFor="password_confirmation" className="text-sm font-medium">
+                                <Label
+                                    htmlFor="password_confirmation"
+                                    className="text-sm font-medium"
+                                >
                                     Konfirmasi Password
                                 </Label>
                                 <div className="relative">
@@ -250,16 +462,27 @@ export default function UserForm({ mode, user, sites }: Props) {
                                         id="password_confirmation"
                                         type={showConfirm ? 'text' : 'password'}
                                         value={data.password_confirmation}
-                                        onChange={(e) => setData('password_confirmation', e.target.value)}
+                                        onChange={(e) =>
+                                            setData(
+                                                'password_confirmation',
+                                                e.target.value,
+                                            )
+                                        }
                                         placeholder="Ulangi password di atas"
                                         className="h-10 pr-10"
                                     />
                                     <button
                                         type="button"
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                        onClick={() => setShowConfirm((v) => !v)}
+                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        onClick={() =>
+                                            setShowConfirm((v) => !v)
+                                        }
                                     >
-                                        {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        {showConfirm ? (
+                                            <EyeOff size={16} />
+                                        ) : (
+                                            <Eye size={16} />
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -267,23 +490,42 @@ export default function UserForm({ mode, user, sites }: Props) {
                     </Card>
 
                     {/* Section 3: Hak Akses Admin */}
-                    <Card className={data.is_admin ? 'border-primary/50 bg-primary/5' : ''}>
+                    <Card
+                        className={
+                            data.is_admin
+                                ? 'border-primary/50 bg-primary/5'
+                                : ''
+                        }
+                    >
                         <CardContent className="py-4">
                             <div className="flex items-start justify-between gap-4">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2">
-                                        <ShieldAlert size={16} className={data.is_admin ? 'text-primary' : 'text-muted-foreground'} />
-                                        <p className="font-medium">Akses Admin</p>
+                                        <ShieldAlert
+                                            size={16}
+                                            className={
+                                                data.is_admin
+                                                    ? 'text-primary'
+                                                    : 'text-muted-foreground'
+                                            }
+                                        />
+                                        <p className="font-medium">
+                                            Akses Admin
+                                        </p>
                                     </div>
                                     <p className="text-sm text-muted-foreground">
-                                        Admin dapat melihat semua data karyawan, mengubah status laporan, dan mengelola pengguna.
-                                        Berikan akses ini hanya kepada petugas HSE yang berwenang.
+                                        Admin dapat melihat semua data karyawan,
+                                        mengubah status laporan, dan mengelola
+                                        pengguna. Berikan akses ini hanya kepada
+                                        petugas HSE yang berwenang.
                                     </p>
                                 </div>
                                 <Switch
                                     checked={data.is_admin}
-                                    onCheckedChange={(v) => setData('is_admin', v)}
-                                    className="shrink-0 mt-0.5"
+                                    onCheckedChange={(v) =>
+                                        setData('is_admin', v)
+                                    }
+                                    className="mt-0.5 shrink-0"
                                 />
                             </div>
                         </CardContent>
@@ -291,11 +533,23 @@ export default function UserForm({ mode, user, sites }: Props) {
 
                     {/* Submit */}
                     <div className="flex gap-3 pb-4">
-                        <Button type="submit" disabled={processing} className="flex-1 h-11 text-base">
-                            {processing ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Tambah Pengguna'}
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="h-11 flex-1 text-base"
+                        >
+                            {processing
+                                ? 'Menyimpan...'
+                                : isEdit
+                                  ? 'Simpan Perubahan'
+                                  : 'Tambah Pengguna'}
                         </Button>
                         <Link href="/admin/users">
-                            <Button type="button" variant="outline" className="h-11">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="h-11"
+                            >
                                 Batal
                             </Button>
                         </Link>
