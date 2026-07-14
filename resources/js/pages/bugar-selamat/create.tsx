@@ -389,7 +389,7 @@ return;
                                 {[
                                     { value: 'Siang', label: 'Shift I',  Icon: Sun,  iconCls: 'text-amber-500' },
                                     { value: 'Malam', label: 'Shift II', Icon: Moon, iconCls: 'text-indigo-500' },
-                                ].map(({ value, label, sub, Icon, iconCls }) => {
+                                ].map(({ value, label, Icon, iconCls }) => {
                                     const selected = data.shift === value;
 
                                     return (

@@ -8,7 +8,7 @@ import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SiteCombobox } from '@/components/site-combobox';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { UploadOverlay } from '@/components/upload-overlay';
@@ -337,23 +337,16 @@ return;
                     <div className="flex flex-col gap-5">
                         <div className="flex flex-col gap-2">
                             <Label className="text-base font-bold">Site Observasi <span className="text-destructive">*</span></Label>
-                            <Select
+                            <SiteCombobox
                                 value={data.site}
-                                onValueChange={(site) => {
+                                options={sites}
+                                onChange={(site) => {
                                     setData('site', site);
                                     setData('lokasi_kerja', '');
                                     setData('penanggung_jawab_id', '');
                                 }}
-                            >
-                                <SelectTrigger className="h-12 w-full text-base">
-                                    <SelectValue placeholder="Pilih site observasi" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {sites.map((site) => (
-                                        <SelectItem key={site.value} value={site.value}>{site.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                placeholder="Pilih site observasi"
+                            />
                             {errors.site && <p className="text-sm text-destructive">{errors.site}</p>}
                         </div>
 
@@ -384,7 +377,7 @@ return;
                                         <ChevronsUpDown size={16} className="opacity-50" />
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-full min-w-[320px] p-0">
+                                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                                     <Command>
                                         <CommandInput placeholder="Cari nama / NIK..." />
                                         <CommandList>
@@ -442,7 +435,7 @@ return;
                                         <ChevronsUpDown size={16} className="opacity-50" />
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-full min-w-[320px] p-0">
+                                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                                     <Command>
                                         <CommandInput
                                             placeholder="Cari lokasi..."

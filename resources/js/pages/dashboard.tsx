@@ -506,98 +506,71 @@ export default function Dashboard({
                     </div>
                 )}
 
-                {/* ④b REMINDER RE-INSPEKSI */}
-                {pending_re_inspeksi && (pending_re_inspeksi.kantor + pending_re_inspeksi.tambang + pending_re_inspeksi.workshop + pending_re_inspeksi.mess) > 0 && (() => {
-                    const total = pending_re_inspeksi.kantor + pending_re_inspeksi.tambang + pending_re_inspeksi.workshop + pending_re_inspeksi.mess;
-                    const links: { label: string; href: string; count: number }[] = [
-                        { label: 'Kantor', href: '/sap/inspeksi-kantor', count: pending_re_inspeksi.kantor },
-                        { label: 'Tambang', href: '/sap/inspeksi-tambang', count: pending_re_inspeksi.tambang },
-                        { label: 'Workshop', href: '/sap/inspeksi-workshop', count: pending_re_inspeksi.workshop },
-                        { label: 'Mess', href: '/sap/inspeksi-mess', count: pending_re_inspeksi.mess },
-                    ].filter(l => l.count > 0);
+                {/* ④b PERLU TINDAKAN — semua reminder terpusat di sini */}
+                {(() => {
+                    const actionItems: ReminderItem[] = [
+                        ...(pending_re_inspeksi
+                            ? [
+                                  { label: 'Approval Inspeksi Kantor', href: '/sap/inspeksi-kantor', count: pending_re_inspeksi.kantor, icon: <ClipboardCheck className="h-4 w-4" />, tone: 'blue' as const },
+                                  { label: 'Approval Inspeksi Tambang', href: '/sap/inspeksi-tambang', count: pending_re_inspeksi.tambang, icon: <ClipboardCheck className="h-4 w-4" />, tone: 'blue' as const },
+                                  { label: 'Approval Inspeksi Workshop', href: '/sap/inspeksi-workshop', count: pending_re_inspeksi.workshop, icon: <ClipboardCheck className="h-4 w-4" />, tone: 'blue' as const },
+                                  { label: 'Approval Inspeksi Mess', href: '/sap/inspeksi-mess', count: pending_re_inspeksi.mess, icon: <ClipboardCheck className="h-4 w-4" />, tone: 'blue' as const },
+                              ]
+                            : []),
+                        { label: 'Konfirmasi Form OK', href: '/sap/observasi-keselamatan', count: pending_form_ok, icon: <Eye className="h-4 w-4" />, tone: 'purple' },
+                        { label: 'Tanda tangan JSA (sebagai TL)', href: '/komunikasi-jsa?filter=pending', count: pending_jsa_tl, icon: <BookOpen className="h-4 w-4" />, tone: 'indigo' },
+                        { label: 'Laporan bahaya — Anda PIC-nya', href: '/laporan-bahaya?filter=pic', count: pending_as_pic, icon: <BriefcaseBusiness className="h-4 w-4" />, tone: 'orange' },
+                    ].filter(item => item.count > 0);
+
+                    const waitingItems: ReminderItem[] = [
+                        { label: 'Form OK Anda — menunggu approval', href: '/observasi-keselamatan?filter=pending', count: my_pending_observasi, icon: <Eye className="h-4 w-4" />, tone: 'amber' },
+                        { label: 'Inspeksi Anda — menunggu approval', href: '/inspeksi?filter=pending', count: my_pending_inspeksi, icon: <ClipboardCheck className="h-4 w-4" />, tone: 'amber' },
+                        { label: 'JSA Anda — menunggu approval', href: '/komunikasi-jsa?filter=pending', count: my_pending_jsa, icon: <BookOpen className="h-4 w-4" />, tone: 'amber' },
+                        { label: 'Laporan Anda — PIC belum closing', href: '/laporan-bahaya', count: my_open_with_pic, icon: <Clock className="h-4 w-4" />, tone: 'red' },
+                    ].filter(item => item.count > 0);
+
+                    if (actionItems.length === 0 && waitingItems.length === 0) {
+                        return null;
+                    }
+
+                    const totalAction = actionItems.reduce((sum, item) => sum + item.count, 0);
 
                     return (
-                        <div className="rounded-xl border-2 border-blue-400 bg-blue-50 px-4 py-3 dark:border-blue-700 dark:bg-blue-950">
-                            <div className="flex items-center gap-3">
-                                <ClipboardCheck className="h-7 w-7 shrink-0 text-blue-500" />
-                                <p className="font-semibold text-blue-800 dark:text-blue-200">
-                                    📋 {total} form inspeksi menunggu approval Anda
-                                </p>
+                        <Card className="gap-0 overflow-hidden py-0">
+                            <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
+                                <p className="text-sm font-bold">🔔 Reminder</p>
+                                {totalAction > 0 && (
+                                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[11px] font-bold text-white">
+                                        {totalAction}
+                                    </span>
+                                )}
                             </div>
-                            <div className="mt-2 flex flex-wrap gap-2 pl-10">
-                                {links.map(l => (
-                                    <Link key={l.href} href={l.href}>
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-200 dark:bg-blue-800 px-3 py-1 text-xs font-semibold text-blue-900 dark:text-blue-100">
-                                            {l.label} ({l.count})
-                                        </span>
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
+                            {actionItems.length > 0 && (
+                                <div className="px-2 pb-2">
+                                    <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                        Perlu tindakan Anda
+                                    </p>
+                                    {actionItems.map(item => (
+                                        <ReminderRow key={item.label} item={item} />
+                                    ))}
+                                </div>
+                            )}
+                            {actionItems.length > 0 && waitingItems.length > 0 && (
+                                <div className="mx-4 border-t" />
+                            )}
+                            {waitingItems.length > 0 && (
+                                <div className={`px-2 pb-2 ${actionItems.length > 0 ? 'pt-2' : ''}`}>
+                                    <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                        Menunggu pihak lain
+                                    </p>
+                                    {waitingItems.map(item => (
+                                        <ReminderRow key={item.label} item={item} />
+                                    ))}
+                                </div>
+                            )}
+                        </Card>
                     );
                 })()}
-
-                {/* ④c REMINDER FORM OK */}
-                {pending_form_ok > 0 && (
-                    <Link href="/sap/observasi-keselamatan" className="block">
-                        <div className="flex items-center gap-3 rounded-xl border-2 border-purple-400 bg-purple-50 px-4 py-3 active:scale-[0.99] transition-transform dark:border-purple-700 dark:bg-purple-950">
-                            <Eye className="h-7 w-7 shrink-0 text-purple-500" />
-                            <div className="flex-1">
-                                <p className="font-semibold text-purple-800 dark:text-purple-200">
-                                    👁️ {pending_form_ok} Form OK menunggu konfirmasi Anda
-                                </p>
-                                <p className="text-xs text-purple-600 dark:text-purple-400">Ketuk untuk melihat dan mengkonfirmasi →</p>
-                            </div>
-                        </div>
-                    </Link>
-                )}
-
-                {/* ④d REMINDER JSA — sebagai Team Leader */}
-                {pending_jsa_tl > 0 && (
-                    <Link href="/komunikasi-jsa?filter=pending" className="block">
-                        <div className="flex items-center gap-3 rounded-xl border-2 border-indigo-400 bg-indigo-50 px-4 py-3 active:scale-[0.99] transition-transform dark:border-indigo-700 dark:bg-indigo-950">
-                            <BookOpen className="h-7 w-7 shrink-0 text-indigo-500" />
-                            <div className="flex-1">
-                                <p className="font-semibold text-indigo-800 dark:text-indigo-200">
-                                    📋 {pending_jsa_tl} JSA menunggu tanda tangan Anda sebagai TL
-                                </p>
-                                <p className="text-xs text-indigo-600 dark:text-indigo-400">Ketuk untuk melihat dan menandatangani →</p>
-                            </div>
-                        </div>
-                    </Link>
-                )}
-
-                {/* ④e REMINDER — form sendiri yang belum disetujui */}
-                {(my_pending_observasi + my_pending_jsa + my_pending_inspeksi) > 0 && (
-                    <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-700 dark:bg-amber-950">
-                        <p className="mb-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
-                            ⏳ Form Anda yang masih menunggu approval
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                            {my_pending_observasi > 0 && (
-                                <Link href="/observasi-keselamatan?filter=pending">
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-200 dark:bg-amber-800 px-3 py-1 text-xs font-semibold text-amber-900 dark:text-amber-100">
-                                        Form OK ({my_pending_observasi})
-                                    </span>
-                                </Link>
-                            )}
-                            {my_pending_inspeksi > 0 && (
-                                <Link href="/inspeksi?filter=pending">
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-200 dark:bg-amber-800 px-3 py-1 text-xs font-semibold text-amber-900 dark:text-amber-100">
-                                        Inspeksi ({my_pending_inspeksi})
-                                    </span>
-                                </Link>
-                            )}
-                            {my_pending_jsa > 0 && (
-                                <Link href="/komunikasi-jsa?filter=pending">
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-200 dark:bg-amber-800 px-3 py-1 text-xs font-semibold text-amber-900 dark:text-amber-100">
-                                        JSA ({my_pending_jsa})
-                                    </span>
-                                </Link>
-                            )}
-                        </div>
-                    </div>
-                )}
 
                 {/* ⑤ TOMBOL AKSI UTAMA */}
                 <div className="flex flex-col gap-2">
@@ -764,33 +737,6 @@ export default function Dashboard({
                         </CardContent>
                     </Card>
                 ) : null}
-
-                {/* ⑦ REMINDER LAPORAN BAHAYA */}
-                {pending_as_pic > 0 && (
-                    <Link href="/laporan-bahaya?filter=pic" className="block">
-                        <div className="flex items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 dark:border-orange-800 dark:bg-orange-950">
-                            <BriefcaseBusiness className="h-5 w-5 shrink-0 text-orange-500" />
-                            <p className="flex-1 text-sm font-semibold text-orange-800 dark:text-orange-200">
-                                Anda ditugaskan sebagai PIC untuk{' '}
-                                <span className="underline underline-offset-2">{pending_as_pic} laporan bahaya</span>{' '}
-                                yang belum ditutup
-                            </p>
-                            <ChevronRight size={14} className="text-orange-400" />
-                        </div>
-                    </Link>
-                )}
-                {my_open_with_pic > 0 && (
-                    <Link href="/laporan-bahaya" className="block">
-                        <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
-                            <Clock className="h-5 w-5 shrink-0 text-red-500" />
-                            <p className="flex-1 text-sm font-semibold text-red-800 dark:text-red-200">
-                                <span className="underline underline-offset-2">{my_open_with_pic} laporan bahaya Anda</span>{' '}
-                                sudah ada PIC namun belum ditutup — ingatkan PIC untuk closing
-                            </p>
-                            <ChevronRight size={14} className="text-red-400" />
-                        </div>
-                    </Link>
-                )}
 
                 {/* ⑧ LEADERBOARD */}
                 {hasAnyLeader && (
@@ -1033,6 +979,42 @@ export default function Dashboard({
                 </p>
             </div>
         </>
+    );
+}
+
+type ReminderTone = 'blue' | 'purple' | 'indigo' | 'orange' | 'amber' | 'red';
+
+type ReminderItem = {
+    label: string;
+    href: string;
+    count: number;
+    icon: React.ReactNode;
+    tone: ReminderTone;
+};
+
+const reminderToneCls: Record<ReminderTone, { iconWrap: string; count: string }> = {
+    blue: { iconWrap: 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400', count: 'text-blue-600 dark:text-blue-400' },
+    purple: { iconWrap: 'bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400', count: 'text-purple-600 dark:text-purple-400' },
+    indigo: { iconWrap: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400', count: 'text-indigo-600 dark:text-indigo-400' },
+    orange: { iconWrap: 'bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400', count: 'text-orange-600 dark:text-orange-400' },
+    amber: { iconWrap: 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400', count: 'text-amber-600 dark:text-amber-400' },
+    red: { iconWrap: 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400', count: 'text-red-600 dark:text-red-400' },
+};
+
+function ReminderRow({ item }: { item: ReminderItem }) {
+    const tone = reminderToneCls[item.tone];
+
+    return (
+        <Link href={item.href} className="block">
+            <div className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-accent active:bg-accent">
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${tone.iconWrap}`}>
+                    {item.icon}
+                </div>
+                <p className="flex-1 text-sm leading-snug">{item.label}</p>
+                <span className={`shrink-0 text-sm font-bold tabular-nums ${tone.count}`}>{item.count}</span>
+                <ChevronRight size={14} className="shrink-0 text-muted-foreground/50" />
+            </div>
+        </Link>
     );
 }
 

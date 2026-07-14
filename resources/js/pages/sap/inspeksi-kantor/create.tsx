@@ -9,7 +9,7 @@ import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SiteCombobox } from '@/components/site-combobox';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { UploadOverlay } from '@/components/upload-overlay';
@@ -295,12 +295,14 @@ fotoGalleryRef.current?.click();
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label>Project / Site <span className="text-destructive">*</span></Label>
-                                    <Select value={data.project_site} onValueChange={(value) => {
-                                        setData('project_site', value); setData('re_inspektor_id', ''); setData('peserta_ids', []);
-                                    }}>
-                                        <SelectTrigger className="h-12! w-full rounded-xl bg-background text-base"><SelectValue placeholder="Pilih project / site" /></SelectTrigger>
-                                        <SelectContent>{sites.map(s => <SelectItem key={s.value} value={s.label}>{s.label}</SelectItem>)}</SelectContent>
-                                    </Select>
+                                    <SiteCombobox
+                                        value={data.project_site}
+                                        options={sites.map(s => ({ value: s.label, label: s.label }))}
+                                        onChange={(value) => {
+                                            setData('project_site', value); setData('re_inspektor_id', ''); setData('peserta_ids', []);
+                                        }}
+                                        placeholder="Pilih project / site"
+                                    />
                                     {errors.project_site && <p className="text-sm text-destructive">{errors.project_site}</p>}
                                 </div>
                                 <div className="space-y-1.5">
@@ -323,7 +325,7 @@ fotoGalleryRef.current?.click();
                                                 <ChevronsUpDown size={16} className="ml-2 opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-full p-0" align="start">
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                                             <Command>
                                                 <CommandInput placeholder="Cari nama..." />
                                                 <CommandList>
@@ -363,7 +365,7 @@ fotoGalleryRef.current?.click();
                                                 <ChevronsUpDown size={16} className="ml-2 opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-full p-0" align="start">
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                                             <Command>
                                                 <CommandInput placeholder="Cari nama..." />
                                                 <CommandList>
