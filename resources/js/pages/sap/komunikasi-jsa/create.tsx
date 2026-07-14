@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SiteCombobox } from '@/components/site-combobox';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
@@ -336,19 +336,16 @@ formData.append('supervisor_signature', supervisorSig);
                     <CardContent className="flex flex-col gap-5 pt-5">
                         <div className="flex flex-col gap-2">
                             <Label className="text-base font-bold">Site <span className="text-destructive">*</span></Label>
-                            <Select
+                            <SiteCombobox
                                 value={site}
-                                onValueChange={(value) => {
+                                options={sites}
+                                onChange={(value) => {
                                     setSite(value);
                                     setLokasi('');
                                     setTeamLeaderId('');
                                 }}
-                            >
-                                <SelectTrigger className="h-12 text-base"><SelectValue placeholder="Pilih site" /></SelectTrigger>
-                                <SelectContent>
-                                    {sites.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                                placeholder="Pilih site"
+                            />
                             {errors.site && <p className="text-sm text-destructive">{errors.site}</p>}
                         </div>
 
@@ -381,7 +378,7 @@ formData.append('supervisor_signature', supervisorSig);
                                         <ChevronsUpDown size={16} className="opacity-50" />
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-full min-w-[320px] p-0">
+                                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                                     <Command>
                                         <CommandInput placeholder="Cari lokasi..." className="h-11 text-base" />
                                         <CommandList>
@@ -410,26 +407,72 @@ formData.append('supervisor_signature', supervisorSig);
                             {errors.lokasi && <p className="text-sm text-destructive">{errors.lokasi}</p>}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="flex flex-col gap-2">
-                                <Label className="text-base font-bold">Shift <span className="text-destructive">*</span></Label>
-                                <Select value={shift} onValueChange={v => setShift(v as 'siang' | 'malam')}>
-                                    <SelectTrigger className="h-12 text-base">
-                                        <SelectValue placeholder="Pilih shift" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="siang">Siang</SelectItem>
-                                        <SelectItem value="malam">Malam</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {errors.shift && <p className="text-sm text-destructive">{errors.shift}</p>}
-                            </div>
+                        <div className="flex flex-col gap-2">
+                            <Label className="text-base font-bold">Shift <span className="text-destructive">*</span></Label>
+                            <div className="grid grid-cols-2 gap-3">
+                                {[
+                                    { value: 'siang' as const, emoji: '☀️', label: 'Siang', selCls: 'border-amber-400 bg-amber-50 dark:bg-amber-950/30' },
+                                    { value: 'malam' as const, emoji: '🌙', label: 'Malam', selCls: 'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30' },
+                                ].map(({ value, emoji, label, selCls }) => {
+                                    const sel = shift === value;
 
-                            <div className="flex flex-col gap-2">
-                                <Label htmlFor="durasi" className="text-base font-bold">Durasi (menit) <span className="text-destructive">*</span></Label>
-                                <Input id="durasi" type="number" min={1} value={durasi} onChange={e => setDurasi(e.target.value)} placeholder="Contoh: 30" className="h-12 text-base" />
-                                {errors.durasi && <p className="text-sm text-destructive">{errors.durasi}</p>}
+                                    return (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            onClick={() => setShift(value)}
+                                            className={cn(
+                                                'flex items-center justify-center gap-2 rounded-xl border-2 py-3.5 text-base font-semibold transition-all',
+                                                sel ? selCls : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/40',
+                                            )}
+                                        >
+                                            <span className="text-xl">{emoji}</span>
+                                            {label}
+                                            {sel && <Check size={16} className="text-primary" />}
+                                        </button>
+                                    );
+                                })}
                             </div>
+                            {errors.shift && <p className="text-sm text-destructive">{errors.shift}</p>}
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <Label htmlFor="durasi" className="text-base font-bold">Durasi <span className="text-destructive">*</span></Label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {['15', '30', '45', '60'].map((preset) => {
+                                    const sel = durasi === preset;
+
+                                    return (
+                                        <button
+                                            key={preset}
+                                            type="button"
+                                            onClick={() => setDurasi(preset)}
+                                            className={cn(
+                                                'rounded-xl border-2 py-2.5 text-sm font-semibold transition-all',
+                                                sel
+                                                    ? 'border-primary bg-primary/10 text-primary'
+                                                    : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/40',
+                                            )}
+                                        >
+                                            {preset} mnt
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <div className="relative">
+                                <Input
+                                    id="durasi"
+                                    type="number"
+                                    inputMode="numeric"
+                                    min={1}
+                                    value={durasi}
+                                    onChange={e => setDurasi(e.target.value)}
+                                    placeholder="Atau isi manual, contoh: 30"
+                                    className="h-12 pr-16 text-base"
+                                />
+                                <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm text-muted-foreground">menit</span>
+                            </div>
+                            {errors.durasi && <p className="text-sm text-destructive">{errors.durasi}</p>}
                         </div>
 
                         <div className="flex flex-col gap-2">
@@ -470,7 +513,7 @@ formData.append('supervisor_signature', supervisorSig);
                                 <ChevronsUpDown size={16} className="opacity-50" />
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-full min-w-[320px] p-0">
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                             <Command>
                                 <CommandInput placeholder="Cari nama / NIK..." />
                                 <CommandList>

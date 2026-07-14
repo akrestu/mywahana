@@ -9,7 +9,7 @@ import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SiteCombobox } from '@/components/site-combobox';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { UploadOverlay } from '@/components/upload-overlay';
@@ -218,12 +218,14 @@ fd.append(k, String(v ?? ''));
                                 <div className="space-y-1.5"><Label>Tanggal <span className="text-destructive">*</span></Label><DatePickerInput value={data.tanggal} onChange={(val) => setData('tanggal', val)} max={today} error={!!errors.tanggal} />{errors.tanggal && <p className="text-sm text-destructive">{errors.tanggal}</p>}</div>
                                 <div className="space-y-1.5">
                                     <Label>Project / Site <span className="text-destructive">*</span></Label>
-                                    <Select value={data.project_site} onValueChange={(value) => {
-                                        setData('project_site', value); setData('re_inspektor_id', ''); setData('peserta_ids', []);
-                                    }}>
-                                        <SelectTrigger className="h-12! w-full rounded-xl bg-background text-base"><SelectValue placeholder="Pilih project / site" /></SelectTrigger>
-                                        <SelectContent>{sites.map(s => <SelectItem key={s.value} value={s.label}>{s.label}</SelectItem>)}</SelectContent>
-                                    </Select>
+                                    <SiteCombobox
+                                        value={data.project_site}
+                                        options={sites.map(s => ({ value: s.label, label: s.label }))}
+                                        onChange={(value) => {
+                                            setData('project_site', value); setData('re_inspektor_id', ''); setData('peserta_ids', []);
+                                        }}
+                                        placeholder="Pilih project / site"
+                                    />
                                 </div>
                                 <div className="space-y-1.5"><Label>Lokasi Mess <span className="text-destructive">*</span></Label><Input value={data.lokasi} onChange={e => setData('lokasi', e.target.value)} placeholder="Nama/lokasi mess" className="h-12 text-base" /></div>
                             </CardContent>
@@ -235,7 +237,7 @@ fd.append(k, String(v ?? ''));
                                     <Label>Re-Inspektor (Opsional)</Label>
                                     <Popover open={riOpen} onOpenChange={setRiOpen}>
                                         <PopoverTrigger asChild><Button variant="outline" role="combobox" className="h-12 w-full justify-between text-base">{selectedRI ? selectedRI.name : 'Pilih re-inspektor...'}<ChevronsUpDown size={16} className="ml-2 opacity-50" /></Button></PopoverTrigger>
-                                        <PopoverContent className="w-full p-0" align="start"><Command><CommandInput placeholder="Cari nama..." /><CommandList><CommandEmpty>Tidak ditemukan</CommandEmpty><CommandGroup>{data.re_inspektor_id && <CommandItem onSelect={() => {
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start"><Command><CommandInput placeholder="Cari nama..." /><CommandList><CommandEmpty>Tidak ditemukan</CommandEmpty><CommandGroup>{data.re_inspektor_id && <CommandItem onSelect={() => {
  setData('re_inspektor_id', ''); setRiOpen(false); 
 }}><X size={14} className="mr-2" /> Hapus pilihan</CommandItem>}{availableStaffUsers.map(u => <CommandItem key={u.id} value={u.name} onSelect={() => {
  setData('re_inspektor_id', String(u.id)); setRiOpen(false); 
@@ -246,7 +248,7 @@ fd.append(k, String(v ?? ''));
                                     <Label>Peserta Inspeksi (Opsional)</Label>
                                     <Popover open={pesertaOpen} onOpenChange={setPesertaOpen}>
                                         <PopoverTrigger asChild><Button variant="outline" role="combobox" className="h-12 w-full justify-between text-base">{selectedPeserta.length > 0 ? `${selectedPeserta.length} peserta dipilih` : 'Tambah peserta...'}<ChevronsUpDown size={16} className="ml-2 opacity-50" /></Button></PopoverTrigger>
-                                        <PopoverContent className="w-full p-0" align="start"><Command><CommandInput placeholder="Cari nama..." /><CommandList><CommandEmpty>Tidak ditemukan</CommandEmpty><CommandGroup>{availableStaffUsers.map(u => {
+                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start"><Command><CommandInput placeholder="Cari nama..." /><CommandList><CommandEmpty>Tidak ditemukan</CommandEmpty><CommandGroup>{availableStaffUsers.map(u => {
  const selected = data.peserta_ids.includes(u.id);
 
  return <CommandItem key={u.id} value={u.name} onSelect={() => setData('peserta_ids', selected ? data.peserta_ids.filter(id => id !== u.id) : [...data.peserta_ids, u.id])}><Check size={14} className={cn('mr-2', selected ? 'opacity-100' : 'opacity-0')} /><div><p className="font-semibold">{u.name}</p>{u.jabatan && <p className="text-xs text-muted-foreground">{u.jabatan}</p>}</div></CommandItem>; 

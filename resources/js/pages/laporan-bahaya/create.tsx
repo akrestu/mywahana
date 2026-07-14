@@ -29,14 +29,8 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { SiteCombobox } from '@/components/site-combobox';
 import {
     Sheet,
     SheetContent,
@@ -446,32 +440,16 @@ galleryRef.current.value = '';
                                 Pilih site tempat bahaya ditemukan. PIC akan
                                 disaring sesuai assignment site ini.
                             </p>
-                            <Select
+                            <SiteCombobox
                                 value={data.site}
-                                onValueChange={(value) => {
+                                options={sites}
+                                onChange={(value) => {
                                     setData('site', value);
                                     setData('pic_user_id', '');
                                     setData('lokasi', '');
                                 }}
-                            >
-                                <SelectTrigger className="h-12! w-full rounded-xl bg-background text-base">
-                                    <SelectValue placeholder="Pilih site pelaporan" />
-                                </SelectTrigger>
-                                <SelectContent
-                                    align="start"
-                                    className="w-[var(--radix-select-trigger-width)]"
-                                >
-                                    {sites.map((site) => (
-                                        <SelectItem
-                                            key={site.value}
-                                            value={site.value}
-                                            className="text-base"
-                                        >
-                                            {site.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                placeholder="Pilih site pelaporan"
+                            />
                             {errors.site && (
                                 <p className="text-sm text-destructive">
                                     {errors.site}
