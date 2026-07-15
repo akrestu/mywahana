@@ -90,6 +90,7 @@ export type AssessmentConfig = {
     uncoveredSecondColKey: 'departemen' | 'jabatan';
     uncoveredAllDoneMessage: string;
     historyLabel: string;
+    exportUrl: string;
     inductionLabel: string;
     inductionExportUrl: string;
     attendanceShowDept: boolean;
@@ -198,13 +199,40 @@ return;
         setDrillUser({ name: row.user.name, records: userRecords });
     };
 
+    const exportUrl = `${config.exportUrl}${(() => {
+        const p = new URLSearchParams();
+
+        if (filters.search) {
+            p.set('search', filters.search);
+        }
+
+        if (filters.departemen) {
+            p.set('departemen', filters.departemen);
+        }
+
+        if (filters.passed) {
+            p.set('passed', filters.passed);
+        }
+
+        const qs = p.toString();
+
+        return qs ? '?' + qs : '';
+    })()}`;
+
     return (
         <div className="flex flex-col gap-6">
 
             {/* Header */}
-            <div>
-                <h2 className="text-xl font-bold">{config.heading}</h2>
-                <p className="text-sm text-muted-foreground">{config.subtitle}</p>
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <h2 className="text-xl font-bold">{config.heading}</h2>
+                    <p className="text-sm text-muted-foreground">{config.subtitle}</p>
+                </div>
+                <a href={exportUrl} className="shrink-0">
+                    <Button size="sm" variant="outline" className="gap-1">
+                        <Download size={14} /> Export Excel
+                    </Button>
+                </a>
             </div>
 
             {/* ── KPI Cards ── */}

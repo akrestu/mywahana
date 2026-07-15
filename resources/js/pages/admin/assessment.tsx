@@ -17,6 +17,7 @@ const config: AssessmentConfig = {
     uncoveredSecondColKey: 'departemen',
     uncoveredAllDoneMessage: 'Semua karyawan sudah mengikuti assessment ✓',
     historyLabel: 'Riwayat Assessment',
+    exportUrl: '/admin/assessment/export',
     inductionLabel: 'Safety',
     inductionExportUrl: '/admin/induction-attendance/export/safety',
     attendanceShowDept: true,
