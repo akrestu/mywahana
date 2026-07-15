@@ -875,6 +875,22 @@ class AdminController extends Controller
         );
     }
 
+    public function exportAssessmentQuestionStats()
+    {
+        return Excel::download(
+            new \App\Exports\AssessmentQuestionStatsExport(),
+            'analisa-soal-assessment-safety-' . now()->format('Ymd') . '.xlsx',
+        );
+    }
+
+    public function exportHrAssessmentQuestionStats()
+    {
+        return Excel::download(
+            new \App\Exports\AssessmentQuestionStatsExport(isHr: true),
+            'analisa-soal-assessment-hr-' . now()->format('Ymd') . '.xlsx',
+        );
+    }
+
     public function exportKomunikasiJsa(Request $request)
     {
         $query = KomunikasiJsa::with(['user:id,name,nik,jabatan,departemen,site', 'teamLeader:id,name,jabatan'])

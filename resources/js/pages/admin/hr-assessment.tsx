@@ -18,6 +18,7 @@ const config: AssessmentConfig = {
     uncoveredAllDoneMessage: 'Semua karyawan sudah mengikuti HR assessment ✓',
     historyLabel: 'Riwayat HR Assessment',
     exportUrl: '/admin/hr-assessment/export',
+    questionStatsExportUrl: '/admin/hr-assessment/export-soal',
     inductionLabel: 'HR',
     inductionExportUrl: '/admin/induction-attendance/export/hr',
     attendanceShowDept: false,

@@ -168,10 +168,12 @@ Route::middleware(['auth'])->group(function () {
         // Assessment monitoring
         Route::get('/assessment', [AdminController::class, 'assessment'])->name('assessment');
         Route::get('/assessment/export', [AdminController::class, 'exportAssessment'])->name('assessment.export');
+        Route::get('/assessment/export-soal', [AdminController::class, 'exportAssessmentQuestionStats'])->name('assessment.export-soal');
         Route::delete('/assessment/batch', [AdminController::class, 'batchDestroyAssessmentSession'])->name('assessment.batch-destroy');
         Route::delete('/assessment/{session}', [AdminController::class, 'destroyAssessmentSession'])->name('assessment.destroy');
         Route::get('/hr-assessment', [AdminController::class, 'hrAssessment'])->name('hr-assessment');
         Route::get('/hr-assessment/export', [AdminController::class, 'exportHrAssessment'])->name('hr-assessment.export');
+        Route::get('/hr-assessment/export-soal', [AdminController::class, 'exportHrAssessmentQuestionStats'])->name('hr-assessment.export-soal');
         Route::delete('/hr-assessment/batch', [AdminController::class, 'batchDestroyHrAssessmentSession'])->name('hr-assessment.batch-destroy');
         Route::delete('/hr-assessment/{session}', [AdminController::class, 'destroyHrAssessmentSession'])->name('hr-assessment.destroy');
         Route::get('/induction-attendance/export/{type}', [AdminController::class, 'exportInductionAttendance'])
