@@ -17,6 +17,7 @@ const config: AssessmentConfig = {
     uncoveredSecondColKey: 'jabatan',
     uncoveredAllDoneMessage: 'Semua karyawan sudah mengikuti HR assessment ✓',
     historyLabel: 'Riwayat HR Assessment',
+    exportUrl: '/admin/hr-assessment/export',
     inductionLabel: 'HR',
     inductionExportUrl: '/admin/induction-attendance/export/hr',
     attendanceShowDept: false,

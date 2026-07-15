@@ -829,6 +829,52 @@ class AdminController extends Controller
         ]);
     }
 
+    public function exportAssessment(Request $request)
+    {
+        $query = AssessmentSession::with('user:id,name,nik,jabatan,departemen,site')
+            ->where('status', 'completed')
+            ->latest('completed_at');
+
+        if ($request->filled('search')) {
+            $query->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$request->search}%")
+                ->orWhere('nik', 'like', "%{$request->search}%"));
+        }
+
+        if ($request->filled('departemen')) {
+            $query->where('departemen', $request->departemen);
+        }
+
+        if ($request->filled('passed')) {
+            $query->where('passed', $request->passed === '1');
+        }
+
+        return Excel::download(
+            new \App\Exports\AssessmentSessionsExport($query),
+            'assessment-safety-' . now()->format('Ymd') . '.xlsx',
+        );
+    }
+
+    public function exportHrAssessment(Request $request)
+    {
+        $query = HrAssessmentSession::with('user:id,name,nik,jabatan,site')
+            ->where('status', 'completed')
+            ->latest('completed_at');
+
+        if ($request->filled('search')) {
+            $query->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$request->search}%")
+                ->orWhere('nik', 'like', "%{$request->search}%"));
+        }
+
+        if ($request->filled('passed')) {
+            $query->where('passed', $request->passed === '1');
+        }
+
+        return Excel::download(
+            new \App\Exports\AssessmentSessionsExport($query, isHr: true),
+            'assessment-hr-' . now()->format('Ymd') . '.xlsx',
+        );
+    }
+
     public function exportKomunikasiJsa(Request $request)
     {
         $query = KomunikasiJsa::with(['user:id,name,nik,jabatan,departemen,site', 'teamLeader:id,name,jabatan'])
