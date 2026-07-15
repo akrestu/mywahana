@@ -1,5 +1,5 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Home, RefreshCw } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type Props = { status: number };
@@ -16,7 +16,7 @@ const ERROR_CFG: Record<
     404: {
         emoji: '🧭',
         title: 'Halaman Tidak Ditemukan',
-        desc: 'Halaman yang Anda cari tidak ada atau sudah dipindahkan. Periksa kembali alamatnya, atau kembali ke beranda.',
+        desc: 'Halaman yang Anda cari tidak ada atau sudah dipindahkan. Periksa kembali alamatnya.',
     },
     419: {
         emoji: '⏰',
@@ -47,7 +47,7 @@ const ERROR_CFG: Record<
 const FALLBACK = {
     emoji: '❓',
     title: 'Terjadi Kesalahan',
-    desc: 'Ada yang tidak beres. Coba muat ulang halaman atau kembali ke beranda.',
+    desc: 'Ada yang tidak beres. Coba muat ulang halaman.',
     canRetry: true,
 };
 
@@ -77,31 +77,16 @@ export default function ErrorPage({ status }: Props) {
                         </p>
                     </div>
 
-                    <div className="flex w-full flex-col gap-2.5 pt-2">
-                        {cfg.canRetry && (
+                    {cfg.canRetry && (
+                        <div className="flex w-full flex-col gap-2.5 pt-2">
                             <Button
                                 onClick={() => router.reload()}
                                 className="h-12 w-full gap-2 text-base font-bold"
                             >
                                 <RefreshCw size={17} /> Muat Ulang
                             </Button>
-                        )}
-                        <Button
-                            variant={cfg.canRetry ? 'outline' : 'default'}
-                            onClick={() => window.history.back()}
-                            className="h-12 w-full gap-2 text-base font-semibold"
-                        >
-                            <ArrowLeft size={17} /> Kembali ke Halaman Sebelumnya
-                        </Button>
-                        <Link href="/home" className="block w-full">
-                            <Button
-                                variant="ghost"
-                                className="h-12 w-full gap-2 text-base"
-                            >
-                                <Home size={17} /> Ke Beranda
-                            </Button>
-                        </Link>
-                    </div>
+                        </div>
+                    )}
 
                     <p className="pt-4 text-xs text-muted-foreground/60">
                         Datang sehat — kerja aman — pulang selamat

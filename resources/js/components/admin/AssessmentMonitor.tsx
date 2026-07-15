@@ -91,6 +91,7 @@ export type AssessmentConfig = {
     uncoveredAllDoneMessage: string;
     historyLabel: string;
     exportUrl: string;
+    questionStatsExportUrl: string;
     inductionLabel: string;
     inductionExportUrl: string;
     attendanceShowDept: boolean;
@@ -228,11 +229,18 @@ return;
                     <h2 className="text-xl font-bold">{config.heading}</h2>
                     <p className="text-sm text-muted-foreground">{config.subtitle}</p>
                 </div>
-                <a href={exportUrl} className="shrink-0">
-                    <Button size="sm" variant="outline" className="gap-1">
-                        <Download size={14} /> Export Excel
-                    </Button>
-                </a>
+                <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                    <a href={config.questionStatsExportUrl}>
+                        <Button size="sm" variant="outline" className="gap-1">
+                            <Download size={14} /> Analisa Soal
+                        </Button>
+                    </a>
+                    <a href={exportUrl}>
+                        <Button size="sm" variant="outline" className="gap-1">
+                            <Download size={14} /> Export Excel
+                        </Button>
+                    </a>
+                </div>
             </div>
 
             {/* ── KPI Cards ── */}
