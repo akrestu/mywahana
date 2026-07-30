@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\ClearOldBugarSelamat;
 use App\Console\Commands\ExpireAssessments;
 use App\Console\Commands\SendBugarSelamatReminder;
 use App\Console\Commands\SendLaporanBahayaPicReminder;
@@ -14,3 +15,4 @@ Artisan::command('inspire', function () {
 Schedule::command(SendBugarSelamatReminder::class)->dailyAt('07:00');
 Schedule::command(SendLaporanBahayaPicReminder::class)->dailyAt('08:00');
 Schedule::command(ExpireAssessments::class)->everyMinute();
+Schedule::command(ClearOldBugarSelamat::class)->dailyAt('02:00');
