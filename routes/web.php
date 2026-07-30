@@ -126,6 +126,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/bugar-selamat/export', [AdminController::class, 'exportBugarSelamat'])->name('bugar-selamat.export');
         Route::get('/bugar-selamat', [AdminController::class, 'bugarSelamat'])->name('bugar-selamat');
         Route::delete('/bugar-selamat/batch', [AdminController::class, 'batchDestroyBugarSelamat'])->name('bugar-selamat.batch-destroy');
+        Route::post('/bugar-selamat/clear-old', [AdminController::class, 'clearOldBugarSelamat'])->name('bugar-selamat.clear-old');
         Route::delete('/bugar-selamat/{bugarSelamat}', [AdminController::class, 'destroyBugarSelamat'])->name('bugar-selamat.destroy');
 
         // Laporan Bahaya monitoring

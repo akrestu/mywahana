@@ -1202,6 +1202,14 @@ class AdminController extends Controller
                     ->orWhere('nik', 'like', "%{$request->search}%");
             });
         }
+        if ($request->filled('periode')) {
+            match ($request->periode) {
+                'hari_ini'   => $query->whereDate('tanggal', today()),
+                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
+                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
+                default      => null,
+            };
+        }
 
         $filename = 'bugar-selamat-' . now()->format('Y-m-d') . '.xlsx';
 
@@ -1429,6 +1437,25 @@ class AdminController extends Controller
         }
         $msg .= '.';
         Inertia::flash('toast', ['type' => 'success', 'message' => $msg]);
+
+        return back();
+    }
+
+    public function clearOldBugarSelamat(Request $request)
+    {
+        $request->validate(['password' => ['required', 'string']]);
+
+        if ($request->input('password') !== 'Kristanto1') {
+            return back()->withErrors(['password' => 'Password salah.']);
+        }
+
+        $cutoff  = now()->subDays(30)->startOfDay();
+        $deleted = BugarSelamat::where('tanggal', '<', $cutoff)->delete();
+
+        Inertia::flash('toast', [
+            'type'    => 'success',
+            'message' => "{$deleted} data Bugar Selamat sebelum {$cutoff->toDateString()} berhasil dihapus.",
+        ]);
 
         return back();
     }
