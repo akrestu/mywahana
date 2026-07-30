@@ -1,5 +1,5 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight, Download, Search, Trash2 } from 'lucide-react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { ChevronLeft, ChevronRight, Download, Lock, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import { KelayakanBadge } from '@/components/status-badge';
@@ -382,6 +382,20 @@ function DaftarView({ records, filters, summary, sites }: Extract<Props, { view:
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [batchDeleting, setBatchDeleting] = useState(false);
     const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+    const [showClearOld, setShowClearOld] = useState(false);
+
+    const clearOldForm = useForm({ password: '' });
+
+    const handleClearOld = (e: React.FormEvent) => {
+        e.preventDefault();
+        clearOldForm.post('/admin/bugar-selamat/clear-old', {
+            preserveScroll: true,
+            onSuccess: () => {
+                setShowClearOld(false);
+                clearOldForm.reset();
+            },
+        });
+    };
 
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
@@ -506,6 +520,13 @@ p.set('periode', filters.periode);
                                     <Download size={14} /> Export Excel
                                 </Button>
                             </a>
+                            <Button
+                                size="sm" variant="outline"
+                                className="gap-1 text-destructive hover:text-destructive"
+                                onClick={() => setShowClearOld(true)}
+                            >
+                                <Lock size={14} /> Hapus Data Lama
+                            </Button>
                         </>
                     )}
                 </div>
@@ -689,6 +710,54 @@ p.set('periode', filters.periode);
                 onCancel={exitSelectMode}
                 deleting={batchDeleting}
             />
+
+            <Dialog
+                open={showClearOld}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setShowClearOld(false);
+                        clearOldForm.reset();
+                        clearOldForm.clearErrors();
+                    }
+                }}
+            >
+                <DialogContent>
+                    <form onSubmit={handleClearOld}>
+                        <DialogHeader>
+                            <DialogTitle>Hapus Data Bugar Selamat Lama</DialogTitle>
+                            <DialogDescription>
+                                Ini akan menghapus permanen seluruh data Bugar Selamat (semua site) dengan tanggal
+                                lebih dari 30 hari yang lalu — bukan hanya data pada filter yang sedang aktif.
+                                Tindakan ini tidak dapat dibatalkan. Masukkan password untuk melanjutkan.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-2">
+                            <Input
+                                type="password"
+                                autoFocus
+                                placeholder="Password"
+                                value={clearOldForm.data.password}
+                                onChange={(e) => clearOldForm.setData('password', e.target.value)}
+                            />
+                            {clearOldForm.errors.password && (
+                                <p className="mt-1.5 text-xs text-destructive">{clearOldForm.errors.password}</p>
+                            )}
+                        </div>
+                        <DialogFooter className="gap-2">
+                            <Button
+                                type="button" variant="outline"
+                                onClick={() => setShowClearOld(false)}
+                                disabled={clearOldForm.processing}
+                            >
+                                Batal
+                            </Button>
+                            <Button type="submit" variant="destructive" disabled={clearOldForm.processing}>
+                                {clearOldForm.processing ? 'Menghapus...' : 'Ya, Hapus'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
