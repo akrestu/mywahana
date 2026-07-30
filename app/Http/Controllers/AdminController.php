@@ -1182,6 +1182,12 @@ class AdminController extends Controller
 
     public function exportBugarSelamat(Request $request)
     {
+        // Dataset ini bisa mencapai ribuan baris; naikkan batas memori/waktu
+        // eksekusi bawaan hosting (sering 128M/30s) agar export tidak fatal
+        // error di tengah proses menulis file.
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $query = BugarSelamat::with('user')->orderBy('tanggal')->orderBy('created_at');
 
         if ($request->filled('site')) {
