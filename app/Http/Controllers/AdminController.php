@@ -831,6 +831,9 @@ class AdminController extends Controller
 
     public function exportAssessment(Request $request)
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $query = AssessmentSession::with('user:id,name,nik,jabatan,departemen,site')
             ->where('status', 'completed')
             ->latest('completed_at');
@@ -856,6 +859,9 @@ class AdminController extends Controller
 
     public function exportHrAssessment(Request $request)
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $query = HrAssessmentSession::with('user:id,name,nik,jabatan,site')
             ->where('status', 'completed')
             ->latest('completed_at');
@@ -877,6 +883,9 @@ class AdminController extends Controller
 
     public function exportAssessmentQuestionStats()
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         return Excel::download(
             new \App\Exports\AssessmentQuestionStatsExport(),
             'analisa-soal-assessment-safety-' . now()->format('Ymd') . '.xlsx',
@@ -885,6 +894,9 @@ class AdminController extends Controller
 
     public function exportHrAssessmentQuestionStats()
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         return Excel::download(
             new \App\Exports\AssessmentQuestionStatsExport(isHr: true),
             'analisa-soal-assessment-hr-' . now()->format('Ymd') . '.xlsx',
@@ -893,11 +905,14 @@ class AdminController extends Controller
 
     public function exportKomunikasiJsa(Request $request)
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $query = KomunikasiJsa::with(['user:id,name,nik,jabatan,departemen,site', 'teamLeader:id,name,jabatan'])
             ->latest('tanggal');
 
-        if ($request->filled('site')) {
-            $query->where('site', $request->site);
+        if ($site = $this->adminSite($request)) {
+            $query->where('site', $site);
         }
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -972,6 +987,9 @@ class AdminController extends Controller
     {
         abort_unless(in_array($type, ['safety', 'hr']), 404);
 
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $query = InductionAttendance::where('type', $type)
             ->with('user:id,name,nik,jabatan,departemen,site')
             ->latest('attended_at');
@@ -987,6 +1005,9 @@ class AdminController extends Controller
 
     public function exportInspeksiKantor(Request $request)
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $query = InspeksiKantor::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
         $this->applyInspeksiFilters($query, $request);
         return Excel::download(new InspeksiKantorExport($query), 'inspeksi-kantor-' . now()->format('Ymd') . '.xlsx');
@@ -994,6 +1015,9 @@ class AdminController extends Controller
 
     public function exportInspeksiTambang(Request $request)
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $query = InspeksiTambang::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
         $this->applyInspeksiFilters($query, $request);
         return Excel::download(new InspeksiTambangExport($query), 'inspeksi-tambang-' . now()->format('Ymd') . '.xlsx');
@@ -1001,6 +1025,9 @@ class AdminController extends Controller
 
     public function exportInspeksiWorkshop(Request $request)
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $query = InspeksiWorkshop::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
         $this->applyInspeksiFilters($query, $request);
         return Excel::download(new InspeksiWorkshopExport($query), 'inspeksi-workshop-' . now()->format('Ymd') . '.xlsx');
@@ -1008,6 +1035,9 @@ class AdminController extends Controller
 
     public function exportInspeksiMess(Request $request)
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $query = InspeksiMess::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
         $this->applyInspeksiFilters($query, $request);
         return Excel::download(new InspeksiMessExport($query), 'inspeksi-mess-' . now()->format('Ymd') . '.xlsx');
@@ -1059,14 +1089,33 @@ class AdminController extends Controller
 
     public function exportObservasiKeselamatan(Request $request)
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $query = ObservasiKeselamatan::with(['user', 'penanggungJawab'])->latest('tanggal');
 
-        if ($request->filled('site')) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        if ($site = $this->adminSite($request)) {
+            $query->whereHas('user', fn ($q) => $q->where('site', $site));
+        }
+
+        if ($request->filled('search')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('name', 'like', "%{$request->search}%")
+                    ->orWhere('nik', 'like', "%{$request->search}%");
+            });
         }
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+
+        if ($request->filled('periode')) {
+            match ($request->periode) {
+                'hari_ini'   => $query->whereDate('tanggal', today()),
+                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
+                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
+                default      => null,
+            };
         }
 
         return Excel::download(
@@ -1190,8 +1239,8 @@ class AdminController extends Controller
 
         $query = BugarSelamat::with('user')->orderBy('tanggal')->orderBy('created_at');
 
-        if ($request->filled('site')) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $request->site));
+        if ($site = $this->adminSite($request)) {
+            $query->whereHas('user', fn ($q) => $q->assignedToSite($site));
         }
         if ($request->filled('status')) {
             $query->where('status_kelayakan', $request->status);
@@ -1218,10 +1267,13 @@ class AdminController extends Controller
 
     public function exportLaporanBahaya(Request $request)
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $query = LaporanBahaya::with(['user', 'pic'])->orderBy('created_at');
 
-        if ($request->filled('site')) {
-            $query->where('site', $request->site);
+        if ($site = $this->adminSite($request)) {
+            $query->where('site', $site);
         }
         if ($request->filled('tingkat_risiko')) {
             $query->where('tingkat_risiko', $request->tingkat_risiko);
@@ -1234,6 +1286,14 @@ class AdminController extends Controller
                 $q->where('name', 'like', "%{$request->search}%")
                     ->orWhere('nik', 'like', "%{$request->search}%");
             });
+        }
+        if ($request->filled('periode')) {
+            match ($request->periode) {
+                'hari_ini'   => $query->whereDate('tanggal', today()),
+                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
+                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
+                default      => null,
+            };
         }
 
         $filename = 'laporan-bahaya-' . now()->format('Y-m-d') . '.xlsx';
@@ -1394,6 +1454,9 @@ class AdminController extends Controller
 
     public function exportUsers(Request $request)
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $query = User::query()->latest();
 
         if ($request->filled('search')) {
@@ -1402,8 +1465,8 @@ class AdminController extends Controller
                     ->orWhere('nik', 'like', "%{$request->search}%");
             });
         }
-        if ($request->filled('site')) {
-            $query->where('site', $request->site);
+        if ($site = $this->adminSite($request)) {
+            $query->assignedToSite($site);
         }
         if ($request->filled('is_admin')) {
             $query->where('is_admin', $request->is_admin === '1');
