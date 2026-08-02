@@ -26,6 +26,7 @@ const config: AssessmentConfig = {
     belumIndukeAllDoneMessage: 'Semua karyawan sudah induksi HR ✓',
     deleteRoute: '/admin/hr-assessment',
     batchDeleteRoute: '/admin/hr-assessment/batch',
+    deleteRangeRoute: '/admin/hr-assessment/delete-range',
 };
 
 export default function AdminHrAssessment(props: Props) {

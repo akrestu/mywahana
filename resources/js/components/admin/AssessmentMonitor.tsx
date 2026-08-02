@@ -1,11 +1,13 @@
 import { router } from '@inertiajs/react';
-import { CheckCircle2, ChevronDown, ChevronUp, ClipboardCheck, Download, Search, Trash2, XCircle } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronUp, ClipboardCheck, Download, Lock, Search, Trash2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import {
     Bar, BarChart, CartesianGrid, Line, LineChart,
     ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
+import DateRangeFilter from '@/components/admin/DateRangeFilter';
+import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,7 +75,7 @@ export type AttendanceSummary = {
     belum_users: UncoveredUser[];
 };
 
-export type Filters = { search?: string; departemen?: string; passed?: string };
+export type Filters = { search?: string; departemen?: string; passed?: string; date_from?: string; date_to?: string };
 
 export type AssessmentConfig = {
     heading: string;
@@ -99,6 +101,7 @@ export type AssessmentConfig = {
     belumIndukeAllDoneMessage: string;
     deleteRoute?: string;
     batchDeleteRoute?: string;
+    deleteRangeRoute?: string;
 };
 
 export type Props = {
@@ -127,6 +130,7 @@ export default function AssessmentMonitor({
     const [drillUser, setDrillUser] = useState<{ name: string; records: SessionRecord[] } | null>(null);
     const [toDelete, setToDelete] = useState<SessionRecord | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [showDeleteRange, setShowDeleteRange] = useState(false);
     const [selectMode, setSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [batchDeleting, setBatchDeleting] = useState(false);
@@ -215,6 +219,14 @@ return;
             p.set('passed', filters.passed);
         }
 
+        if (filters.date_from) {
+            p.set('date_from', filters.date_from);
+        }
+
+        if (filters.date_to) {
+            p.set('date_to', filters.date_to);
+        }
+
         const qs = p.toString();
 
         return qs ? '?' + qs : '';
@@ -240,6 +252,15 @@ return;
                             <Download size={14} /> Export Excel
                         </Button>
                     </a>
+                    {config.deleteRangeRoute && (
+                        <Button
+                            size="sm" variant="outline"
+                            className="gap-1 text-destructive hover:text-destructive"
+                            onClick={() => setShowDeleteRange(true)}
+                        >
+                            <Lock size={14} /> Hapus Data (Rentang Tanggal)
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -460,6 +481,13 @@ return;
                             <SelectItem value="0">Tidak Lulus</SelectItem>
                         </SelectContent>
                     </Select>
+                </div>
+                <div className="mt-3 max-w-md">
+                    <DateRangeFilter
+                        dateFrom={filters.date_from}
+                        dateTo={filters.date_to}
+                        onChange={(v) => applyFilters(v)}
+                    />
                 </div>
             </div>
 
@@ -743,6 +771,16 @@ return;
                     onDelete={() => setShowBatchConfirm(true)}
                     onCancel={exitSelectMode}
                     deleting={batchDeleting}
+                />
+            )}
+
+            {config.deleteRangeRoute && (
+                <DeleteRangeDialog
+                    open={showDeleteRange}
+                    onOpenChange={setShowDeleteRange}
+                    endpoint={config.deleteRangeRoute}
+                    title={`Hapus ${config.historyLabel}`}
+                    description={`Ini akan menghapus permanen seluruh ${config.historyLabel} pada rentang tanggal yang dipilih, di luar filter tampilan saat ini. Tindakan ini tidak dapat dibatalkan.`}
                 />
             )}
 

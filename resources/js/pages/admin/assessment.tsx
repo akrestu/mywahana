@@ -26,6 +26,7 @@ const config: AssessmentConfig = {
     belumIndukeAllDoneMessage: 'Semua karyawan sudah induksi Safety ✓',
     deleteRoute: '/admin/assessment',
     batchDeleteRoute: '/admin/assessment/batch',
+    deleteRangeRoute: '/admin/assessment/delete-range',
 };
 
 export default function AdminAssessment(props: Props) {

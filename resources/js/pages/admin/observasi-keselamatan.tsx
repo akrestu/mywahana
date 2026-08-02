@@ -1,7 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { CheckCircle2, Clock, Download, Search, Trash2 } from 'lucide-react';
+import { CheckCircle2, Clock, Download, Lock, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
+import DateRangeFilter from '@/components/admin/DateRangeFilter';
+import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,7 +30,7 @@ type OKRecord = {
 
 type Paginated = { data: OKRecord[]; total: number; next_page_url: string | null; prev_page_url: string | null };
 type Summary = { total: number; menunggu_konfirmasi: number; dikonfirmasi: number };
-type Filters = { site?: string; status?: string; search?: string; periode?: string };
+type Filters = { site?: string; status?: string; search?: string; periode?: string; date_from?: string; date_to?: string };
 type SiteOption = { value: string; label: string };
 type Props = { records: Paginated; filters: Filters; summary: Summary; sites: SiteOption[] };
 
@@ -46,6 +48,7 @@ export default function AdminObservasiKeselamatan({ records, filters, summary, s
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [batchDeleting, setBatchDeleting] = useState(false);
     const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+    const [showDeleteRange, setShowDeleteRange] = useState(false);
 
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
@@ -139,6 +142,13 @@ return;
                                         <Download size={16} /> Export
                                     </Button>
                                 </a>
+                                <Button
+                                    variant="outline"
+                                    className="gap-2 h-9 text-destructive hover:text-destructive"
+                                    onClick={() => setShowDeleteRange(true)}
+                                >
+                                    <Lock size={16} /> Hapus Data
+                                </Button>
                             </>
                         )}
                     </div>
@@ -199,6 +209,11 @@ return;
                             </SelectContent>
                         </Select>
                     </div>
+                    <DateRangeFilter
+                        dateFrom={filters.date_from}
+                        dateTo={filters.date_to}
+                        onChange={(v) => applyFilters(v)}
+                    />
                 </div>
 
                 {/* Table */}
@@ -323,6 +338,14 @@ return;
                 onDelete={() => setShowBatchConfirm(true)}
                 onCancel={exitSelectMode}
                 deleting={batchDeleting}
+            />
+
+            <DeleteRangeDialog
+                open={showDeleteRange}
+                onOpenChange={setShowDeleteRange}
+                endpoint="/admin/observasi-keselamatan/delete-range"
+                title="Hapus Data Observasi Keselamatan"
+                description="Ini akan menghapus permanen seluruh data OK pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
             />
         </>
     );

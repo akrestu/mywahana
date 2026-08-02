@@ -260,14 +260,7 @@ class AdminController extends Controller
             });
         }
 
-        if ($request->filled('periode')) {
-            match ($request->periode) {
-                'hari_ini'   => $query->whereDate('tanggal', today()),
-                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
-                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
-                default      => null,
-            };
-        }
+        $this->applyDateFilter($query, $request);
 
         $summaryQuery = clone $query;
         $summaryData  = $summaryQuery->selectRaw('status_kelayakan, count(*) as total')
@@ -291,7 +284,7 @@ class AdminController extends Controller
             'records'    => $query->paginate(20)->withQueryString(),
             'sites'      => $sites,
             'admin_site' => $adminSite,
-            'filters'    => $request->only('site', 'status', 'search', 'periode', 'view'),
+            'filters'    => $request->only('site', 'status', 'search', 'periode', 'view', 'date_from', 'date_to'),
             'summary'    => $summary,
         ]);
     }
@@ -313,14 +306,7 @@ class AdminController extends Controller
             });
         }
 
-        if ($request->filled('periode')) {
-            match ($request->periode) {
-                'hari_ini'   => $query->whereDate('tanggal', today()),
-                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
-                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
-                default      => null,
-            };
-        }
+        $this->applyDateFilter($query, $request);
 
         // Summary dihitung sebelum filter risiko/status agar tetap menyeluruh
         $summaryQuery = clone $query;
@@ -355,7 +341,7 @@ class AdminController extends Controller
 
         return Inertia::render('admin/laporan-bahaya', [
             'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => $request->only('site', 'tingkat_risiko', 'status_tindakan', 'search', 'periode'),
+            'filters'    => $request->only('site', 'tingkat_risiko', 'status_tindakan', 'search', 'periode', 'date_from', 'date_to'),
             'summary'    => $summary,
             'sites'      => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
@@ -404,14 +390,7 @@ class AdminController extends Controller
             $query->where('status', $request->status);
         }
 
-        if ($request->filled('periode')) {
-            match ($request->periode) {
-                'hari_ini'   => $query->whereDate('tanggal', today()),
-                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
-                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
-                default      => null,
-            };
-        }
+        $this->applyDateFilter($query, $request);
 
         $summary = [
             'total'              => ObservasiKeselamatan::count(),
@@ -421,7 +400,7 @@ class AdminController extends Controller
 
         return Inertia::render('admin/observasi-keselamatan', [
             'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => $request->only('site', 'status', 'search', 'periode'),
+            'filters'    => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
             'summary'    => $summary,
             'sites'      => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
@@ -449,7 +428,7 @@ class AdminController extends Controller
 
         return Inertia::render('admin/inspeksi-kantor', [
             'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => $request->only('site', 'status', 'search', 'periode'),
+            'filters'    => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
             'summary'    => $summary,
             'sites'      => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
@@ -475,7 +454,7 @@ class AdminController extends Controller
 
         return Inertia::render('admin/inspeksi-tambang', [
             'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => $request->only('site', 'status', 'search', 'periode'),
+            'filters'    => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
             'summary'    => $summary,
             'sites'      => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
@@ -501,7 +480,7 @@ class AdminController extends Controller
 
         return Inertia::render('admin/inspeksi-workshop', [
             'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => $request->only('site', 'status', 'search', 'periode'),
+            'filters'    => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
             'summary'    => $summary,
             'sites'      => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
@@ -527,7 +506,7 @@ class AdminController extends Controller
 
         return Inertia::render('admin/inspeksi-mess', [
             'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => $request->only('site', 'status', 'search', 'periode'),
+            'filters'    => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
             'summary'    => $summary,
             'sites'      => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
@@ -563,14 +542,7 @@ class AdminController extends Controller
             $query->where('shift', $request->shift);
         }
 
-        if ($request->filled('periode')) {
-            match ($request->periode) {
-                'hari_ini'   => $query->whereDate('tanggal', today()),
-                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
-                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
-                default      => null,
-            };
-        }
+        $this->applyDateFilter($query, $request);
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
@@ -596,7 +568,7 @@ class AdminController extends Controller
 
         return Inertia::render('admin/komunikasi-jsa', [
             'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => (object) $request->only('site', 'status', 'shift', 'search', 'periode'),
+            'filters'    => (object) $request->only('site', 'status', 'shift', 'search', 'periode', 'date_from', 'date_to'),
             'summary'    => $summary,
             'sites'      => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
@@ -630,6 +602,8 @@ class AdminController extends Controller
         if ($request->filled('passed')) {
             $query->where('passed', $request->passed === '1');
         }
+
+        $this->applyDateFilter($query, $request, 'completed_at');
 
         $totalCompleted = AssessmentSession::completed()->count();
         $lulusCount     = AssessmentSession::completed()->where('passed', true)->count();
@@ -721,7 +695,7 @@ class AdminController extends Controller
 
         return Inertia::render('admin/assessment', [
             'records'           => $query->paginate(20)->withQueryString(),
-            'filters'           => $request->only('search', 'departemen', 'passed'),
+            'filters'           => $request->only('search', 'departemen', 'passed', 'date_from', 'date_to'),
             'summary'           => $summary,
             'dept_stats'        => $deptStats,
             'monthly_trend'     => $monthlyTrend,
@@ -745,6 +719,8 @@ class AdminController extends Controller
         if ($request->filled('passed')) {
             $query->where('passed', $request->passed === '1');
         }
+
+        $this->applyDateFilter($query, $request, 'completed_at');
 
         $totalCompleted = HrAssessmentSession::where('status', 'completed')->count();
         $lulusCount     = HrAssessmentSession::where('status', 'completed')->where('passed', true)->count();
@@ -820,7 +796,7 @@ class AdminController extends Controller
 
         return Inertia::render('admin/hr-assessment', [
             'records'           => $query->paginate(20)->withQueryString(),
-            'filters'           => $request->only('search', 'passed'),
+            'filters'           => $request->only('search', 'passed', 'date_from', 'date_to'),
             'summary'           => $summary,
             'monthly_trend'     => $monthlyTrend,
             'weak_questions'    => $weakQuestions,
@@ -851,6 +827,8 @@ class AdminController extends Controller
             $query->where('passed', $request->passed === '1');
         }
 
+        $this->applyDateFilter($query, $request, 'completed_at');
+
         return Excel::download(
             new \App\Exports\AssessmentSessionsExport($query),
             'assessment-safety-' . now()->format('Ymd') . '.xlsx',
@@ -874,6 +852,8 @@ class AdminController extends Controller
         if ($request->filled('passed')) {
             $query->where('passed', $request->passed === '1');
         }
+
+        $this->applyDateFilter($query, $request, 'completed_at');
 
         return Excel::download(
             new \App\Exports\AssessmentSessionsExport($query, isHr: true),
@@ -920,14 +900,7 @@ class AdminController extends Controller
         if ($request->filled('shift')) {
             $query->where('shift', $request->shift);
         }
-        if ($request->filled('periode')) {
-            match ($request->periode) {
-                'hari_ini'   => $query->whereDate('tanggal', today()),
-                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
-                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
-                default      => null,
-            };
-        }
+        $this->applyDateFilter($query, $request);
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('judul_dokumen', 'like', "%{$request->search}%")
@@ -1054,6 +1027,33 @@ class AdminController extends Controller
         return $adminSite ?: ($request->filled('site') ? $request->site : null);
     }
 
+    /**
+     * Apply an explicit date_from/date_to range if present, otherwise fall
+     * back to a periode preset (hari_ini/minggu_ini/bulan_ini).
+     */
+    private function applyDateFilter($query, Request $request, string $column = 'tanggal'): void
+    {
+        if ($request->filled('date_from') || $request->filled('date_to')) {
+            if ($request->filled('date_from')) {
+                $query->where($column, '>=', Carbon::parse($request->date_from)->startOfDay());
+            }
+            if ($request->filled('date_to')) {
+                $query->where($column, '<=', Carbon::parse($request->date_to)->endOfDay());
+            }
+
+            return;
+        }
+
+        if ($request->filled('periode')) {
+            match ($request->periode) {
+                'hari_ini'   => $query->whereDate($column, today()),
+                'minggu_ini' => $query->whereBetween($column, [now()->startOfWeek(), now()->endOfWeek()]),
+                'bulan_ini'  => $query->whereMonth($column, now()->month)->whereYear($column, now()->year),
+                default      => null,
+            };
+        }
+    }
+
     private function applyInspeksiFilters($query, Request $request): void
     {
         $site = $this->adminSite($request);
@@ -1067,14 +1067,7 @@ class AdminController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-        if ($request->filled('periode')) {
-            match ($request->periode) {
-                'hari_ini'   => $query->whereDate('tanggal', today()),
-                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
-                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
-                default      => null,
-            };
-        }
+        $this->applyDateFilter($query, $request);
     }
 
     private function inspeksiSummary(string $model): array
@@ -1109,14 +1102,7 @@ class AdminController extends Controller
             $query->where('status', $request->status);
         }
 
-        if ($request->filled('periode')) {
-            match ($request->periode) {
-                'hari_ini'   => $query->whereDate('tanggal', today()),
-                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
-                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
-                default      => null,
-            };
-        }
+        $this->applyDateFilter($query, $request);
 
         return Excel::download(
             new ObservasiKeselamatanExport($query),
@@ -1251,14 +1237,7 @@ class AdminController extends Controller
                     ->orWhere('nik', 'like', "%{$request->search}%");
             });
         }
-        if ($request->filled('periode')) {
-            match ($request->periode) {
-                'hari_ini'   => $query->whereDate('tanggal', today()),
-                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
-                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
-                default      => null,
-            };
-        }
+        $this->applyDateFilter($query, $request);
 
         $filename = 'bugar-selamat-' . now()->format('Y-m-d') . '.xlsx';
 
@@ -1287,14 +1266,7 @@ class AdminController extends Controller
                     ->orWhere('nik', 'like', "%{$request->search}%");
             });
         }
-        if ($request->filled('periode')) {
-            match ($request->periode) {
-                'hari_ini'   => $query->whereDate('tanggal', today()),
-                'minggu_ini' => $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]),
-                'bulan_ini'  => $query->whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year),
-                default      => null,
-            };
-        }
+        $this->applyDateFilter($query, $request);
 
         $filename = 'laporan-bahaya-' . now()->format('Y-m-d') . '.xlsx';
 
@@ -1504,20 +1476,137 @@ class AdminController extends Controller
         return back();
     }
 
-    public function clearOldBugarSelamat(Request $request)
+    public function deleteRangeBugarSelamat(Request $request)
     {
-        $request->validate(['password' => ['required', 'string']]);
+        return $this->deleteRange($request, function ($from, $to) use ($request) {
+            $query = BugarSelamat::whereBetween('tanggal', [$from, $to]);
+            if ($site = $this->adminSite($request)) {
+                $query->whereHas('user', fn ($q) => $q->assignedToSite($site));
+            }
+
+            return $query->delete();
+        });
+    }
+
+    public function deleteRangeLaporanBahaya(Request $request)
+    {
+        return $this->deleteRange($request, function ($from, $to) use ($request) {
+            $query = LaporanBahaya::whereBetween('tanggal', [$from, $to]);
+            if ($site = $this->adminSite($request)) {
+                $query->where('site', $site);
+            }
+
+            return $query->delete();
+        });
+    }
+
+    public function deleteRangeObservasiKeselamatan(Request $request)
+    {
+        return $this->deleteRange($request, function ($from, $to) use ($request) {
+            $query = ObservasiKeselamatan::whereBetween('tanggal', [$from, $to]);
+            if ($site = $this->adminSite($request)) {
+                $query->whereHas('user', fn ($q) => $q->where('site', $site));
+            }
+
+            return $query->delete();
+        });
+    }
+
+    public function deleteRangeKomunikasiJsa(Request $request)
+    {
+        return $this->deleteRange($request, function ($from, $to) use ($request) {
+            $query = KomunikasiJsa::whereBetween('tanggal', [$from, $to]);
+            if ($site = $this->adminSite($request)) {
+                $query->where('site', $site);
+            }
+
+            return $query->delete();
+        });
+    }
+
+    public function deleteRangeInspeksiKantor(Request $request)
+    {
+        return $this->deleteRangeInspeksi($request, InspeksiKantor::class);
+    }
+
+    public function deleteRangeInspeksiTambang(Request $request)
+    {
+        return $this->deleteRangeInspeksi($request, InspeksiTambang::class);
+    }
+
+    public function deleteRangeInspeksiWorkshop(Request $request)
+    {
+        return $this->deleteRangeInspeksi($request, InspeksiWorkshop::class);
+    }
+
+    public function deleteRangeInspeksiMess(Request $request)
+    {
+        return $this->deleteRangeInspeksi($request, InspeksiMess::class);
+    }
+
+    private function deleteRangeInspeksi(Request $request, string $modelClass)
+    {
+        return $this->deleteRange($request, function ($from, $to) use ($request, $modelClass) {
+            $query = $modelClass::whereBetween('tanggal', [$from, $to]);
+            if ($site = $this->adminSite($request)) {
+                $query->whereHas('user', fn ($q) => $q->where('site', $site));
+            }
+
+            return $query->delete();
+        });
+    }
+
+    public function deleteRangeAssessment(Request $request)
+    {
+        return $this->deleteRange($request, function ($from, $to) {
+            return DB::transaction(function () use ($from, $to) {
+                $ids = AssessmentSession::whereBetween('completed_at', [$from, $to])->pluck('id');
+                AssessmentSessionQuestion::whereIn('assessment_session_id', $ids)->delete();
+                InductionAttendance::where('type', 'safety')->whereIn('assessment_session_id', $ids)->delete();
+
+                return AssessmentSession::whereIn('id', $ids)->delete();
+            });
+        });
+    }
+
+    public function deleteRangeHrAssessment(Request $request)
+    {
+        return $this->deleteRange($request, function ($from, $to) {
+            return DB::transaction(function () use ($from, $to) {
+                $ids = HrAssessmentSession::whereBetween('completed_at', [$from, $to])->pluck('id');
+                HrAssessmentSessionQuestion::whereIn('hr_assessment_session_id', $ids)->delete();
+                InductionAttendance::where('type', 'hr')->whereIn('assessment_session_id', $ids)->delete();
+
+                return HrAssessmentSession::whereIn('id', $ids)->delete();
+            });
+        });
+    }
+
+    /**
+     * Shared handler for the password-gated "delete by date range" actions
+     * used across the admin history pages. $delete receives (Carbon $from,
+     * Carbon $to) and must return the number of rows deleted.
+     */
+    private function deleteRange(Request $request, \Closure $delete)
+    {
+        $request->validate([
+            'date_from' => ['required', 'date'],
+            'date_to'   => ['required', 'date', 'after_or_equal:date_from'],
+            'password'  => ['required', 'string'],
+        ]);
 
         if ($request->input('password') !== 'Kristanto1') {
             return back()->withErrors(['password' => 'Password salah.']);
         }
 
-        $cutoff  = now()->subDays(30)->startOfDay();
-        $deleted = BugarSelamat::where('tanggal', '<', $cutoff)->delete();
+        $from = Carbon::parse($request->date_from)->startOfDay();
+        $to   = Carbon::parse($request->date_to)->endOfDay();
+
+        $deleted = $delete($from, $to);
 
         Inertia::flash('toast', [
             'type'    => 'success',
-            'message' => "{$deleted} data Bugar Selamat sebelum {$cutoff->toDateString()} berhasil dihapus.",
+            'message' => "{$deleted} data berhasil dihapus (periode {$from->toDateString()} s/d {$to->toDateString()}).",
         ]);
 
         return back();
