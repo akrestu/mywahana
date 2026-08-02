@@ -1,7 +1,9 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Download, Lock, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
+import DateRangeFilter from '@/components/admin/DateRangeFilter';
+import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
 import { KelayakanBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -53,7 +55,7 @@ type PaginatedRecords = {
 };
 
 type SiteOption = { value: string; label: string };
-type CommonFilters = { site?: string; search?: string; tanggal?: string; view?: string; periode?: string; status?: string };
+type CommonFilters = { site?: string; search?: string; tanggal?: string; view?: string; periode?: string; status?: string; date_from?: string; date_to?: string };
 
 type Props =
     | { view: 'harian';  tanggal: string; users: UserRow[]; entries: Record<string, Entry>; summary: HarianSummary; filters: CommonFilters; sites: SiteOption[] }
@@ -382,20 +384,7 @@ function DaftarView({ records, filters, summary, sites }: Extract<Props, { view:
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [batchDeleting, setBatchDeleting] = useState(false);
     const [showBatchConfirm, setShowBatchConfirm] = useState(false);
-    const [showClearOld, setShowClearOld] = useState(false);
-
-    const clearOldForm = useForm({ password: '' });
-
-    const handleClearOld = (e: React.FormEvent) => {
-        e.preventDefault();
-        clearOldForm.post('/admin/bugar-selamat/clear-old', {
-            preserveScroll: true,
-            onSuccess: () => {
-                setShowClearOld(false);
-                clearOldForm.reset();
-            },
-        });
-    };
+    const [showDeleteRange, setShowDeleteRange] = useState(false);
 
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
@@ -484,6 +473,14 @@ p.set('status', filters.status);
 p.set('periode', filters.periode);
 }
 
+        if (filters.date_from) {
+p.set('date_from', filters.date_from);
+}
+
+        if (filters.date_to) {
+p.set('date_to', filters.date_to);
+}
+
         const qs = p.toString();
 
         return qs ? '?' + qs : '';
@@ -523,9 +520,9 @@ p.set('periode', filters.periode);
                             <Button
                                 size="sm" variant="outline"
                                 className="gap-1 text-destructive hover:text-destructive"
-                                onClick={() => setShowClearOld(true)}
+                                onClick={() => setShowDeleteRange(true)}
                             >
-                                <Lock size={14} /> Hapus Data Lama
+                                <Lock size={14} /> Hapus Data (Rentang Tanggal)
                             </Button>
                         </>
                     )}
@@ -568,6 +565,13 @@ p.set('periode', filters.periode);
                         </Button>
                     )}
                 </div>
+
+                {/* Filter Rentang Tanggal (custom, dipakai juga untuk export) */}
+                <DateRangeFilter
+                    dateFrom={filters.date_from}
+                    dateTo={filters.date_to}
+                    onChange={(v) => applyFilters(v)}
+                />
 
                 {/* Filter Pencarian & Dropdown */}
                 <div className="space-y-2">
@@ -711,53 +715,13 @@ p.set('periode', filters.periode);
                 deleting={batchDeleting}
             />
 
-            <Dialog
-                open={showClearOld}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        setShowClearOld(false);
-                        clearOldForm.reset();
-                        clearOldForm.clearErrors();
-                    }
-                }}
-            >
-                <DialogContent>
-                    <form onSubmit={handleClearOld}>
-                        <DialogHeader>
-                            <DialogTitle>Hapus Data Bugar Selamat Lama</DialogTitle>
-                            <DialogDescription>
-                                Ini akan menghapus permanen seluruh data Bugar Selamat (semua site) dengan tanggal
-                                lebih dari 30 hari yang lalu — bukan hanya data pada filter yang sedang aktif.
-                                Tindakan ini tidak dapat dibatalkan. Masukkan password untuk melanjutkan.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="py-2">
-                            <Input
-                                type="password"
-                                autoFocus
-                                placeholder="Password"
-                                value={clearOldForm.data.password}
-                                onChange={(e) => clearOldForm.setData('password', e.target.value)}
-                            />
-                            {clearOldForm.errors.password && (
-                                <p className="mt-1.5 text-xs text-destructive">{clearOldForm.errors.password}</p>
-                            )}
-                        </div>
-                        <DialogFooter className="gap-2">
-                            <Button
-                                type="button" variant="outline"
-                                onClick={() => setShowClearOld(false)}
-                                disabled={clearOldForm.processing}
-                            >
-                                Batal
-                            </Button>
-                            <Button type="submit" variant="destructive" disabled={clearOldForm.processing}>
-                                {clearOldForm.processing ? 'Menghapus...' : 'Ya, Hapus'}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+            <DeleteRangeDialog
+                open={showDeleteRange}
+                onOpenChange={setShowDeleteRange}
+                endpoint="/admin/bugar-selamat/delete-range"
+                title="Hapus Data Bugar Selamat"
+                description="Ini akan menghapus permanen seluruh data Bugar Selamat pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
+            />
         </>
     );
 }

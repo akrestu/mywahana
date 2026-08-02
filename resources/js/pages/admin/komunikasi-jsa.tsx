@@ -1,7 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { BookOpen, CalendarDays, Clock, Download, MapPin, Search, Trash2, Users } from 'lucide-react';
+import { BookOpen, CalendarDays, Clock, Download, Lock, MapPin, Search, Trash2, Users } from 'lucide-react';
 import { useState } from 'react';
 import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
+import DateRangeFilter from '@/components/admin/DateRangeFilter';
+import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,7 +32,7 @@ type JsaRecord = {
 
 type Paginated = { data: JsaRecord[]; total: number; next_page_url: string | null; prev_page_url: string | null };
 type Summary = { total: number; selesai: number; dikonfirmasi: number; menunggu_konfirmasi: number; ditolak: number };
-type Filters = { site?: string; status?: string; shift?: string; search?: string; periode?: string };
+type Filters = { site?: string; status?: string; shift?: string; search?: string; periode?: string; date_from?: string; date_to?: string };
 type SiteOption = { value: string; label: string };
 type Props = { records: Paginated; filters: Filters; summary: Summary; sites: SiteOption[] };
 
@@ -76,6 +78,7 @@ export default function AdminKomunikasiJsa({ records, filters, summary, sites }:
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [batchDeleting, setBatchDeleting] = useState(false);
     const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+    const [showDeleteRange, setShowDeleteRange] = useState(false);
 
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
@@ -162,6 +165,14 @@ p.set('shift', filters.shift);
 p.set('periode', filters.periode);
 }
 
+        if (filters.date_from) {
+p.set('date_from', filters.date_from);
+}
+
+        if (filters.date_to) {
+p.set('date_to', filters.date_to);
+}
+
         const qs = p.toString();
 
         return qs ? '?' + qs : '';
@@ -195,6 +206,13 @@ p.set('periode', filters.periode);
                                         <Download size={14} /> Export Excel
                                     </Button>
                                 </a>
+                                <Button
+                                    size="sm" variant="outline"
+                                    className="gap-1 text-destructive hover:text-destructive"
+                                    onClick={() => setShowDeleteRange(true)}
+                                >
+                                    <Lock size={14} /> Hapus Data (Rentang Tanggal)
+                                </Button>
                             </>
                         )}
                     </div>
@@ -237,6 +255,12 @@ p.set('periode', filters.periode);
                         </Button>
                     )}
                 </div>
+
+                <DateRangeFilter
+                    dateFrom={filters.date_from}
+                    dateTo={filters.date_to}
+                    onChange={(v) => applyFilters(v)}
+                />
 
                 {/* Filter Pencarian & Dropdown */}
                 <div className="space-y-2">
@@ -401,6 +425,14 @@ p.set('periode', filters.periode);
                 onDelete={() => setShowBatchConfirm(true)}
                 onCancel={exitSelectMode}
                 deleting={batchDeleting}
+            />
+
+            <DeleteRangeDialog
+                open={showDeleteRange}
+                onOpenChange={setShowDeleteRange}
+                endpoint="/admin/komunikasi-jsa/delete-range"
+                title="Hapus Data Komunikasi JSA"
+                description="Ini akan menghapus permanen seluruh form Komunikasi JSA/SOP/IK pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
             />
         </>
     );

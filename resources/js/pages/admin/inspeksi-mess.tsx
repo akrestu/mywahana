@@ -1,7 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { BedDouble, Download, Search, Trash2 } from 'lucide-react';
+import { BedDouble, Download, Lock, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
+import DateRangeFilter from '@/components/admin/DateRangeFilter';
+import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,7 +31,7 @@ type InspeksiRecord = {
 
 type Paginated = { data: InspeksiRecord[]; total: number; next_page_url: string | null; prev_page_url: string | null };
 type Summary = { total: number; menunggu_re_inspeksi: number; selesai: number; ditolak: number };
-type Filters = { site?: string; status?: string; search?: string; periode?: string };
+type Filters = { site?: string; status?: string; search?: string; periode?: string; date_from?: string; date_to?: string };
 type SiteOption = { value: string; label: string };
 type Props = { records: Paginated; filters: Filters; summary: Summary; sites: SiteOption[] };
 
@@ -75,6 +77,7 @@ export default function AdminInspeksiMess({ records, filters, summary, sites }: 
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [batchDeleting, setBatchDeleting] = useState(false);
     const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+    const [showDeleteRange, setShowDeleteRange] = useState(false);
 
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
@@ -167,6 +170,13 @@ return;
                                         <Download size={16} /> Export
                                     </Button>
                                 </a>
+                                <Button
+                                    variant="outline"
+                                    className="gap-2 h-9 text-destructive hover:text-destructive"
+                                    onClick={() => setShowDeleteRange(true)}
+                                >
+                                    <Lock size={16} /> Hapus Data
+                                </Button>
                             </>
                         )}
                     </div>
@@ -227,6 +237,11 @@ return;
                             </SelectContent>
                         </Select>
                     </div>
+                    <DateRangeFilter
+                        dateFrom={filters.date_from}
+                        dateTo={filters.date_to}
+                        onChange={(v) => applyFilters(v)}
+                    />
                 </div>
 
                 {records.data.length === 0 ? (
@@ -340,6 +355,14 @@ return;
                 onDelete={() => setShowBatchConfirm(true)}
                 onCancel={exitSelectMode}
                 deleting={batchDeleting}
+            />
+
+            <DeleteRangeDialog
+                open={showDeleteRange}
+                onOpenChange={setShowDeleteRange}
+                endpoint="/admin/inspeksi-mess/delete-range"
+                title="Hapus Data Inspeksi Mess"
+                description="Ini akan menghapus permanen seluruh data Inspeksi Mess pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
             />
         </>
     );

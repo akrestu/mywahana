@@ -1,7 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Check, ChevronsUpDown, Download, Search, Trash2, UserPen } from 'lucide-react';
+import { Check, ChevronsUpDown, Download, Lock, Search, Trash2, UserPen } from 'lucide-react';
 import { useState } from 'react';
 import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
+import DateRangeFilter from '@/components/admin/DateRangeFilter';
+import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
 import { RiskBadge } from '@/components/risk-badge';
 import { TindakanBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
@@ -39,7 +41,7 @@ type PaginatedRecords = {
 };
 
 type Summary = { pending: number; aa: number; a: number; b: number; c: number; total: number };
-type Filters = { site?: string; tingkat_risiko?: string; status_tindakan?: string; search?: string; periode?: string };
+type Filters = { site?: string; tingkat_risiko?: string; status_tindakan?: string; search?: string; periode?: string; date_from?: string; date_to?: string };
 type SiteOption = { value: string; label: string };
 type Props = { records: PaginatedRecords; filters: Filters; summary: Summary; sites: SiteOption[]; pics: PicUser[] };
 
@@ -69,6 +71,7 @@ export default function AdminLaporanBahaya({ records, filters, summary, sites, p
     const [picDialogValue, setPicDialogValue] = useState<string>('');
     const [picOpen, setPicOpen] = useState(false);
     const [updatingPic, setUpdatingPic] = useState(false);
+    const [showDeleteRange, setShowDeleteRange] = useState(false);
 
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
@@ -189,6 +192,14 @@ p.set('status_tindakan', filters.status_tindakan);
 p.set('periode', filters.periode);
 }
 
+        if (filters.date_from) {
+p.set('date_from', filters.date_from);
+}
+
+        if (filters.date_to) {
+p.set('date_to', filters.date_to);
+}
+
         const qs = p.toString();
 
         return qs ? '?' + qs : '';
@@ -220,6 +231,13 @@ p.set('periode', filters.periode);
                                         <Download size={14} /> Export Excel
                                     </Button>
                                 </a>
+                                <Button
+                                    size="sm" variant="outline"
+                                    className="gap-1 text-destructive hover:text-destructive"
+                                    onClick={() => setShowDeleteRange(true)}
+                                >
+                                    <Lock size={14} /> Hapus Data (Rentang Tanggal)
+                                </Button>
                             </>
                         )}
                     </div>
@@ -266,6 +284,12 @@ p.set('periode', filters.periode);
                         </Button>
                     )}
                 </div>
+
+                <DateRangeFilter
+                    dateFrom={filters.date_from}
+                    dateTo={filters.date_to}
+                    onChange={(v) => applyFilters(v)}
+                />
 
                 {/* Filter Pencarian & Dropdown */}
                 <div className="space-y-2">
@@ -543,6 +567,14 @@ p.set('periode', filters.periode);
                 onDelete={() => setShowBatchConfirm(true)}
                 onCancel={exitSelectMode}
                 deleting={batchDeleting}
+            />
+
+            <DeleteRangeDialog
+                open={showDeleteRange}
+                onOpenChange={setShowDeleteRange}
+                endpoint="/admin/laporan-bahaya/delete-range"
+                title="Hapus Data Laporan Bahaya"
+                description="Ini akan menghapus permanen seluruh Laporan Bahaya pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
             />
         </>
     );
