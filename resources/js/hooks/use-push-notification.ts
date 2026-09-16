@@ -1,5 +1,4 @@
 import { usePage } from '@inertiajs/react';
-import axios from 'axios';
 import { useEffect } from 'react';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -12,15 +11,16 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 export function usePushNotification() {
     const { auth, vapidPublicKey } = usePage().props;
+    const userId = auth?.user?.id;
 
     useEffect(() => {
-        if (!auth?.user || !vapidPublicKey) {
-return;
-}
+        if (!userId || !vapidPublicKey) {
+            return;
+        }
 
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-return;
-}
+            return;
+        }
 
         async function subscribe() {
             const reg = await navigator.serviceWorker.register('/sw.js');
@@ -28,20 +28,38 @@ return;
             const permission = await Notification.requestPermission();
 
             if (permission !== 'granted') {
-return;
-}
+                return;
+            }
 
             const existing = await reg.pushManager.getSubscription();
             const sub =
                 existing ??
                 (await reg.pushManager.subscribe({
                     userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey as string),
+                    applicationServerKey: (() => {
+                        const key = urlBase64ToUint8Array(vapidPublicKey as string);
+
+                        return key.buffer.slice(key.byteOffset, key.byteOffset + key.byteLength) as ArrayBuffer;
+                    })(),
                 }));
 
-            await axios.post('/push-subscription', sub.toJSON());
+            const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+            const response = await fetch('/push-subscription', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+                body: JSON.stringify(sub.toJSON()),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Push subscription failed (${response.status})`);
+            }
         }
 
         subscribe().catch(console.error);
-    }, [auth?.user?.id]);
+    }, [userId, vapidPublicKey]);
 }

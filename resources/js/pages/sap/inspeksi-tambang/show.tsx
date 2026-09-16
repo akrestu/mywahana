@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 type UserInfo = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
 type TindakanRow = { tindakan: string; pic: string; due_date: string; remark: string };
 
-type Record = {
+type InspectionRecord = {
     id: number;
     user: UserInfo;
     re_inspektor: UserInfo | null;
@@ -32,7 +32,7 @@ type Record = {
     [key: string]: unknown;
 };
 
-type Props = { record: Record; is_ri: boolean };
+type Props = { record: InspectionRecord; is_ri: boolean };
 
 const RISK_CFG = {
     L:  { label: 'Baik',           cls: 'bg-green-100 text-green-800 border-green-300', bar: 'bg-green-500' },

@@ -1,0 +1,1 @@
+var e=[`Production`,`Maintenance`,`Supply Chain`,`Engineering`,`HSE`,`HRGA`];function t(e){let[t,n]=e.split(`-`);return new Date(Number(t),Number(n)-1).toLocaleDateString(`id-ID`,{month:`short`,year:`2-digit`})}export{t as n,e as t};

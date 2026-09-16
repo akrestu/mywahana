@@ -1,7 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, GraduationCap, HeartPulse, LayoutGrid, MapPin, Mountain, ShieldCheck, Target, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, FileQuestion, GraduationCap, HeartPulse, LayoutGrid, MapPin, Mountain, ShieldCheck, Target, Users, Wrench } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
 import { NavMain } from '@/components/nav-main';
 import type { NavGroup } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -17,6 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import { index as adminIndex } from '@/routes/admin';
 import { home as dashboardRoute } from '@/routes/app';
+import { index as assessmentIndex } from '@/routes/assessment';
 import { index as bugarSelamatIndex } from '@/routes/bugar-selamat';
 import { index as laporanBahayaIndex } from '@/routes/laporan-bahaya';
 import { index as inspeksiKantorIndex } from '@/routes/sap/inspeksi-kantor';
@@ -61,6 +61,8 @@ export function AppSidebar() {
                     { title: 'Kelola Pengguna', href: '/admin/users',    icon: Users },
                     { title: 'Kelola Site',     href: '/admin/sites',    icon: MapPin },
                     { title: 'Target Kinerja',  href: '/admin/targets',  icon: Target },
+                    { title: 'Bank Soal Safety', href: '/admin/assessment/questions',    icon: FileQuestion },
+                    { title: 'Bank Soal HR',     href: '/admin/hr-assessment/questions', icon: FileQuestion },
                 ],
             },
           ]
@@ -71,7 +73,7 @@ export function AppSidebar() {
                     { title: 'Dashboard', href: dashboardUrl, icon: LayoutGrid },
                     { title: 'Bugar Selamat', href: bugarSelamatIndex.url(), icon: HeartPulse },
                     { title: 'Laporan Bahaya', href: laporanBahayaIndex.url(), icon: AlertTriangle },
-                    { title: 'Assessment', href: route('assessment.index'), icon: GraduationCap },
+                    { title: 'Assessment', href: assessmentIndex.url(), icon: GraduationCap },
                 ],
             },
             ...(isStaff ? [{

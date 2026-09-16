@@ -17,7 +17,6 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { RiskBadge } from '@/components/risk-badge';
 import { KelayakanBadge } from '@/components/status-badge';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -40,7 +39,7 @@ type RecentLaporanBahaya = {
     tanggal: string;
     lokasi: string;
     tingkat_risiko: 'AA' | 'A' | 'B' | 'C';
-    status_tindakan: 'pending' | 'selesai';
+    status_tindakan: 'pending' | 'continue' | 'progress' | 'close';
 };
 
 type RecentObservasi = {
@@ -231,24 +230,28 @@ return { greeting: 'Selamat Sore', emoji: '🌇', gradientStyle: 'linear-gradien
 }
 
 function useTimeOfDay() {
-    const [now, setNow] = useState<Date | null>(null);
+    const [now, setNow] = useState(() => new Date());
     useEffect(() => {
-        setNow(new Date());
         const tick = () => setNow(new Date());
         const delay = 1000 - new Date().getMilliseconds();
+        let interval: ReturnType<typeof setInterval> | undefined;
         const t1 = setTimeout(() => {
             tick();
-            const interval = setInterval(tick, 1000);
-
-            return () => clearInterval(interval);
+            interval = setInterval(tick, 1000);
         }, delay);
 
-        return () => clearTimeout(t1);
+        return () => {
+            clearTimeout(t1);
+
+            if (interval) {
+clearInterval(interval);
+}
+        };
     }, []);
-    const hour = now?.getHours() ?? 8;
+    const hour = now.getHours();
     const tod = useMemo(() => getTimeOfDay(hour), [hour]);
-    const timeStr = now?.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) ?? '--:--';
-    const dateStr = now?.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) ?? '';
+    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     return { ...tod, timeStr, dateStr };
 }
@@ -282,9 +285,14 @@ const kelayakanAlertColors = {
     },
 };
 
-const jenisTindakanColors = {
+const jenisTindakanColors: Record<RecentLaporanBahaya['status_tindakan'], string> = {
     pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-    selesai: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    continue: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+    progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    close: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+};
+const jenisTindakanLabels: Record<RecentLaporanBahaya['status_tindakan'], string> = {
+    pending: 'Pending', continue: 'Continue', progress: 'Progress', close: 'Selesai',
 };
 
 export default function Dashboard({
@@ -317,12 +325,13 @@ export default function Dashboard({
     const sudahIsiBugarHariIni = recent_bugar_selamat.length > 0 && isToday(recent_bugar_selamat[0].tanggal);
     const isSAPUser = user.participation_level === 'staff' || user.participation_level === 'srstaff';
 
-    const [dismissedKeys, setDismissedKeys] = useState<string[]>([]);
-    useEffect(() => {
+    const [dismissedKeys, setDismissedKeys] = useState<string[]>(() => {
         try {
- setDismissedKeys(JSON.parse(localStorage.getItem('dismissed_badges') ?? '[]')); 
-} catch { /* ignore */ }
-    }, []);
+            return JSON.parse(localStorage.getItem('dismissed_badges') ?? '[]') as string[];
+        } catch {
+            return [];
+        }
+    });
     const visibleBadges = new_badges.filter((b) => !dismissedKeys.includes(b.key));
     const dismissBadges = () => {
         const updated = [...new Set([...dismissedKeys, ...visibleBadges.map((b) => b.key)])];
@@ -330,10 +339,7 @@ export default function Dashboard({
         setDismissedKeys(updated);
     };
 
-    const [motivasi, setMotivasi] = useState(motivasiList[0]);
-    useEffect(() => {
-        setMotivasi(motivasiList[Math.floor(Math.random() * motivasiList.length)]);
-    }, []);
+    const [motivasi] = useState(() => motivasiList[Math.floor(Math.random() * motivasiList.length)]);
 
     const userSite = user.site ?? '';
     const leaderSites = Object.keys(leaderboard);
@@ -508,7 +514,7 @@ export default function Dashboard({
 
                 {/* ④b PERLU TINDAKAN — semua reminder terpusat di sini */}
                 {(() => {
-                    const actionItems: ReminderItem[] = [
+                    const actionItems = ([
                         ...(pending_re_inspeksi
                             ? [
                                   { label: 'Approval Inspeksi Kantor', href: '/sap/inspeksi-kantor', count: pending_re_inspeksi.kantor, icon: <ClipboardCheck className="h-4 w-4" />, tone: 'blue' as const },
@@ -520,14 +526,14 @@ export default function Dashboard({
                         { label: 'Konfirmasi Form OK', href: '/sap/observasi-keselamatan', count: pending_form_ok, icon: <Eye className="h-4 w-4" />, tone: 'purple' },
                         { label: 'Tanda tangan JSA (sebagai TL)', href: '/komunikasi-jsa?filter=pending', count: pending_jsa_tl, icon: <BookOpen className="h-4 w-4" />, tone: 'indigo' },
                         { label: 'Laporan bahaya — Anda PIC-nya', href: '/laporan-bahaya?filter=pic', count: pending_as_pic, icon: <BriefcaseBusiness className="h-4 w-4" />, tone: 'orange' },
-                    ].filter(item => item.count > 0);
+                    ] satisfies ReminderItem[]).filter(item => item.count > 0);
 
-                    const waitingItems: ReminderItem[] = [
+                    const waitingItems = ([
                         { label: 'Form OK Anda — menunggu approval', href: '/observasi-keselamatan?filter=pending', count: my_pending_observasi, icon: <Eye className="h-4 w-4" />, tone: 'amber' },
                         { label: 'Inspeksi Anda — menunggu approval', href: '/inspeksi?filter=pending', count: my_pending_inspeksi, icon: <ClipboardCheck className="h-4 w-4" />, tone: 'amber' },
                         { label: 'JSA Anda — menunggu approval', href: '/komunikasi-jsa?filter=pending', count: my_pending_jsa, icon: <BookOpen className="h-4 w-4" />, tone: 'amber' },
                         { label: 'Laporan Anda — PIC belum closing', href: '/laporan-bahaya', count: my_open_with_pic, icon: <Clock className="h-4 w-4" />, tone: 'red' },
-                    ].filter(item => item.count > 0);
+                    ] satisfies ReminderItem[]).filter(item => item.count > 0);
 
                     if (actionItems.length === 0 && waitingItems.length === 0) {
                         return null;
@@ -882,7 +888,7 @@ export default function Dashboard({
                                                 <div className="ml-2 flex items-center gap-1.5 shrink-0">
                                                     <RiskBadge level={r.tingkat_risiko} />
                                                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${jenisTindakanColors[r.status_tindakan]}`}>
-                                                        {r.status_tindakan === 'pending' ? 'Pending' : 'Selesai'}
+                                                        {jenisTindakanLabels[r.status_tindakan]}
                                                     </span>
                                                     <ChevronRight size={12} className="text-muted-foreground" />
                                                 </div>

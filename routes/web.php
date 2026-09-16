@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AssessmentController;
+use App\Http\Controllers\AssessmentQuestionController;
 use App\Http\Controllers\HrAssessmentController;
+use App\Http\Controllers\HrAssessmentQuestionController;
 use App\Http\Controllers\BugarSelamatController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\DashboardController;
@@ -179,12 +181,33 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/assessment/export-soal', [AdminController::class, 'exportAssessmentQuestionStats'])->name('assessment.export-soal');
         Route::delete('/assessment/batch', [AdminController::class, 'batchDestroyAssessmentSession'])->name('assessment.batch-destroy');
         Route::post('/assessment/delete-range', [AdminController::class, 'deleteRangeAssessment'])->name('assessment.delete-range');
+
+        // Bank soal - Assessment Safety
+        Route::get('/assessment/questions', [AssessmentQuestionController::class, 'index'])->name('assessment.questions.index');
+        Route::post('/assessment/questions', [AssessmentQuestionController::class, 'store'])->name('assessment.questions.store');
+        Route::get('/assessment/questions/export', [AssessmentQuestionController::class, 'export'])->name('assessment.questions.export');
+        Route::get('/assessment/questions/import-template', [AssessmentQuestionController::class, 'importTemplate'])->name('assessment.questions.import-template');
+        Route::post('/assessment/questions/import', [AssessmentQuestionController::class, 'import'])->name('assessment.questions.import');
+        Route::delete('/assessment/questions/batch', [AssessmentQuestionController::class, 'batchDestroy'])->name('assessment.questions.batch-destroy');
+        Route::put('/assessment/questions/{assessmentQuestion}', [AssessmentQuestionController::class, 'update'])->name('assessment.questions.update');
+        Route::delete('/assessment/questions/{assessmentQuestion}', [AssessmentQuestionController::class, 'destroy'])->name('assessment.questions.destroy');
+
         Route::delete('/assessment/{session}', [AdminController::class, 'destroyAssessmentSession'])->name('assessment.destroy');
         Route::get('/hr-assessment', [AdminController::class, 'hrAssessment'])->name('hr-assessment');
         Route::get('/hr-assessment/export', [AdminController::class, 'exportHrAssessment'])->name('hr-assessment.export');
         Route::get('/hr-assessment/export-soal', [AdminController::class, 'exportHrAssessmentQuestionStats'])->name('hr-assessment.export-soal');
         Route::delete('/hr-assessment/batch', [AdminController::class, 'batchDestroyHrAssessmentSession'])->name('hr-assessment.batch-destroy');
         Route::post('/hr-assessment/delete-range', [AdminController::class, 'deleteRangeHrAssessment'])->name('hr-assessment.delete-range');
+
+        // Bank soal - HR Assessment
+        Route::get('/hr-assessment/questions', [HrAssessmentQuestionController::class, 'index'])->name('hr-assessment.questions.index');
+        Route::post('/hr-assessment/questions', [HrAssessmentQuestionController::class, 'store'])->name('hr-assessment.questions.store');
+        Route::get('/hr-assessment/questions/export', [HrAssessmentQuestionController::class, 'export'])->name('hr-assessment.questions.export');
+        Route::get('/hr-assessment/questions/import-template', [HrAssessmentQuestionController::class, 'importTemplate'])->name('hr-assessment.questions.import-template');
+        Route::post('/hr-assessment/questions/import', [HrAssessmentQuestionController::class, 'import'])->name('hr-assessment.questions.import');
+        Route::delete('/hr-assessment/questions/batch', [HrAssessmentQuestionController::class, 'batchDestroy'])->name('hr-assessment.questions.batch-destroy');
+        Route::put('/hr-assessment/questions/{hrAssessmentQuestion}', [HrAssessmentQuestionController::class, 'update'])->name('hr-assessment.questions.update');
+        Route::delete('/hr-assessment/questions/{hrAssessmentQuestion}', [HrAssessmentQuestionController::class, 'destroy'])->name('hr-assessment.questions.destroy');
         Route::delete('/hr-assessment/{session}', [AdminController::class, 'destroyHrAssessmentSession'])->name('hr-assessment.destroy');
         Route::get('/induction-attendance/export/{type}', [AdminController::class, 'exportInductionAttendance'])
             ->name('induction-attendance.export')

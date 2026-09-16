@@ -17,12 +17,12 @@ trait ProfileValidationRules
     protected function profileRules(?int $userId = null): array
     {
         return [
-            'name'    => $this->nameRules(),
-            'email'   => $this->emailRules($userId),
-            'nik'     => $this->nikRules($userId),
-            'jabatan'    => ['nullable', 'string', 'max:100'],
+            'name' => $this->nameRules(),
+            'email' => $this->emailRules($userId),
+            'nik' => $this->nikRules($userId),
+            'jabatan' => ['nullable', 'string', 'max:100'],
             'departemen' => ['nullable', 'string', 'in:Production,Maintenance,Supply Chain,Engineering,HSE,HRGA,Management'],
-            'site'       => ['nullable', 'string', Rule::exists(Site::class, 'value')],
+            'site' => ['nullable', 'string', Rule::exists(Site::class, 'value')],
         ];
     }
 
@@ -54,10 +54,10 @@ trait ProfileValidationRules
         ];
     }
 
-    protected function nikRules(?int $userId = null): array
+    protected function nikRules(?int $userId = null, bool $required = false): array
     {
         return [
-            'nullable',
+            $required ? 'required' : 'nullable',
             'string',
             'max:16',
             $userId === null

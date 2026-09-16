@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
 class AssessmentSession extends Model
 {
     public const DURATION_SECONDS = 45 * 60;
+
     public const PASSING_PERCENTAGE = 80;
 
     protected $fillable = [
@@ -22,17 +26,17 @@ class AssessmentSession extends Model
         'completed_at' => 'datetime',
     ];
 
-    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function sessionQuestions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function sessionQuestions(): HasMany
     {
         return $this->hasMany(AssessmentSessionQuestion::class)->orderBy('urutan');
     }
 
-    public function scopeCompleted(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeCompleted(Builder $query): Builder
     {
         return $query->where('status', 'completed');
     }
@@ -55,7 +59,7 @@ class AssessmentSession extends Model
             $score = 0;
             foreach ($this->sessionQuestions as $sq) {
                 $isCorrect = $sq->jawaban_user !== null
-                    && (int) $sq->jawaban_user === (int) $sq->question->jawaban_benar;
+                    && (int) $sq->jawaban_user === $sq->correctAnswer();
 
                 if ($sq->jawaban_user !== null) {
                     $sq->update(['is_correct' => $isCorrect]);

@@ -7,7 +7,6 @@ import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
 import { KelayakanBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog, DialogContent, DialogDescription,
@@ -104,6 +103,23 @@ const STATUS_LABEL: Record<string, string> = {
     dilarang: 'Dilarang',
 };
 
+// Border kiri berwarna pada baris tabel sebagai indikator status kelayakan
+const statusRowBorder = (status?: 'layak' | 'catatan' | 'dilarang') => {
+    if (status === 'layak') {
+        return 'border-l-4 border-l-green-500';
+    }
+
+    if (status === 'catatan') {
+        return 'border-l-4 border-l-yellow-400';
+    }
+
+    if (status === 'dilarang') {
+        return 'border-l-4 border-l-red-500';
+    }
+
+    return 'border-l-4 border-l-slate-300';
+};
+
 // ─── Harian View ──────────────────────────────────────────────────────────────
 
 function HarianView({ tanggal, users, entries, summary, filters, sites }: Extract<Props, { view: 'harian' }>) {
@@ -127,6 +143,12 @@ function HarianView({ tanggal, users, entries, summary, filters, sites }: Extrac
     const prevDay = addDays(tanggal, -1);
     const nextDay = addDays(tanggal, 1);
 
+    const exportUrl = `/admin/bugar-selamat/export?${new URLSearchParams({
+        date_from: tanggal,
+        date_to: tanggal,
+        ...(filters.search ? { search: filters.search } : {}),
+    }).toString()}`;
+
     const summaryItems = [
         { label: 'Belum Mengisi', count: summary.not_filled, color: 'text-slate-500', bg: 'bg-slate-100' },
         { label: 'Layak',         count: summary.layak,      color: 'text-green-700',  bg: 'bg-green-50' },
@@ -136,6 +158,15 @@ function HarianView({ tanggal, users, entries, summary, filters, sites }: Extrac
 
     return (
         <div className="space-y-4">
+            {/* Export */}
+            <div className="flex justify-end">
+                <a href={exportUrl}>
+                    <Button size="sm" variant="outline" className="gap-1">
+                        <Download size={14} /> Export Excel
+                    </Button>
+                </a>
+            </div>
+
             {/* Date Navigator */}
             <div className="flex items-center justify-between gap-2">
                 <Button size="icon" variant="outline" onClick={() => navigate({ tanggal: prevDay })}>
@@ -189,50 +220,58 @@ function HarianView({ tanggal, users, entries, summary, filters, sites }: Extrac
             {users.length === 0 ? (
                 <p className="py-10 text-center text-sm text-muted-foreground">Tidak ada karyawan.</p>
             ) : (
-                <div className="space-y-2">
-                    {users.map((user) => {
-                        const entry = entries[user.id.toString()];
+                <div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full min-w-[640px] border-collapse text-xs">
+                        <thead>
+                            <tr className="bg-muted/50 text-left">
+                                <th className="px-3 py-2 font-semibold">Karyawan</th>
+                                <th className="px-2 py-2 font-semibold">Site</th>
+                                <th className="px-2 py-2 text-center font-semibold">Status</th>
+                                <th className="px-2 py-2 text-center font-semibold">Shift</th>
+                                <th className="px-2 py-2 text-center font-semibold">Siap Kerja</th>
+                                <th className="px-2 py-2 text-right font-semibold">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {users.map((user, idx) => {
+                                const entry = entries[user.id.toString()];
 
-                        return (
-                            <Card key={user.id} className={entry
-                                ? entry.status === 'layak'    ? 'border-l-4 border-l-green-500'
-                                : entry.status === 'catatan'  ? 'border-l-4 border-l-yellow-400'
-                                : 'border-l-4 border-l-red-500'
-                                : 'border-l-4 border-l-slate-300 opacity-70'
-                            }>
-                                <CardContent className="py-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate font-semibold">{user.name}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                NIK: {user.nik ?? '—'} · {siteName(user.site)}
-                                            </p>
-                                            {entry ? (
-                                                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                                                    <KelayakanBadge status={entry.status} />
-                                                    <Badge variant="outline" className="text-xs">
-                                                        Shift {entry.shift}
-                                                    </Badge>
-                                                    <Badge variant={entry.siap_bekerja ? 'outline' : 'destructive'} className="text-xs">
-                                                        {entry.siap_bekerja ? '✓ Siap Bekerja' : '✗ Tidak Siap'}
-                                                    </Badge>
-                                                </div>
-                                            ) : (
-                                                <p className="mt-1 text-xs text-muted-foreground italic">Belum mengisi</p>
+                                return (
+                                    <tr key={user.id} className={`${idx % 2 === 0 ? 'bg-background' : 'bg-muted/10'} ${!entry ? 'opacity-60' : ''}`}>
+                                        <td className={`px-3 py-2 ${statusRowBorder(entry?.status)}`}>
+                                            <p className="truncate max-w-[160px] font-medium">{user.name}</p>
+                                            <p className="text-[10px] text-muted-foreground">NIK: {user.nik ?? '—'}</p>
+                                        </td>
+                                        <td className="px-2 py-2 text-muted-foreground">{siteName(user.site)}</td>
+                                        <td className="px-2 py-2 text-center">
+                                            {entry
+                                                ? <KelayakanBadge status={entry.status} />
+                                                : <span className="text-[10px] italic text-muted-foreground">Belum mengisi</span>}
+                                        </td>
+                                        <td className="px-2 py-2 text-center">
+                                            {entry ? <Badge variant="outline" className="text-[10px]">Shift {entry.shift}</Badge> : '—'}
+                                        </td>
+                                        <td className="px-2 py-2 text-center">
+                                            {entry
+                                                ? (
+                                                    <span className={entry.siap_bekerja ? 'text-green-600' : 'font-semibold text-red-600'}>
+                                                        {entry.siap_bekerja ? '✓' : '✗'}
+                                                    </span>
+                                                )
+                                                : '—'}
+                                        </td>
+                                        <td className="px-2 py-2 text-right">
+                                            {entry && (
+                                                <Link href={`/bugar-selamat/${entry.id}?ref=monitoring`}>
+                                                    <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]">Detail</Button>
+                                                </Link>
                                             )}
-                                        </div>
-                                        {entry && (
-                                            <Link href={`/bugar-selamat/${entry.id}?ref=monitoring`}>
-                                                <Button size="sm" variant="outline" className="h-8 shrink-0">
-                                                    Detail
-                                                </Button>
-                                            </Link>
-                                        )}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
             )}
         </div>
@@ -486,11 +525,7 @@ p.set('date_to', filters.date_to);
         return qs ? '?' + qs : '';
     })()}`;
 
-    const cardBorder: Record<string, string> = {
-        layak:    'border-l-4 border-l-green-500',
-        catatan:  'border-l-4 border-l-yellow-400',
-        dilarang: 'border-l-4 border-l-red-500',
-    };
+    const allSelected = records.data.length > 0 && selectedIds.size === records.data.length;
 
     const bannerBg = summary.dilarang > 0
         ? 'bg-red-50 border border-red-200'
@@ -501,7 +536,7 @@ p.set('date_to', filters.date_to);
     return (
         <>
             <div className="space-y-4">
-                <div className="flex justify-end gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
                     {selectMode ? (
                         <>
                             <Button size="sm" variant="outline" onClick={toggleSelectAll}>
@@ -612,50 +647,64 @@ p.set('date_to', filters.date_to);
                 {records.data.length === 0 ? (
                     <p className="py-10 text-center text-sm text-muted-foreground">Tidak ada data yang sesuai filter.</p>
                 ) : (
-                    <div className="space-y-2">
-                        {records.data.map((record) => (
-                            <Card key={record.id} className={cardBorder[record.status_kelayakan]}>
-                                <CardContent className="py-3">
-                                    <div className="flex items-start justify-between gap-2">
+                    <div className="overflow-x-auto rounded-lg border">
+                        <table className="w-full min-w-[720px] border-collapse text-xs">
+                            <thead>
+                                <tr className="bg-muted/50 text-left">
+                                    {selectMode && (
+                                        <th className="w-8 px-2 py-2">
+                                            <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
+                                        </th>
+                                    )}
+                                    <th className="px-3 py-2 font-semibold">Karyawan</th>
+                                    <th className="px-2 py-2 font-semibold">Site</th>
+                                    <th className="px-2 py-2 font-semibold">Tanggal</th>
+                                    <th className="px-2 py-2 text-center font-semibold">Shift</th>
+                                    <th className="px-2 py-2 text-center font-semibold">Hari ke</th>
+                                    <th className="px-2 py-2 text-center font-semibold">Status</th>
+                                    {!selectMode && <th className="px-2 py-2 text-right font-semibold">Aksi</th>}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {records.data.map((record, idx) => (
+                                    <tr key={record.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/10'}>
                                         {selectMode && (
-                                            <Checkbox
-                                                checked={selectedIds.has(record.id)}
-                                                onCheckedChange={() => toggleSelect(record.id)}
-                                                className="mt-1 shrink-0"
-                                            />
+                                            <td className="px-2 py-2">
+                                                <Checkbox
+                                                    checked={selectedIds.has(record.id)}
+                                                    onCheckedChange={() => toggleSelect(record.id)}
+                                                />
+                                            </td>
                                         )}
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate font-semibold">{record.user.name}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                NIK: {record.user.nik ?? '—'} · {siteName(record.user.site ?? null)}
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {formatTanggalShort(record.tanggal)}
-                                                {' · Shift '}{record.shift}
-                                                {' · Hari ke-'}{record.hari_ke}
-                                            </p>
-                                            <div className="mt-2">
-                                                <KelayakanBadge status={record.status_kelayakan} />
-                                            </div>
-                                        </div>
+                                        <td className={`px-3 py-2 ${statusRowBorder(record.status_kelayakan)}`}>
+                                            <p className="truncate max-w-[160px] font-medium">{record.user.name}</p>
+                                            <p className="text-[10px] text-muted-foreground">NIK: {record.user.nik ?? '—'}</p>
+                                        </td>
+                                        <td className="px-2 py-2 text-muted-foreground">{siteName(record.user.site ?? null)}</td>
+                                        <td className="px-2 py-2 text-muted-foreground">{formatTanggalShort(record.tanggal)}</td>
+                                        <td className="px-2 py-2 text-center">{record.shift}</td>
+                                        <td className="px-2 py-2 text-center">{record.hari_ke}</td>
+                                        <td className="px-2 py-2 text-center"><KelayakanBadge status={record.status_kelayakan} /></td>
                                         {!selectMode && (
-                                            <div className="flex shrink-0 items-center gap-1">
-                                                <Link href={`/bugar-selamat/${record.id}?ref=daftar`}>
-                                                    <Button size="sm" variant="outline" className="h-9">Detail</Button>
-                                                </Link>
-                                                <Button
-                                                    size="sm" variant="ghost"
-                                                    className="h-9 w-9 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                    onClick={() => setToDelete(record)}
-                                                >
-                                                    <Trash2 size={15} />
-                                                </Button>
-                                            </div>
+                                            <td className="px-2 py-2 text-right">
+                                                <div className="flex justify-end gap-1">
+                                                    <Link href={`/bugar-selamat/${record.id}?ref=daftar`}>
+                                                        <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]">Detail</Button>
+                                                    </Link>
+                                                    <Button
+                                                        size="sm" variant="ghost"
+                                                        className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                        onClick={() => setToDelete(record)}
+                                                    >
+                                                        <Trash2 size={13} />
+                                                    </Button>
+                                                </div>
+                                            </td>
                                         )}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 

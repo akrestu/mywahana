@@ -1,4 +1,4 @@
-﻿import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import {
     Camera,
     Check,
@@ -285,7 +285,7 @@ galleryRef.current.value = '';
         setUploadProgress(0);
         post('/laporan-bahaya', {
             forceFormData: true,
-            onProgress: (e) => setUploadProgress(e.percentage ?? null),
+            onProgress: (e) => setUploadProgress(e?.percentage ?? null),
             onFinish: () => setUploadProgress(null),
         });
     };

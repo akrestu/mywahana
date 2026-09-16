@@ -7,7 +7,6 @@ import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
 import { RiskBadge } from '@/components/risk-badge';
 import { TindakanBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import {
@@ -205,17 +204,19 @@ p.set('date_to', filters.date_to);
         return qs ? '?' + qs : '';
     })()}`;
 
+    const allSelected = records.data.length > 0 && selectedIds.size === records.data.length;
+
     return (
         <>
             <Head title="Admin — Laporan Bahaya" />
 
             <div className="space-y-4">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <h2 className="text-lg font-bold">Laporan Bahaya</h2>
                         <p className="text-sm text-muted-foreground">Semua laporan bahaya karyawan</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         {selectMode ? (
                             <>
                                 <Button size="sm" variant="outline" onClick={toggleSelectAll}>
@@ -341,83 +342,104 @@ p.set('date_to', filters.date_to);
                 {records.data.length === 0 ? (
                     <p className="py-10 text-center text-sm text-muted-foreground">Tidak ada laporan yang sesuai filter.</p>
                 ) : (
-                    <div className="space-y-2">
-                        {records.data.map((record) => (
-                            <Card key={record.id} className={cardBorder[record.tingkat_risiko]}>
-                                <CardContent className="space-y-3 py-3">
-                                    <div className="flex items-start justify-between gap-2">
+                    <div className="overflow-x-auto rounded-lg border">
+                        <table className="w-full min-w-[680px] border-collapse text-xs">
+                            <thead>
+                                <tr className="bg-muted/50 text-left">
+                                    {selectMode && (
+                                        <th className="w-8 px-2 py-2">
+                                            <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
+                                        </th>
+                                    )}
+                                    <th className="px-3 py-2 font-semibold">Karyawan</th>
+                                    <th className="px-2 py-2 font-semibold">Lokasi</th>
+                                    <th className="px-2 py-2 text-center font-semibold">Risiko</th>
+                                    <th className="px-2 py-2 font-semibold">PIC</th>
+                                    <th className="px-2 py-2 font-semibold">Tindakan</th>
+                                    {!selectMode && <th className="px-2 py-2 text-right font-semibold">Aksi</th>}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {records.data.map((record, idx) => (
+                                    <tr key={record.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/10'}>
                                         {selectMode && (
-                                            <Checkbox
-                                                checked={selectedIds.has(record.id)}
-                                                onCheckedChange={() => toggleSelect(record.id)}
-                                                className="mt-1 shrink-0"
-                                            />
+                                            <td className="px-2 py-2">
+                                                <Checkbox
+                                                    checked={selectedIds.has(record.id)}
+                                                    onCheckedChange={() => toggleSelect(record.id)}
+                                                />
+                                            </td>
                                         )}
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate font-semibold">{record.user.name}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                NIK: {record.user.nik ?? '—'} · {record.user.site ? record.user.site.charAt(0).toUpperCase() + record.user.site.slice(1) : '—'}
+                                        <td className={cn('px-3 py-2', cardBorder[record.tingkat_risiko])}>
+                                            <p className="truncate max-w-[160px] font-medium">{record.user.name}</p>
+                                            <p className="text-[10px] text-muted-foreground">
+                                                NIK: {record.user.nik ?? '—'}
+                                                {record.user.site && ` · ${record.user.site.charAt(0).toUpperCase() + record.user.site.slice(1)}`}
                                             </p>
-                                            <p className="truncate text-sm text-muted-foreground">
-                                                {new Date(record.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                                {' · '}{record.lokasi}
+                                        </td>
+                                        <td className="px-2 py-2 text-muted-foreground">
+                                            <p className="truncate max-w-[140px]">{record.lokasi}</p>
+                                            <p className="text-[10px]">
+                                                {new Date(record.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                             </p>
-                                        </div>
-                                        <div className="flex shrink-0 items-center gap-1">
-                                            <RiskBadge level={record.tingkat_risiko} />
-                                            {!selectMode && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    className="h-9 w-9 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                    onClick={() => setToDelete(record)}
-                                                >
-                                                    <Trash2 size={15} />
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <span className="font-medium">PIC:</span>
-                                        <span className={record.pic ? '' : 'italic text-destructive/70'}>
-                                            {record.pic ? record.pic.name : 'Belum ditugaskan'}
-                                        </span>
-                                        {!selectMode && (
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                                                onClick={() => openPicDialog(record)}
-                                            >
-                                                <UserPen size={14} />
-                                            </Button>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <TindakanBadge status={record.status_tindakan} />
-                                        <div className="flex gap-2">
-                                            {(['pending', 'continue', 'progress', 'close'] as const)
-                                                .filter(s => s !== record.status_tindakan)
-                                                .map(s => (
+                                        </td>
+                                        <td className="px-2 py-2 text-center"><RiskBadge level={record.tingkat_risiko} /></td>
+                                        <td className="px-2 py-2">
+                                            <div className="flex items-center gap-1">
+                                                <span className={cn('truncate max-w-[100px]', !record.pic && 'italic text-destructive/70')}>
+                                                    {record.pic ? record.pic.name : 'Belum ditugaskan'}
+                                                </span>
+                                                {!selectMode && (
                                                     <Button
-                                                        key={s}
                                                         size="sm"
-                                                        variant="outline"
-                                                        className="h-9 gap-1 capitalize"
-                                                        disabled={updatingId === record.id}
-                                                        onClick={() => handleStatusUpdate(record.id, s)}
+                                                        variant="ghost"
+                                                        className="h-6 w-6 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                                        onClick={() => openPicDialog(record)}
                                                     >
-                                                        {updatingId === record.id ? 'Menyimpan...' : s.charAt(0).toUpperCase() + s.slice(1)}
+                                                        <UserPen size={12} />
                                                     </Button>
-                                                ))}
-                                            <Link href={`/laporan-bahaya/${record.id}?ref=admin`}>
-                                                <Button size="sm" variant="ghost" className="h-9">Detail</Button>
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-2 py-2">
+                                            <div className="flex items-center gap-1.5">
+                                                <TindakanBadge status={record.status_tindakan} />
+                                                {!selectMode && (
+                                                    <select
+                                                        value={record.status_tindakan}
+                                                        onChange={(e) => handleStatusUpdate(record.id, e.target.value)}
+                                                        disabled={updatingId === record.id}
+                                                        className="h-6 rounded border bg-background px-1 text-[10px] disabled:opacity-50"
+                                                    >
+                                                        <option value="pending">Pending</option>
+                                                        <option value="continue">Continue</option>
+                                                        <option value="progress">Progress</option>
+                                                        <option value="close">Close</option>
+                                                    </select>
+                                                )}
+                                            </div>
+                                        </td>
+                                        {!selectMode && (
+                                            <td className="px-2 py-2 text-right">
+                                                <div className="flex justify-end gap-1">
+                                                    <Link href={`/laporan-bahaya/${record.id}?ref=admin`}>
+                                                        <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]">Detail</Button>
+                                                    </Link>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                        onClick={() => setToDelete(record)}
+                                                    >
+                                                        <Trash2 size={13} />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 

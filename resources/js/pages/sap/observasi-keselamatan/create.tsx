@@ -273,7 +273,7 @@ return;
 
         setUploadProgress(0);
         post('/sap/observasi-keselamatan', {
-            onProgress: (e) => setUploadProgress(e.percentage ?? null),
+            onProgress: (e) => setUploadProgress(e?.percentage ?? null),
             onFinish: () => setUploadProgress(null),
         });
     };

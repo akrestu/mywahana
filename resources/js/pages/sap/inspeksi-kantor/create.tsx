@@ -1,7 +1,8 @@
-﻿import { Head, useForm } from '@inertiajs/react';
-import { ArrowLeft, ArrowRight, Calendar, Camera, Check, ChevronsUpDown, Images, Plus, Trash2, X } from 'lucide-react';
+import { Head, router, useForm } from '@inertiajs/react';
+import { ArrowLeft, ArrowRight, Camera, Check, ChevronsUpDown, Images, Plus, Trash2, X } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
+import { SiteCombobox } from '@/components/site-combobox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -9,7 +10,6 @@ import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { SiteCombobox } from '@/components/site-combobox';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { UploadOverlay } from '@/components/upload-overlay';
@@ -81,7 +81,6 @@ type FormData = {
 } & { [K in ScoreKey]: string } & {
     tindakan_perbaikan: TindakanRow[];
     ttd_inspektor: string;
-    [key: string]: unknown;
 };
 
 const ALL_SCORE_KEYS: ScoreKey[] = [
@@ -191,7 +190,6 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
 }, [step]);
     const [riOpen, setRiOpen] = useState(false);
     const [pesertaOpen, setPesertaOpen] = useState(false);
-    const [siteOpen, setSiteOpen] = useState(false);
     const [fotoFiles, setFotoFiles] = useState<Record<string, File>>({});
     const handleFotoChange = async (key: string, file: File) => {
         const compressed = await compressImageWithToast(file);
@@ -202,6 +200,7 @@ export default function InspeksiKantorCreate({ user, staffUsers, sites }: Props)
     const [showCamera, setShowCamera] = useState(false);
     const [pendingFotoKey, setPendingFotoKey] = useState<string | null>(null);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [processing, setProcessing] = useState(false);
     function openFotoPicker(key: string) {
  setPendingFotoKey(key); setPhotoSheet(true); 
 }
@@ -217,7 +216,7 @@ fotoGalleryRef.current?.click();
 
     const initialScores = Object.fromEntries(ALL_SCORE_KEYS.map(k => [k, ''])) as { [K in ScoreKey]: string };
 
-    const { data, setData, post, processing, errors } = useForm<FormData>({
+    const { data, setData, errors } = useForm<FormData>({
         re_inspektor_id: '',
         peserta_ids: [],
         tanggal: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }),
@@ -260,10 +259,12 @@ fotoGalleryRef.current?.click();
         });
         Object.entries(fotoFiles).forEach(([k, f]) => fd.append(`foto[${k}]`, f));
         setUploadProgress(0);
-        post('/sap/inspeksi-kantor', {
-            data: fd as unknown as FormData,
-            onProgress: (e) => setUploadProgress(e.percentage ?? null),
-            onFinish: () => setUploadProgress(null),
+        router.post('/sap/inspeksi-kantor', fd, {
+            onStart: () => setProcessing(true),
+            onProgress: (e) => setUploadProgress(e?.percentage ?? null),
+            onFinish: () => {
+ setUploadProgress(null); setProcessing(false);
+},
         });
     };
 

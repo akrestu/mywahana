@@ -6,7 +6,6 @@ import DateRangeFilter from '@/components/admin/DateRangeFilter';
 import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog, DialogContent, DialogDescription,
@@ -179,18 +178,19 @@ p.set('date_to', filters.date_to);
     })()}`;
 
     const hasPending = summary.menunggu_konfirmasi > 0;
+    const allSelected = records.data.length > 0 && selectedIds.size === records.data.length;
 
     return (
         <>
             <Head title="Admin — Komunikasi JSA/SOP/IK" />
 
             <div className="space-y-4">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <h2 className="text-lg font-bold">Komunikasi JSA/SOP/IK</h2>
                         <p className="text-sm text-muted-foreground">WBK-HSE-FO-026 · Semua data karyawan</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         {selectMode ? (
                             <>
                                 <Button size="sm" variant="outline" onClick={toggleSelectAll}>
@@ -308,63 +308,90 @@ p.set('date_to', filters.date_to);
                 {records.data.length === 0 ? (
                     <p className="py-10 text-center text-sm text-muted-foreground">Tidak ada data yang sesuai filter.</p>
                 ) : (
-                    <div className="space-y-2">
-                        {records.data.map(record => (
-                            <Card key={record.id} className={`border-l-4 ${barColor(record.status)}`}>
-                                <CardContent className="py-3 space-y-2">
-                                    <div className="flex items-start justify-between gap-2">
+                    <div className="overflow-x-auto rounded-lg border">
+                        <table className="w-full min-w-[760px] border-collapse text-xs">
+                            <thead>
+                                <tr className="bg-muted/50 text-left">
+                                    {selectMode && (
+                                        <th className="w-8 px-2 py-2">
+                                            <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
+                                        </th>
+                                    )}
+                                    <th className="px-3 py-2 font-semibold">Dokumen</th>
+                                    <th className="px-2 py-2 font-semibold">Karyawan</th>
+                                    <th className="px-2 py-2 font-semibold">Lokasi</th>
+                                    <th className="px-2 py-2 text-center font-semibold">Peserta</th>
+                                    <th className="px-2 py-2 text-center font-semibold">Durasi</th>
+                                    <th className="px-2 py-2 font-semibold">Tanggal</th>
+                                    {!selectMode && <th className="px-2 py-2 text-right font-semibold">Aksi</th>}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {records.data.map((record, idx) => (
+                                    <tr key={record.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/10'}>
                                         {selectMode && (
-                                            <Checkbox
-                                                checked={selectedIds.has(record.id)}
-                                                onCheckedChange={() => toggleSelect(record.id)}
-                                                className="mt-1 shrink-0"
-                                            />
+                                            <td className="px-2 py-2">
+                                                <Checkbox
+                                                    checked={selectedIds.has(record.id)}
+                                                    onCheckedChange={() => toggleSelect(record.id)}
+                                                />
+                                            </td>
                                         )}
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                                        <td className={`px-3 py-2 border-l-4 ${barColor(record.status)}`}>
+                                            <div className="mb-1 flex flex-wrap items-center gap-1">
                                                 <StatusBadge status={record.status} />
-                                                <Badge variant="outline" className="text-xs capitalize">{record.shift}</Badge>
+                                                <Badge variant="outline" className="text-[10px] capitalize">{record.shift}</Badge>
                                             </div>
-                                            <p className="font-semibold text-sm leading-snug line-clamp-1 flex items-center gap-1.5">
-                                                <BookOpen size={13} className="shrink-0 text-muted-foreground" />
+                                            <p className="flex items-center gap-1 truncate max-w-[180px] font-medium">
+                                                <BookOpen size={11} className="shrink-0 text-muted-foreground" />
                                                 {record.judul_dokumen}
                                             </p>
-                                            <p className="text-sm text-muted-foreground font-medium">{record.user.name}
-                                                {record.user.nik && <span className="font-normal"> · {record.user.nik}</span>}
-                                                {record.user.site && <span className="font-normal capitalize"> · {record.user.site}</span>}
+                                        </td>
+                                        <td className="px-2 py-2 text-muted-foreground">
+                                            <p className="truncate max-w-[140px] font-medium text-foreground">{record.user.name}</p>
+                                            <p className="text-[10px]">
+                                                {record.user.nik ?? '—'}{record.user.site && ` · ${record.user.site}`}
                                             </p>
-                                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
-                                                <span className="flex items-center gap-1">
-                                                    <CalendarDays size={11} />
-                                                    {new Date(record.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                                </span>
-                                                <span className="flex items-center gap-1"><MapPin size={11} />{record.lokasi}</span>
-                                                <span className="flex items-center gap-1"><Users size={11} />{record.peserta.length} peserta</span>
-                                                <span className="flex items-center gap-1"><Clock size={11} />{record.durasi} mnt</span>
-                                            </div>
-                                            {record.team_leader && (
-                                                <p className="text-xs text-muted-foreground mt-0.5">TL: {record.team_leader.name}</p>
-                                            )}
-                                        </div>
+                                        </td>
+                                        <td className="px-2 py-2 text-muted-foreground">
+                                            <p className="flex items-center gap-1 truncate max-w-[140px]">
+                                                <MapPin size={11} className="shrink-0" />{record.lokasi}
+                                            </p>
+                                            {record.team_leader && <p className="text-[10px]">TL: {record.team_leader.name}</p>}
+                                        </td>
+                                        <td className="px-2 py-2 text-center text-muted-foreground">
+                                            <span className="inline-flex items-center gap-1"><Users size={11} />{record.peserta.length}</span>
+                                        </td>
+                                        <td className="px-2 py-2 text-center text-muted-foreground">
+                                            <span className="inline-flex items-center gap-1"><Clock size={11} />{record.durasi}m</span>
+                                        </td>
+                                        <td className="px-2 py-2 text-muted-foreground">
+                                            <span className="inline-flex items-center gap-1">
+                                                <CalendarDays size={11} />
+                                                {new Date(record.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </span>
+                                        </td>
                                         {!selectMode && (
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-9 w-9 p-0 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                onClick={() => setToDelete(record)}
-                                            >
-                                                <Trash2 size={15} />
-                                            </Button>
+                                            <td className="px-2 py-2 text-right">
+                                                <div className="flex justify-end gap-1">
+                                                    <Link href={`/sap/komunikasi-jsa/${record.id}`}>
+                                                        <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]">Detail</Button>
+                                                    </Link>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                        onClick={() => setToDelete(record)}
+                                                    >
+                                                        <Trash2 size={13} />
+                                                    </Button>
+                                                </div>
+                                            </td>
                                         )}
-                                    </div>
-                                    <div className="flex justify-end">
-                                        <Link href={`/sap/komunikasi-jsa/${record.id}`}>
-                                            <Button size="sm" variant="ghost" className="h-8 text-xs">Lihat Detail</Button>
-                                        </Link>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 

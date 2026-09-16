@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 type UserInfo = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
 type TindakanRow = { tindakan: string; pic: string; due_date: string; remark: string };
 
-type Record = {
+type InspectionRecord = {
     id: number;
     user: UserInfo;
     re_inspektor: UserInfo | null;
@@ -32,7 +32,7 @@ type Record = {
     [key: string]: unknown;
 };
 
-type Props = { record: Record; is_ri: boolean };
+type Props = { record: InspectionRecord; is_ri: boolean };
 
 const CATEGORIES = [
     { key: 'situasi', label: 'Situasi', items: [
@@ -257,7 +257,7 @@ return null;
                 {record.status === 'menunggu_re_inspeksi' && is_ri && (
                     <div className="rounded-2xl border-2 border-yellow-300 bg-yellow-50/50 dark:bg-yellow-950/10 p-4 text-center">
                         <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300 mb-3">
-                            Menunggu re-inspeksi dari {record.re_inspektor.name}
+                            Menunggu re-inspeksi dari {record.re_inspektor?.name ?? 're-inspektor'}
                         </p>
                         <Link href={`/sap/inspeksi-kantor/${record.id}/re-inspeksi`}>
                             <Button className="bg-yellow-500 hover:bg-yellow-600 text-white">Lakukan Re-Inspeksi</Button>

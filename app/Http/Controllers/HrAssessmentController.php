@@ -14,7 +14,9 @@ use Inertia\Inertia;
 class HrAssessmentController extends Controller
 {
     private const PASSING_PERCENTAGE = 80;
+
     private const QUESTION_COUNT = 30;
+
     private const MAX_DAILY_ATTEMPTS = 3;
 
     public function index()
@@ -63,6 +65,7 @@ class HrAssessmentController extends Controller
 
         if ($passedToday) {
             Inertia::flash('toast', ['type' => 'info', 'message' => 'Kamu sudah lulus HR Assessment hari ini. Selamat!']);
+
             return redirect()->route('hr-assessment.index');
         }
 
@@ -72,13 +75,16 @@ class HrAssessmentController extends Controller
             ->count();
 
         if ($completedToday >= self::MAX_DAILY_ATTEMPTS) {
-            Inertia::flash('toast', ['type' => 'warning', 'message' => 'Kamu sudah mencapai batas maksimal ' . self::MAX_DAILY_ATTEMPTS . 'x percobaan hari ini. Coba lagi besok.']);
+            Inertia::flash('toast', ['type' => 'warning', 'message' => 'Kamu sudah mencapai batas maksimal '.self::MAX_DAILY_ATTEMPTS.'x percobaan hari ini. Coba lagi besok.']);
+
             return redirect()->route('hr-assessment.index');
         }
 
         $questions = HrAssessmentQuestion::inRandomOrder()
             ->limit(self::QUESTION_COUNT)
             ->get();
+
+        abort_if($questions->isEmpty(), 422, 'Belum ada soal HR assessment tersedia. Hubungi admin HR.');
 
         $session = DB::transaction(function () use ($user, $questions) {
             $session = HrAssessmentSession::create([
@@ -93,6 +99,12 @@ class HrAssessmentController extends Controller
                     'hr_assessment_session_id' => $session->id,
                     'hr_assessment_question_id' => $question->id,
                     'urutan' => $index + 1,
+                    'question_snapshot' => $question->question,
+                    'jawaban_1_snapshot' => $question->jawaban_1,
+                    'jawaban_2_snapshot' => $question->jawaban_2,
+                    'jawaban_3_snapshot' => $question->jawaban_3,
+                    'jawaban_4_snapshot' => $question->jawaban_4,
+                    'jawaban_benar_snapshot' => $question->jawaban_benar,
                 ]);
             }
 
@@ -117,14 +129,14 @@ class HrAssessmentController extends Controller
 
         $session->load(['sessionQuestions.question']);
 
-        $questions = $session->sessionQuestions->map(fn($sq) => [
+        $questions = $session->sessionQuestions->map(fn ($sq) => [
             'session_question_id' => $sq->id,
             'urutan' => $sq->urutan,
-            'question' => $sq->question->question,
-            'jawaban_1' => $sq->question->jawaban_1,
-            'jawaban_2' => $sq->question->jawaban_2,
-            'jawaban_3' => $sq->question->jawaban_3,
-            'jawaban_4' => $sq->question->jawaban_4,
+            'question' => $sq->questionText(),
+            'jawaban_1' => $sq->answerOption(1),
+            'jawaban_2' => $sq->answerOption(2),
+            'jawaban_3' => $sq->answerOption(3),
+            'jawaban_4' => $sq->answerOption(4),
             'jawaban_user' => $sq->jawaban_user,
         ]);
 
@@ -142,10 +154,16 @@ class HrAssessmentController extends Controller
     {
         $user = Auth::user();
         abort_unless($session->user_id === $user->id, 403);
-        abort_if($session->status === 'completed', 403);
+        abort_unless($session->status === 'in_progress', 403);
+
+        if ($session->started_at->addSeconds(HrAssessmentSession::DURATION_SECONDS + 15)->isPast()) {
+            $session->autoExpire();
+
+            return redirect()->route('hr-assessment.result', $session);
+        }
 
         $answers = $request->validate([
-            'answers' => ['required', 'array'],
+            'answers' => ['present', 'array'],
             'answers.*' => ['nullable', 'integer', 'min:1', 'max:4'],
         ])['answers'];
 
@@ -155,14 +173,16 @@ class HrAssessmentController extends Controller
             foreach ($session->sessionQuestions as $sq) {
                 $jawabanUser = $answers[$sq->id] ?? null;
                 $isCorrect = $jawabanUser !== null
-                    && (int) $jawabanUser === (int) $sq->question->jawaban_benar;
+                    && (int) $jawabanUser === $sq->correctAnswer();
 
                 $sq->update([
                     'jawaban_user' => $jawabanUser,
                     'is_correct' => $isCorrect,
                 ]);
 
-                if ($isCorrect) $score++;
+                if ($isCorrect) {
+                    $score++;
+                }
             }
 
             $percentage = $session->total_questions > 0
@@ -200,14 +220,14 @@ class HrAssessmentController extends Controller
 
         $session->load(['sessionQuestions.question']);
 
-        $review = $session->sessionQuestions->map(fn($sq) => [
+        $review = $session->sessionQuestions->map(fn ($sq) => [
             'urutan' => $sq->urutan,
-            'question' => $sq->question->question,
-            'jawaban_1' => $sq->question->jawaban_1,
-            'jawaban_2' => $sq->question->jawaban_2,
-            'jawaban_3' => $sq->question->jawaban_3,
-            'jawaban_4' => $sq->question->jawaban_4,
-            'jawaban_benar' => $sq->question->jawaban_benar,
+            'question' => $sq->questionText(),
+            'jawaban_1' => $sq->answerOption(1),
+            'jawaban_2' => $sq->answerOption(2),
+            'jawaban_3' => $sq->answerOption(3),
+            'jawaban_4' => $sq->answerOption(4),
+            'jawaban_benar' => $sq->correctAnswer(),
             'jawaban_user' => $sq->jawaban_user,
             'is_correct' => $sq->is_correct,
         ]);

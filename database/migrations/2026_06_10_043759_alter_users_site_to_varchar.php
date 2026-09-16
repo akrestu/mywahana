@@ -7,11 +7,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE users MODIFY COLUMN site VARCHAR(100) NULL");
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+        DB::statement('ALTER TABLE users MODIFY COLUMN site VARCHAR(100) NULL');
     }
 
     public function down(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
         DB::statement("ALTER TABLE users MODIFY COLUMN site ENUM('baratama','bandhawa') NULL");
     }
 };

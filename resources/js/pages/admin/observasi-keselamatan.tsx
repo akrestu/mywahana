@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 type OKRecord = {
@@ -116,17 +115,19 @@ return;
         Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) as Record<string, string>
     ).toString()}`;
 
+    const allSelected = records.data.length > 0 && selectedIds.size === records.data.length;
+
     return (
         <>
             <Head title="Monitoring Observasi Keselamatan" />
             <div className="flex flex-col gap-6">
                 {/* Header */}
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 className="text-xl font-bold">Observasi Keselamatan</h2>
                         <p className="text-sm text-muted-foreground">Monitoring form OK seluruh site</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         {selectMode ? (
                             <>
                                 <Button variant="outline" size="sm" onClick={toggleSelectAll}>
@@ -220,66 +221,77 @@ return;
                 {records.data.length === 0 ? (
                     <p className="py-10 text-center text-muted-foreground">Tidak ada data.</p>
                 ) : (
-                    <Card className="p-0 overflow-hidden">
-                        {records.data.map((record, idx) => (
-                            <div key={record.id}>
-                                <div className={cn(
-                                    'flex items-center gap-3 px-4 py-4',
-                                    record.status === 'dikonfirmasi' ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-yellow-500',
-                                )}>
+                    <div className="overflow-x-auto rounded-lg border">
+                        <table className="w-full min-w-[640px] border-collapse text-xs">
+                            <thead>
+                                <tr className="bg-muted/50 text-left">
                                     {selectMode && (
-                                        <Checkbox
-                                            checked={selectedIds.has(record.id)}
-                                            onCheckedChange={() => toggleSelect(record.id)}
-                                            className="shrink-0"
-                                        />
+                                        <th className="w-8 px-2 py-2">
+                                            <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
+                                        </th>
                                     )}
-                                    {/* Status icon */}
-                                    {record.status === 'dikonfirmasi'
-                                        ? <CheckCircle2 size={20} className="text-green-600 shrink-0" />
-                                        : <Clock size={20} className="text-yellow-600 shrink-0" />}
-
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="min-w-0">
-                                                <p className="font-semibold text-sm">
-                                                    {record.user.name}
-                                                    {record.user.site && <span className="ml-2 text-xs text-muted-foreground">· {record.user.site}</span>}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground truncate">{record.lokasi_kerja} · {record.jenis_pekerjaan}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    PJ: {record.penanggung_jawab?.name ?? '—'}
-                                                </p>
-                                            </div>
-                                            <div className="text-right shrink-0">
-                                                <p className="text-sm font-medium">
-                                                    {new Date(record.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                </p>
-                                                <Badge variant="outline" className={cn(
-                                                    'text-xs mt-1',
-                                                    record.status === 'dikonfirmasi' ? 'border-green-400 text-green-700' : 'border-yellow-400 text-yellow-700',
-                                                )}>
-                                                    {record.status === 'dikonfirmasi' ? 'Dikonfirmasi' : 'Menunggu'}
-                                                </Badge>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {!selectMode && (
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-9 w-9 text-destructive hover:text-destructive shrink-0"
-                                            onClick={() => setToDelete(record)}
-                                        >
-                                            <Trash2 size={16} />
-                                        </Button>
-                                    )}
-                                </div>
-                                {idx < records.data.length - 1 && <Separator />}
-                            </div>
-                        ))}
-                    </Card>
+                                    <th className="px-3 py-2 font-semibold">Karyawan</th>
+                                    <th className="px-2 py-2 font-semibold">Lokasi & Pekerjaan</th>
+                                    <th className="px-2 py-2 font-semibold">PJ</th>
+                                    <th className="px-2 py-2 text-center font-semibold">Status</th>
+                                    <th className="px-2 py-2 font-semibold">Tanggal</th>
+                                    {!selectMode && <th className="px-2 py-2 text-right font-semibold">Aksi</th>}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {records.data.map((record, idx) => (
+                                    <tr key={record.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/10'}>
+                                        {selectMode && (
+                                            <td className="px-2 py-2">
+                                                <Checkbox
+                                                    checked={selectedIds.has(record.id)}
+                                                    onCheckedChange={() => toggleSelect(record.id)}
+                                                />
+                                            </td>
+                                        )}
+                                        <td className={cn(
+                                            'px-3 py-2',
+                                            record.status === 'dikonfirmasi' ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-yellow-500',
+                                        )}>
+                                            <p className="truncate max-w-[160px] font-medium">{record.user.name}</p>
+                                            {record.user.site && <p className="text-[10px] text-muted-foreground">{record.user.site}</p>}
+                                        </td>
+                                        <td className="px-2 py-2 text-muted-foreground">
+                                            <p className="truncate max-w-[160px]">{record.lokasi_kerja}</p>
+                                            <p className="text-[10px]">{record.jenis_pekerjaan}</p>
+                                        </td>
+                                        <td className="px-2 py-2 text-muted-foreground">{record.penanggung_jawab?.name ?? '—'}</td>
+                                        <td className="px-2 py-2 text-center">
+                                            <Badge variant="outline" className={cn(
+                                                'gap-1 text-[10px]',
+                                                record.status === 'dikonfirmasi' ? 'border-green-400 text-green-700' : 'border-yellow-400 text-yellow-700',
+                                            )}>
+                                                {record.status === 'dikonfirmasi'
+                                                    ? <CheckCircle2 size={11} />
+                                                    : <Clock size={11} />}
+                                                {record.status === 'dikonfirmasi' ? 'Dikonfirmasi' : 'Menunggu'}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-2 py-2 text-muted-foreground">
+                                            {new Date(record.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </td>
+                                        {!selectMode && (
+                                            <td className="px-2 py-2 text-right">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 text-destructive hover:text-destructive"
+                                                    onClick={() => setToDelete(record)}
+                                                >
+                                                    <Trash2 size={13} />
+                                                </Button>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
 
                 {/* Pagination */}

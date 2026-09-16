@@ -70,11 +70,11 @@ export default function DeleteRangeDialog({ open, onOpenChange, endpoint, title,
                             </div>
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Password</Label>
+                            <Label className="text-xs">Password Akun Admin</Label>
                             <Input
                                 type="password"
                                 required
-                                placeholder="Password konfirmasi"
+                                placeholder="Masukkan password akun Anda"
                                 value={form.data.password}
                                 onChange={(e) => form.setData('password', e.target.value)}
                             />

@@ -2,13 +2,16 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
         // Alter enum to add 'ditolak'
         DB::statement("ALTER TABLE observasi_keselamatan MODIFY COLUMN status ENUM('menunggu_konfirmasi','dikonfirmasi','ditolak') NOT NULL DEFAULT 'menunggu_konfirmasi'");
 
@@ -20,6 +23,9 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
         Schema::table('observasi_keselamatan', function (Blueprint $table) {
             $table->dropColumn(['pj_tolak_alasan', 'pj_ditolak_at']);
         });

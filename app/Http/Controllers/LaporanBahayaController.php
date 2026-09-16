@@ -8,12 +8,12 @@ use App\Models\Site;
 use App\Models\User;
 use App\Notifications\LaporanBahayaPicDitugaskan;
 use App\Notifications\LaporanBahayaStatusDiperbarui;
+use App\Services\BadgeService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use App\Services\BadgeService;
 use Inertia\Inertia;
 
 class LaporanBahayaController extends Controller
@@ -38,8 +38,8 @@ class LaporanBahayaController extends Controller
             ->count();
 
         return Inertia::render('laporan-bahaya/index', [
-            'myRecords'       => $myRecords,
-            'picRecords'      => $picRecords,
+            'myRecords' => $myRecords,
+            'picRecords' => $picRecords,
             'pendingPicCount' => $pendingPicCount,
         ]);
     }
@@ -72,21 +72,21 @@ class LaporanBahayaController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'tanggal'             => ['required', 'date'],
-            'site'                => ['required', 'string', Rule::exists('sites', 'value')],
-            'waktu_pengamatan'    => ['required', 'date_format:H:i'],
-            'kategori'            => ['required', 'in:KTA,TTA'],
-            'klasifikasi_bahaya'  => ['required', 'string', 'max:255'],
-            'lokasi'              => ['required', 'string', 'max:255'],
-            'detail_lokasi'       => ['nullable', 'string', 'max:255'],
-            'deskripsi_bahaya'    => ['required', 'string'],
-            'tindakan_perbaikan'  => ['required', 'string'],
-            'probabilitas'        => ['required', 'integer', 'between:1,5'],
-            'frekuensi'           => ['required', 'integer', 'between:1,5'],
-            'severity'            => ['required', 'integer', 'in:1,2,3,25,30'],
-            'status_tindakan'     => ['required', 'in:pending,continue,progress,close'],
-            'pic_user_id'         => ['required', 'exists:users,id'],
-            'foto'                => ['nullable', 'image', 'max:5120'],
+            'tanggal' => ['required', 'date'],
+            'site' => ['required', 'string', Rule::exists('sites', 'value')],
+            'waktu_pengamatan' => ['required', 'date_format:H:i'],
+            'kategori' => ['required', 'in:KTA,TTA'],
+            'klasifikasi_bahaya' => ['required', 'string', 'max:255'],
+            'lokasi' => ['required', 'string', 'max:255'],
+            'detail_lokasi' => ['nullable', 'string', 'max:255'],
+            'deskripsi_bahaya' => ['required', 'string'],
+            'tindakan_perbaikan' => ['required', 'string'],
+            'probabilitas' => ['required', 'integer', 'between:1,5'],
+            'frekuensi' => ['required', 'integer', 'between:1,5'],
+            'severity' => ['required', 'integer', 'in:1,2,3,25,30'],
+            'status_tindakan' => ['required', 'in:pending,continue,progress,close'],
+            'pic_user_id' => ['required', 'exists:users,id'],
+            'foto' => ['nullable', 'image', 'max:5120'],
         ]);
 
         $reporter = $request->user()->load('sites:id,value');
@@ -151,16 +151,16 @@ class LaporanBahayaController extends Controller
         $attachmentUrls = [];
         foreach ($laporanBahaya->reviews as $review) {
             $paths = $review->attachment_paths ?? [];
-            $attachmentUrls[$review->id] = array_map(fn($p) => Storage::url($p), $paths);
+            $attachmentUrls[$review->id] = array_map(fn ($p) => Storage::url($p), $paths);
         }
 
         return Inertia::render('laporan-bahaya/show', [
-            'record'          => $laporanBahaya,
-            'fotoUrl'         => $laporanBahaya->foto_path
+            'record' => $laporanBahaya,
+            'fotoUrl' => $laporanBahaya->foto_path
                 ? Storage::url($laporanBahaya->foto_path)
                 : null,
-            'back_url'        => $backUrl,
-            'is_pic'          => $user->id === $laporanBahaya->pic_user_id,
+            'back_url' => $backUrl,
+            'is_pic' => $user->id === $laporanBahaya->pic_user_id,
             'attachment_urls' => $attachmentUrls,
         ]);
     }
@@ -170,30 +170,30 @@ class LaporanBahayaController extends Controller
         abort_unless($request->user()->id === $laporanBahaya->pic_user_id, 403);
 
         $validated = $request->validate([
-            'comment'        => ['nullable', 'string', 'max:2000'],
-            'status_tindakan'=> ['required', 'in:pending,continue,progress,close'],
-            'tanda_tangan'   => ['nullable', 'string'],
-            'attachments'    => ['nullable', 'array', 'max:5'],
-            'attachments.*'  => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx'],
+            'comment' => ['nullable', 'string', 'max:2000'],
+            'status_tindakan' => ['required', 'in:pending,continue,progress,close'],
+            'tanda_tangan' => ['nullable', 'string'],
+            'attachments' => ['nullable', 'array', 'max:5'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx'],
         ]);
 
         $paths = [];
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
-                $filename  = Str::uuid().'.'.$file->getClientOriginalExtension();
-                $dir       = "laporan-bahaya/reviews/{$laporanBahaya->id}";
-                $path      = Storage::disk('public')->putFileAs($dir, $file, $filename);
-                $paths[]   = $path;
+                $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
+                $dir = "laporan-bahaya/reviews/{$laporanBahaya->id}";
+                $path = Storage::disk('public')->putFileAs($dir, $file, $filename);
+                $paths[] = $path;
             }
         }
 
         $review = LaporanBahayaReview::create([
             'laporan_bahaya_id' => $laporanBahaya->id,
-            'user_id'           => $request->user()->id,
-            'comment'           => $validated['comment'] ?? null,
-            'attachment_paths'  => $paths ?: null,
-            'status_tindakan'   => $validated['status_tindakan'],
-            'tanda_tangan'      => $validated['tanda_tangan'] ?? null,
+            'user_id' => $request->user()->id,
+            'comment' => $validated['comment'] ?? null,
+            'attachment_paths' => $paths ?: null,
+            'status_tindakan' => $validated['status_tindakan'],
+            'tanda_tangan' => $validated['tanda_tangan'] ?? null,
         ]);
 
         $laporanBahaya->update(['status_tindakan' => $validated['status_tindakan']]);
@@ -217,12 +217,12 @@ class LaporanBahayaController extends Controller
         $laporanBahaya->load('user');
 
         $fotoAbsPath = $laporanBahaya->foto_path
-            ? Storage::path($laporanBahaya->foto_path)
+            ? Storage::disk('public')->path($laporanBahaya->foto_path)
             : null;
 
         $pdf = Pdf::loadView('pdf.laporan-bahaya', [
-            'record'       => $laporanBahaya,
-            'fotoAbsPath'  => $fotoAbsPath,
+            'record' => $laporanBahaya,
+            'fotoAbsPath' => $fotoAbsPath,
         ])->setPaper('a4', 'portrait');
 
         return $pdf->stream('laporan-bahaya-'.$laporanBahaya->id.'.pdf');

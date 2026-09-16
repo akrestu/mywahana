@@ -27,6 +27,19 @@ type EmployeeRecap = { weeks: WeekMeta[]; employees: EmployeeRecapRow[] };
 type Filter       = { bulan: number; tahun: number; site: string; departemen: string; level: string; jabatan: string };
 type SiteOption   = { value: string; label: string };
 
+type SapBreakdownRow = {
+    level: string; total_users: number;
+    on_track: number | null; persen: number | null; total_submissions: number;
+};
+type SapCategory = {
+    label: string; total_submissions: number; persen_on_track: number;
+    minggu_berlalu?: number; periode_berlalu?: number; breakdown: SapBreakdownRow[];
+};
+type SapMonitoring = {
+    laporan_bahaya: SapCategory; inspeksi: SapCategory;
+    observasi_keselamatan: SapCategory; komunikasi_jsa: SapCategory;
+};
+
 type Props = {
     compliance:       ComplianceData;
     employee_recap:   EmployeeRecap;
@@ -34,7 +47,7 @@ type Props = {
     sites:            SiteOption[];
     jabatan_options:  string[];
     admin_site?:      string | null;
-    sap_monitoring?:  unknown;
+    sap_monitoring?:  SapMonitoring;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -79,6 +92,30 @@ const ACTIVITIES = [
     { key: 'observasi' as const, label: 'Obs. Keselamatan', unit: 'minggu',  icon: '👁️' },
     { key: 'jsa'       as const, label: 'JSA',               unit: 'periode', icon: '📋' },
 ] as const;
+
+// Peta key ACTIVITIES → key pada payload sap_monitoring dari backend
+const SAP_MONITORING_KEY: Record<typeof ACTIVITIES[number]['key'], keyof SapMonitoring> = {
+    laporan: 'laporan_bahaya', inspeksi: 'inspeksi',
+    observasi: 'observasi_keselamatan', jsa: 'komunikasi_jsa',
+};
+
+const DEFAULT_SAP_CATEGORY: SapCategory = { label: '', total_submissions: 0, persen_on_track: 0, breakdown: [] };
+const DEFAULT_SAP_MONITORING: SapMonitoring = {
+    laporan_bahaya: DEFAULT_SAP_CATEGORY, inspeksi: DEFAULT_SAP_CATEGORY,
+    observasi_keselamatan: DEFAULT_SAP_CATEGORY, komunikasi_jsa: DEFAULT_SAP_CATEGORY,
+};
+
+function percentTone(persen: number): { text: string; bg: string } {
+    if (persen >= 80) {
+        return { text: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/50' };
+    }
+
+    if (persen >= 50) {
+        return { text: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-950/50' };
+    }
+
+    return { text: 'text-red-700 dark:text-red-300', bg: 'bg-red-50 dark:bg-red-950/50' };
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -693,6 +730,74 @@ return;
     );
 }
 
+// ─── Stat Cards (ringkasan) ─────────────────────────────────────────────────────
+
+function StatTile({ icon, label, value, sub, tone, onClick }: {
+    icon: string; label: string; value: string; sub?: string;
+    tone: { text: string; bg: string }; onClick?: () => void;
+}) {
+    const Comp = onClick ? 'button' : 'div';
+
+    return (
+        <Comp
+            onClick={onClick}
+            className={`flex flex-col gap-0.5 rounded-xl border px-2.5 py-2 text-left ${tone.bg} ${
+                onClick ? 'cursor-pointer transition-colors hover:brightness-95 dark:hover:brightness-110' : ''
+            }`}
+        >
+            <span className="text-[10px] font-medium text-muted-foreground truncate">{icon} {label}</span>
+            <p className={`text-base font-bold leading-none ${tone.text}`}>{value}</p>
+            {sub && <p className="text-[9px] text-muted-foreground truncate">{sub}</p>}
+        </Comp>
+    );
+}
+
+function StatCardsRow({ compliance, sapMonitoring, dilarangExpanded, onToggleDilarang }: {
+    compliance: ComplianceData; sapMonitoring: SapMonitoring;
+    dilarangExpanded: boolean; onToggleDilarang: () => void;
+}) {
+    const bsPersen = compliance.total_karyawan > 0
+        ? Math.round((compliance.sudah_submit_bs / compliance.total_karyawan) * 100)
+        : 0;
+    const dilarangCount = compliance.dilarang_list.length;
+
+    return (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            <StatTile
+                icon="💪" label="Bugar Selamat"
+                value={`${bsPersen}%`}
+                sub={`${compliance.sudah_submit_bs}/${compliance.total_karyawan} submit hari ini`}
+                tone={percentTone(bsPersen)}
+            />
+
+            {ACTIVITIES.map(activity => {
+                const cat = sapMonitoring[SAP_MONITORING_KEY[activity.key]];
+
+                return (
+                    <StatTile
+                        key={activity.key}
+                        icon={activity.icon}
+                        label={activity.label}
+                        value={`${cat.persen_on_track}%`}
+                        sub={`${cat.total_submissions} submission`}
+                        tone={percentTone(cat.persen_on_track)}
+                    />
+                );
+            })}
+
+            <StatTile
+                icon="🚫" label="Dilarang Bekerja"
+                value={String(dilarangCount)}
+                sub={dilarangCount > 0 ? (dilarangExpanded ? 'Tutup daftar' : 'Lihat daftar') : 'Aman'}
+                tone={dilarangCount > 0
+                    ? { text: 'text-red-700 dark:text-red-300', bg: 'bg-red-50 dark:bg-red-950/50' }
+                    : { text: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/50' }}
+                onClick={dilarangCount > 0 ? onToggleDilarang : undefined}
+            />
+        </div>
+    );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const DEFAULT_COMPLIANCE: ComplianceData = { total_karyawan: 0, sudah_submit_bs: 0, dilarang_list: [] };
@@ -709,6 +814,7 @@ export default function AdminIndex({
     sites           = [],
     jabatan_options = [],
     admin_site,
+    sap_monitoring  = DEFAULT_SAP_MONITORING,
 }: Props) {
     const [dilarangExpanded, setDilarangExpanded] = useState(false);
     const compliance   = rawCompliance ?? DEFAULT_COMPLIANCE;
@@ -723,49 +829,7 @@ export default function AdminIndex({
 
             <div className="space-y-4 pb-10">
 
-                {/* ① DILARANG BEKERJA ALERT */}
-                {dilarangList.length > 0 && (
-                    <div className="rounded-xl border-2 border-red-300 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
-                        <div className="flex items-center gap-3">
-                            <span className="text-xl shrink-0">🚫</span>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-bold text-red-800 dark:text-red-200 text-sm">
-                                    {dilarangList.length} karyawan dilarang bekerja hari ini
-                                </p>
-                                <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
-                                    Berdasarkan hasil Bugar Selamat terbaru
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setDilarangExpanded(v => !v)}
-                                className="shrink-0 rounded-lg bg-red-100 dark:bg-red-900 px-2.5 py-1 text-xs font-medium text-red-700 dark:text-red-300"
-                            >
-                                {dilarangExpanded ? 'Tutup' : 'Lihat'}
-                            </button>
-                        </div>
-                        {dilarangExpanded && (
-                            <div className="mt-3 space-y-2">
-                                {dilarangList.map((entry, i) => (
-                                    <div key={i} className="flex items-center gap-2 rounded-lg bg-red-100 dark:bg-red-900 px-3 py-2">
-                                        {entry.avatar ? (
-                                            <img src={entry.avatar} alt={entry.name} className="h-8 w-8 rounded-full object-cover shrink-0" />
-                                        ) : (
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-300 dark:bg-red-700 text-sm font-bold text-red-800 dark:text-red-200">
-                                                {entry.name.charAt(0).toUpperCase()}
-                                            </div>
-                                        )}
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-semibold text-red-900 dark:text-red-100 truncate">{entry.name}</p>
-                                            <p className="text-xs text-red-600 dark:text-red-400">{entry.jabatan ?? '-'} · {entry.site ?? '-'}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* ② PAGE TITLE + EXPORT */}
+                {/* ① PAGE TITLE + EXPORT */}
                 <div className="flex items-start justify-between gap-2">
                     <div>
                         <h1 className="text-xl font-bold">Monitoring SAP</h1>
@@ -776,6 +840,40 @@ export default function AdminIndex({
                     </div>
                     <ExportButtons targetRef={exportRef} filename={exportFilename} />
                 </div>
+
+                {/* ② RINGKASAN — stat cards */}
+                <StatCardsRow
+                    compliance={compliance}
+                    sapMonitoring={sap_monitoring}
+                    dilarangExpanded={dilarangExpanded}
+                    onToggleDilarang={() => setDilarangExpanded(v => !v)}
+                />
+
+                {/* Daftar dilarang bekerja — muncul saat tile "Dilarang Bekerja" diklik */}
+                {dilarangExpanded && dilarangList.length > 0 && (
+                    <div className="rounded-xl border-2 border-red-300 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
+                        <p className="text-xs text-red-600 dark:text-red-400 mb-2">
+                            Berdasarkan hasil Bugar Selamat terbaru
+                        </p>
+                        <div className="space-y-2">
+                            {dilarangList.map((entry, i) => (
+                                <div key={i} className="flex items-center gap-2 rounded-lg bg-red-100 dark:bg-red-900 px-3 py-2">
+                                    {entry.avatar ? (
+                                        <img src={entry.avatar} alt={entry.name} className="h-8 w-8 rounded-full object-cover shrink-0" />
+                                    ) : (
+                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-300 dark:bg-red-700 text-sm font-bold text-red-800 dark:text-red-200">
+                                            {entry.name.charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-red-900 dark:text-red-100 truncate">{entry.name}</p>
+                                        <p className="text-xs text-red-600 dark:text-red-400">{entry.jabatan ?? '-'} · {entry.site ?? '-'}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* ③ COLLAPSIBLE FILTER */}
                 <FilterBar filter={filter} sites={sites} jabatanOptions={jabatan_options} adminSite={admin_site} />

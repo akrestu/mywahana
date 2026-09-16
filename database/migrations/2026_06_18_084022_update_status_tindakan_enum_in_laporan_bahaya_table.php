@@ -7,6 +7,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            DB::table('laporan_bahaya')->where('status_tindakan', 'selesai')->update(['status_tindakan' => 'close']);
+
+            return;
+        }
         // Step 1: expand enum to include both old and new values
         DB::statement("ALTER TABLE laporan_bahaya MODIFY status_tindakan ENUM('pending','selesai','continue','progress','close') DEFAULT 'pending'");
 
@@ -19,6 +24,11 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            DB::table('laporan_bahaya')->where('status_tindakan', 'close')->update(['status_tindakan' => 'selesai']);
+
+            return;
+        }
         DB::statement("ALTER TABLE laporan_bahaya MODIFY status_tindakan ENUM('pending','close','continue','progress','selesai') DEFAULT 'pending'");
 
         DB::table('laporan_bahaya')->where('status_tindakan', 'close')->update(['status_tindakan' => 'selesai']);

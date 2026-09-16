@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\AssessmentQuestionStatsExport;
+use App\Exports\AssessmentSessionsExport;
 use App\Exports\BugarSelamatExport;
 use App\Exports\InductionAttendanceExport;
 use App\Exports\InspeksiKantorExport;
@@ -13,30 +15,33 @@ use App\Exports\ObservasiKeselamatanExport;
 use App\Exports\UsersExport;
 use App\Exports\UsersImportTemplate;
 use App\Imports\UsersImport;
+use App\Models\AssessmentSession;
+use App\Models\AssessmentSessionQuestion;
 use App\Models\BugarSelamat;
+use App\Models\HrAssessmentSession;
+use App\Models\HrAssessmentSessionQuestion;
+use App\Models\InductionAttendance;
 use App\Models\InspeksiKantor;
 use App\Models\InspeksiMess;
 use App\Models\InspeksiTambang;
 use App\Models\InspeksiWorkshop;
-use App\Models\AssessmentSession;
-use App\Models\AssessmentSessionQuestion;
-use App\Models\HrAssessmentSession;
-use App\Models\HrAssessmentSessionQuestion;
-use App\Models\InductionAttendance;
 use App\Models\KomunikasiJsa;
 use App\Models\LaporanBahaya;
 use App\Models\ObservasiKeselamatan;
-use App\Notifications\LaporanBahayaPicDitugaskan;
 use App\Models\ParticipationTarget;
 use App\Models\Site;
 use App\Models\User;
+use App\Notifications\LaporanBahayaPicDitugaskan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class AdminController extends Controller
 {
@@ -44,10 +49,10 @@ class AdminController extends Controller
     {
         return redirect()->route('app.home');
 
-        $now        = Carbon::now();
-        $todayDate  = $now->toDateString();
+        $now = Carbon::now();
+        $todayDate = $now->toDateString();
 
-        $inspeksiTotal    = InspeksiKantor::count() + InspeksiTambang::count() + InspeksiWorkshop::count() + InspeksiMess::count();
+        $inspeksiTotal = InspeksiKantor::count() + InspeksiTambang::count() + InspeksiWorkshop::count() + InspeksiMess::count();
         $inspeksiBulanIni = InspeksiKantor::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count()
             + InspeksiTambang::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count()
             + InspeksiWorkshop::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count()
@@ -67,81 +72,81 @@ class AdminController extends Controller
             ->with('user:id,name,jabatan,site,avatar')
             ->get()
             ->map(fn ($bs) => [
-                'id'      => $bs->user->id ?? null,
-                'name'    => $bs->user->name ?? '-',
+                'id' => $bs->user->id ?? null,
+                'name' => $bs->user->name ?? '-',
                 'jabatan' => $bs->user->jabatan ?? null,
-                'site'    => $bs->user->site ?? null,
-                'avatar'  => $bs->user->avatar ? asset('storage/' . $bs->user->avatar) : null,
+                'site' => $bs->user->site ?? null,
+                'avatar' => $bs->user->avatar ? asset('storage/'.$bs->user->avatar) : null,
             ])
             ->values();
 
         $stats = [
             'bugar_selamat' => [
-                'total'    => BugarSelamat::count(),
-                'bulan_ini'=> BugarSelamat::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
-                'layak'    => BugarSelamat::where('status_kelayakan', 'layak')->count(),
-                'catatan'  => BugarSelamat::where('status_kelayakan', 'catatan')->count(),
+                'total' => BugarSelamat::count(),
+                'bulan_ini' => BugarSelamat::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
+                'layak' => BugarSelamat::where('status_kelayakan', 'layak')->count(),
+                'catatan' => BugarSelamat::where('status_kelayakan', 'catatan')->count(),
                 'dilarang' => BugarSelamat::where('status_kelayakan', 'dilarang')->count(),
             ],
             'laporan_bahaya' => [
-                'total'    => LaporanBahaya::count(),
-                'bulan_ini'=> LaporanBahaya::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
-                'AA'       => LaporanBahaya::where('tingkat_risiko', 'AA')->count(),
-                'A'        => LaporanBahaya::where('tingkat_risiko', 'A')->count(),
-                'B'        => LaporanBahaya::where('tingkat_risiko', 'B')->count(),
-                'C'        => LaporanBahaya::where('tingkat_risiko', 'C')->count(),
-                'pending'  => LaporanBahaya::where('status_tindakan', 'pending')->count(),
-                'selesai'  => LaporanBahaya::where('status_tindakan', 'selesai')->count(),
+                'total' => LaporanBahaya::count(),
+                'bulan_ini' => LaporanBahaya::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
+                'AA' => LaporanBahaya::where('tingkat_risiko', 'AA')->count(),
+                'A' => LaporanBahaya::where('tingkat_risiko', 'A')->count(),
+                'B' => LaporanBahaya::where('tingkat_risiko', 'B')->count(),
+                'C' => LaporanBahaya::where('tingkat_risiko', 'C')->count(),
+                'pending' => LaporanBahaya::where('status_tindakan', 'pending')->count(),
+                'selesai' => LaporanBahaya::where('status_tindakan', 'close')->count(),
             ],
             'observasi_keselamatan' => [
-                'total'               => ObservasiKeselamatan::count(),
-                'bulan_ini'           => ObservasiKeselamatan::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
+                'total' => ObservasiKeselamatan::count(),
+                'bulan_ini' => ObservasiKeselamatan::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
                 'menunggu_konfirmasi' => ObservasiKeselamatan::where('status', 'menunggu_konfirmasi')->count(),
             ],
             'inspeksi' => [
-                'total'    => $inspeksiTotal,
-                'bulan_ini'=> $inspeksiBulanIni,
-                'kantor'   => InspeksiKantor::count(),
-                'tambang'  => InspeksiTambang::count(),
+                'total' => $inspeksiTotal,
+                'bulan_ini' => $inspeksiBulanIni,
+                'kantor' => InspeksiKantor::count(),
+                'tambang' => InspeksiTambang::count(),
                 'workshop' => InspeksiWorkshop::count(),
-                'mess'     => InspeksiMess::count(),
+                'mess' => InspeksiMess::count(),
             ],
             'users' => [
-                'total'    => $totalKaryawan,
+                'total' => $totalKaryawan,
                 'baratama' => User::where('is_admin', false)->where('site', 'baratama')->count(),
                 'bandhawa' => User::where('is_admin', false)->where('site', 'bandhawa')->count(),
             ],
             'komunikasi_jsa' => [
-                'total'               => KomunikasiJsa::count(),
-                'bulan_ini'           => KomunikasiJsa::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
+                'total' => KomunikasiJsa::count(),
+                'bulan_ini' => KomunikasiJsa::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
                 'menunggu_konfirmasi' => KomunikasiJsa::where('status', 'menunggu_konfirmasi')->count(),
             ],
         ];
 
-        $leaderboard           = $this->buildLeaderboard($now);
+        $leaderboard = $this->buildLeaderboard($now);
         $participation_targets = ParticipationTarget::all(['level', 'laporan_per_minggu', 'inspeksi_per_minggu', 'observasi_per_minggu', 'bugar_per_hari']);
 
         return Inertia::render('admin/index', [
-            'stats'                 => $stats,
-            'trend'                 => $this->buildMonthlyTrend($now),
-            'site_breakdown'        => $this->buildSiteBreakdown(),
-            'leaderboard'           => $leaderboard,
+            'stats' => $stats,
+            'trend' => $this->buildMonthlyTrend($now),
+            'site_breakdown' => $this->buildSiteBreakdown(),
+            'leaderboard' => $leaderboard,
             'participation_targets' => $participation_targets,
-            'compliance'            => [
-                'total_karyawan'  => $totalKaryawan,
+            'compliance' => [
+                'total_karyawan' => $totalKaryawan,
                 'sudah_submit_bs' => $sudahSubmitBs,
-                'dilarang_list'   => $dilarangHariIni,
+                'dilarang_list' => $dilarangHariIni,
             ],
         ]);
     }
 
     public function bugarSelamat(Request $request)
     {
-        $viewMode  = $request->get('view', 'harian');
-        $site      = $this->adminSite($request);
+        $viewMode = $request->get('view', 'harian');
+        $site = $this->adminSite($request);
         $adminSite = $request->user()->site;
-        $search    = $request->filled('search') ? $request->search : null;
-        $sites     = $adminSite
+        $search = $request->filled('search') ? $request->search : null;
+        $sites = $adminSite
             ? Site::where('value', $adminSite)->get(['value', 'label'])
             : Site::orderBy('label')->get(['value', 'label']);
 
@@ -150,10 +155,10 @@ class AdminController extends Controller
             $tanggal = $request->filled('tanggal') ? $request->tanggal : today()->toDateString();
 
             $users = User::where('is_admin', false)
-                ->when($site,   fn ($q) => $q->where('site', $site))
+                ->when($site, fn ($q) => $q->where('site', $site))
                 ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%$search%")
-                      ->orWhere('nik',  'like', "%$search%");
+                        ->orWhere('nik', 'like', "%$search%");
                 }))
                 ->orderBy('site')->orderBy('name')
                 ->get(['id', 'name', 'nik', 'site']);
@@ -165,47 +170,47 @@ class AdminController extends Controller
                 ->get(['id', 'user_id', 'status_kelayakan', 'shift', 'siap_bekerja', 'hari_ke'])
                 ->keyBy('user_id')
                 ->map(fn ($r) => [
-                    'id'           => $r->id,
-                    'status'       => $r->status_kelayakan,
-                    'shift'        => $r->shift,
+                    'id' => $r->id,
+                    'status' => $r->status_kelayakan,
+                    'shift' => $r->shift,
                     'siap_bekerja' => (bool) $r->siap_bekerja,
-                    'hari_ke'      => $r->hari_ke,
+                    'hari_ke' => $r->hari_ke,
                 ]);
 
-            $filled   = $entries->count();
-            $total    = $users->count();
+            $filled = $entries->count();
+            $total = $users->count();
 
             return Inertia::render('admin/bugar-selamat', [
-                'view'       => 'harian',
-                'tanggal'    => $tanggal,
-                'users'      => $users,
-                'entries'    => $entries,
-                'sites'      => $sites,
+                'view' => 'harian',
+                'tanggal' => $tanggal,
+                'users' => $users,
+                'entries' => $entries,
+                'sites' => $sites,
                 'admin_site' => $adminSite,
-                'summary'    => [
-                    'filled'     => $filled,
+                'summary' => [
+                    'filled' => $filled,
                     'not_filled' => $total - $filled,
-                    'layak'      => $entries->where('status', 'layak')->count(),
-                    'catatan'    => $entries->where('status', 'catatan')->count(),
-                    'dilarang'   => $entries->where('status', 'dilarang')->count(),
-                    'total'      => $total,
+                    'layak' => $entries->where('status', 'layak')->count(),
+                    'catatan' => $entries->where('status', 'catatan')->count(),
+                    'dilarang' => $entries->where('status', 'dilarang')->count(),
+                    'total' => $total,
                 ],
-                'filters'    => $request->only('site', 'search', 'tanggal', 'view'),
+                'filters' => $request->only('site', 'search', 'tanggal', 'view'),
             ]);
         }
 
         // ── Kalender view: matriks karyawan × tanggal dalam satu bulan ───────
         if ($viewMode === 'kalender') {
-            $tanggal   = $request->filled('tanggal') ? $request->tanggal : today()->toDateString();
-            $carbon    = Carbon::parse($tanggal);
+            $tanggal = $request->filled('tanggal') ? $request->tanggal : today()->toDateString();
+            $carbon = Carbon::parse($tanggal);
             $startDate = $carbon->copy()->startOfMonth();
-            $endDate   = $carbon->copy()->endOfMonth()->min(today());
+            $endDate = $carbon->copy()->endOfMonth()->min(today());
 
             $users = User::where('is_admin', false)
-                ->when($site,   fn ($q) => $q->where('site', $site))
+                ->when($site, fn ($q) => $q->where('site', $site))
                 ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%$search%")
-                      ->orWhere('nik',  'like', "%$search%");
+                        ->orWhere('nik', 'like', "%$search%");
                 }))
                 ->orderBy('site')->orderBy('name')
                 ->get(['id', 'name', 'nik', 'site']);
@@ -215,15 +220,15 @@ class AdminController extends Controller
             $entries = BugarSelamat::whereBetween('tanggal', [$startDate, $endDate])
                 ->whereIn('user_id', $userIds)
                 ->get(['id', 'user_id', 'tanggal', 'status_kelayakan', 'shift', 'siap_bekerja'])
-                ->keyBy(fn ($r) => $r->user_id . '_' . Carbon::parse($r->tanggal)->toDateString())
+                ->keyBy(fn ($r) => $r->user_id.'_'.Carbon::parse($r->tanggal)->toDateString())
                 ->map(fn ($r) => [
-                    'id'           => $r->id,
-                    'status'       => $r->status_kelayakan,
-                    'shift'        => $r->shift,
+                    'id' => $r->id,
+                    'status' => $r->status_kelayakan,
+                    'shift' => $r->shift,
                     'siap_bekerja' => (bool) $r->siap_bekerja,
                 ]);
 
-            $dates   = [];
+            $dates = [];
             $current = $startDate->copy();
             while ($current->lte($endDate)) {
                 $dates[] = $current->toDateString();
@@ -231,18 +236,18 @@ class AdminController extends Controller
             }
 
             return Inertia::render('admin/bugar-selamat', [
-                'view'       => 'kalender',
-                'tanggal'    => $tanggal,
-                'users'      => $users,
-                'dates'      => $dates,
-                'entries'    => $entries,
-                'sites'      => $sites,
+                'view' => 'kalender',
+                'tanggal' => $tanggal,
+                'users' => $users,
+                'dates' => $dates,
+                'entries' => $entries,
+                'sites' => $sites,
                 'admin_site' => $adminSite,
-                'summary'    => [
+                'summary' => [
                     'total' => $users->count(),
                     'bulan' => $carbon->locale('id')->isoFormat('MMMM YYYY'),
                 ],
-                'filters'    => $request->only('site', 'search', 'tanggal', 'view'),
+                'filters' => $request->only('site', 'search', 'tanggal', 'view'),
             ]);
         }
 
@@ -256,23 +261,23 @@ class AdminController extends Controller
         if ($search) {
             $query->whereHas('user', function ($q) use ($search) {
                 $q->where('name', 'like', "%$search%")
-                  ->orWhere('nik', 'like', "%$search%");
+                    ->orWhere('nik', 'like', "%$search%");
             });
         }
 
         $this->applyDateFilter($query, $request);
 
         $summaryQuery = clone $query;
-        $summaryData  = $summaryQuery->selectRaw('status_kelayakan, count(*) as total')
+        $summaryData = $summaryQuery->selectRaw('status_kelayakan, count(*) as total')
             ->reorder()
             ->groupBy('status_kelayakan')
             ->pluck('total', 'status_kelayakan');
 
         $summary = [
-            'layak'    => (int) ($summaryData['layak']    ?? 0),
-            'catatan'  => (int) ($summaryData['catatan']  ?? 0),
+            'layak' => (int) ($summaryData['layak'] ?? 0),
+            'catatan' => (int) ($summaryData['catatan'] ?? 0),
             'dilarang' => (int) ($summaryData['dilarang'] ?? 0),
-            'total'    => (int) $summaryData->sum(),
+            'total' => (int) $summaryData->sum(),
         ];
 
         if ($request->filled('status')) {
@@ -280,20 +285,20 @@ class AdminController extends Controller
         }
 
         return Inertia::render('admin/bugar-selamat', [
-            'view'       => 'daftar',
-            'records'    => $query->paginate(20)->withQueryString(),
-            'sites'      => $sites,
+            'view' => 'daftar',
+            'records' => $query->paginate(20)->withQueryString(),
+            'sites' => $sites,
             'admin_site' => $adminSite,
-            'filters'    => $request->only('site', 'status', 'search', 'periode', 'view', 'date_from', 'date_to'),
-            'summary'    => $summary,
+            'filters' => $request->only('site', 'status', 'search', 'periode', 'view', 'date_from', 'date_to'),
+            'summary' => $summary,
         ]);
     }
 
     public function laporanBahaya(Request $request)
     {
-        $query     = LaporanBahaya::with(['user', 'pic'])->latest('tanggal');
+        $query = LaporanBahaya::with(['user', 'pic'])->latest('tanggal');
         $adminSite = $request->user()->site;
-        $site      = $this->adminSite($request);
+        $site = $this->adminSite($request);
 
         if ($site) {
             $query->where('site', $site);
@@ -310,7 +315,7 @@ class AdminController extends Controller
 
         // Summary dihitung sebelum filter risiko/status agar tetap menyeluruh
         $summaryQuery = clone $query;
-        $riskCounts   = $summaryQuery->selectRaw('tingkat_risiko, count(*) as total')
+        $riskCounts = $summaryQuery->selectRaw('tingkat_risiko, count(*) as total')
             ->reorder()
             ->groupBy('tingkat_risiko')
             ->pluck('total', 'tingkat_risiko');
@@ -319,11 +324,11 @@ class AdminController extends Controller
 
         $summary = [
             'pending' => $pendingCount,
-            'aa'      => (int) ($riskCounts['AA'] ?? 0),
-            'a'       => (int) ($riskCounts['A'] ?? 0),
-            'b'       => (int) ($riskCounts['B'] ?? 0),
-            'c'       => (int) ($riskCounts['C'] ?? 0),
-            'total'   => (int) $riskCounts->sum(),
+            'aa' => (int) ($riskCounts['AA'] ?? 0),
+            'a' => (int) ($riskCounts['A'] ?? 0),
+            'b' => (int) ($riskCounts['B'] ?? 0),
+            'c' => (int) ($riskCounts['C'] ?? 0),
+            'total' => (int) $riskCounts->sum(),
         ];
 
         if ($request->filled('tingkat_risiko')) {
@@ -334,20 +339,20 @@ class AdminController extends Controller
             $query->where('status_tindakan', $request->status_tindakan);
         }
 
-        $picsQuery = \App\Models\User::whereIn('participation_level', ['staff', 'srstaff'])->orderBy('name');
+        $picsQuery = User::whereIn('participation_level', ['staff', 'srstaff'])->orderBy('name');
         if ($adminSite) {
             $picsQuery->assignedToSite($adminSite);
         }
 
         return Inertia::render('admin/laporan-bahaya', [
-            'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => $request->only('site', 'tingkat_risiko', 'status_tindakan', 'search', 'periode', 'date_from', 'date_to'),
-            'summary'    => $summary,
-            'sites'      => $adminSite
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('site', 'tingkat_risiko', 'status_tindakan', 'search', 'periode', 'date_from', 'date_to'),
+            'summary' => $summary,
+            'sites' => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
                 : Site::orderBy('label')->get(['value', 'label']),
             'admin_site' => $adminSite,
-            'pics'       => $picsQuery->get(['id', 'name', 'jabatan', 'site']),
+            'pics' => $picsQuery->get(['id', 'name', 'jabatan', 'site']),
         ]);
     }
 
@@ -371,9 +376,9 @@ class AdminController extends Controller
 
     public function observasiKeselamatan(Request $request)
     {
-        $query     = ObservasiKeselamatan::with(['user', 'penanggungJawab'])->latest('tanggal');
+        $query = ObservasiKeselamatan::with(['user', 'penanggungJawab'])->latest('tanggal');
         $adminSite = $request->user()->site;
-        $site      = $this->adminSite($request);
+        $site = $this->adminSite($request);
 
         if ($site) {
             $query->whereHas('user', fn ($q) => $q->where('site', $site));
@@ -393,16 +398,16 @@ class AdminController extends Controller
         $this->applyDateFilter($query, $request);
 
         $summary = [
-            'total'              => ObservasiKeselamatan::count(),
-            'menunggu_konfirmasi'=> ObservasiKeselamatan::where('status', 'menunggu_konfirmasi')->count(),
-            'dikonfirmasi'       => ObservasiKeselamatan::where('status', 'dikonfirmasi')->count(),
+            'total' => ObservasiKeselamatan::count(),
+            'menunggu_konfirmasi' => ObservasiKeselamatan::where('status', 'menunggu_konfirmasi')->count(),
+            'dikonfirmasi' => ObservasiKeselamatan::where('status', 'dikonfirmasi')->count(),
         ];
 
         return Inertia::render('admin/observasi-keselamatan', [
-            'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
-            'summary'    => $summary,
-            'sites'      => $adminSite
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
+            'summary' => $summary,
+            'sites' => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
                 : Site::orderBy('label')->get(['value', 'label']),
             'admin_site' => $adminSite,
@@ -420,17 +425,17 @@ class AdminController extends Controller
 
     public function inspeksiKantor(Request $request)
     {
-        $query     = InspeksiKantor::with(['user', 'reInspektor'])->latest('tanggal');
+        $query = InspeksiKantor::with(['user', 'reInspektor'])->latest('tanggal');
         $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
         $summary = $this->inspeksiSummary(InspeksiKantor::class);
 
         return Inertia::render('admin/inspeksi-kantor', [
-            'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
-            'summary'    => $summary,
-            'sites'      => $adminSite
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
+            'summary' => $summary,
+            'sites' => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
                 : Site::orderBy('label')->get(['value', 'label']),
             'admin_site' => $adminSite,
@@ -441,22 +446,23 @@ class AdminController extends Controller
     {
         $inspeksiKantor->delete();
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
+
         return back();
     }
 
     public function inspeksiTambang(Request $request)
     {
-        $query     = InspeksiTambang::with(['user', 'reInspektor'])->latest('tanggal');
+        $query = InspeksiTambang::with(['user', 'reInspektor'])->latest('tanggal');
         $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
         $summary = $this->inspeksiSummary(InspeksiTambang::class);
 
         return Inertia::render('admin/inspeksi-tambang', [
-            'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
-            'summary'    => $summary,
-            'sites'      => $adminSite
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
+            'summary' => $summary,
+            'sites' => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
                 : Site::orderBy('label')->get(['value', 'label']),
             'admin_site' => $adminSite,
@@ -467,22 +473,23 @@ class AdminController extends Controller
     {
         $inspeksiTambang->delete();
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
+
         return back();
     }
 
     public function inspeksiWorkshop(Request $request)
     {
-        $query     = InspeksiWorkshop::with(['user', 'reInspektor'])->latest('tanggal');
+        $query = InspeksiWorkshop::with(['user', 'reInspektor'])->latest('tanggal');
         $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
         $summary = $this->inspeksiSummary(InspeksiWorkshop::class);
 
         return Inertia::render('admin/inspeksi-workshop', [
-            'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
-            'summary'    => $summary,
-            'sites'      => $adminSite
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
+            'summary' => $summary,
+            'sites' => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
                 : Site::orderBy('label')->get(['value', 'label']),
             'admin_site' => $adminSite,
@@ -493,22 +500,23 @@ class AdminController extends Controller
     {
         $inspeksiWorkshop->delete();
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
+
         return back();
     }
 
     public function inspeksiMess(Request $request)
     {
-        $query     = InspeksiMess::with(['user', 'reInspektor'])->latest('tanggal');
+        $query = InspeksiMess::with(['user', 'reInspektor'])->latest('tanggal');
         $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
         $summary = $this->inspeksiSummary(InspeksiMess::class);
 
         return Inertia::render('admin/inspeksi-mess', [
-            'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
-            'summary'    => $summary,
-            'sites'      => $adminSite
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('site', 'status', 'search', 'periode', 'date_from', 'date_to'),
+            'summary' => $summary,
+            'sites' => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
                 : Site::orderBy('label')->get(['value', 'label']),
             'admin_site' => $adminSite,
@@ -519,16 +527,17 @@ class AdminController extends Controller
     {
         $inspeksiMess->delete();
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
+
         return back();
     }
 
     public function komunikasiJsa(Request $request)
     {
-        $query     = KomunikasiJsa::with(['user:id,name,nik,jabatan,site', 'teamLeader:id,name,jabatan'])
+        $query = KomunikasiJsa::with(['user:id,name,nik,jabatan,site', 'teamLeader:id,name,jabatan'])
             ->latest('tanggal')
             ->latest('created_at');
         $adminSite = $request->user()->site;
-        $site      = $this->adminSite($request);
+        $site = $this->adminSite($request);
 
         if ($site) {
             $query->whereHas('user', fn ($q) => $q->where('site', $site));
@@ -559,18 +568,18 @@ class AdminController extends Controller
         }
 
         $summary = [
-            'total'               => $summaryQuery->count(),
-            'selesai'             => (clone $summaryQuery)->where('status', 'selesai')->count(),
-            'dikonfirmasi'        => (clone $summaryQuery)->where('status', 'dikonfirmasi')->count(),
+            'total' => $summaryQuery->count(),
+            'selesai' => (clone $summaryQuery)->where('status', 'selesai')->count(),
+            'dikonfirmasi' => (clone $summaryQuery)->where('status', 'dikonfirmasi')->count(),
             'menunggu_konfirmasi' => (clone $summaryQuery)->where('status', 'menunggu_konfirmasi')->count(),
-            'ditolak'             => (clone $summaryQuery)->where('status', 'ditolak')->count(),
+            'ditolak' => (clone $summaryQuery)->where('status', 'ditolak')->count(),
         ];
 
         return Inertia::render('admin/komunikasi-jsa', [
-            'records'    => $query->paginate(20)->withQueryString(),
-            'filters'    => (object) $request->only('site', 'status', 'shift', 'search', 'periode', 'date_from', 'date_to'),
-            'summary'    => $summary,
-            'sites'      => $adminSite
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => (object) $request->only('site', 'status', 'shift', 'search', 'periode', 'date_from', 'date_to'),
+            'summary' => $summary,
+            'sites' => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
                 : Site::orderBy('label')->get(['value', 'label']),
             'admin_site' => $adminSite,
@@ -581,6 +590,7 @@ class AdminController extends Controller
     {
         $komunikasiJsa->delete();
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
+
         return back();
     }
 
@@ -606,17 +616,17 @@ class AdminController extends Controller
         $this->applyDateFilter($query, $request, 'completed_at');
 
         $totalCompleted = AssessmentSession::completed()->count();
-        $lulusCount     = AssessmentSession::completed()->where('passed', true)->count();
+        $lulusCount = AssessmentSession::completed()->where('passed', true)->count();
 
         $summary = [
-            'total'       => $totalCompleted,
-            'lulus'       => $lulusCount,
+            'total' => $totalCompleted,
+            'lulus' => $lulusCount,
             'tidak_lulus' => AssessmentSession::completed()->where('passed', false)->count(),
-            'avg_score'   => $totalCompleted > 0
+            'avg_score' => $totalCompleted > 0
                 ? round(AssessmentSession::completed()->avg('percentage'), 1)
                 : 0,
             'coverage_pct' => ($totalNonAdmin = User::where('is_admin', false)->count()) > 0
-                ? round(InductionAttendance::where('type', 'safety')->distinct('user_id')->count('user_id') / $totalNonAdmin * 100)
+                ? round(AssessmentSession::completed()->whereHas('user', fn ($q) => $q->where('is_admin', false))->distinct('user_id')->count('user_id') / $totalNonAdmin * 100)
                 : 0,
         ];
 
@@ -626,22 +636,22 @@ class AdminController extends Controller
             ->orderBy('departemen')
             ->get()
             ->map(fn ($r) => [
-                'departemen'  => $r->departemen,
-                'total'       => (int) $r->total,
-                'lulus'       => (int) $r->lulus,
-                'pass_rate'   => $r->total > 0 ? round($r->lulus / $r->total * 100) : 0,
+                'departemen' => $r->departemen,
+                'total' => (int) $r->total,
+                'lulus' => (int) $r->lulus,
+                'pass_rate' => $r->total > 0 ? round($r->lulus / $r->total * 100) : 0,
             ]);
 
         $monthlyTrend = AssessmentSession::completed()
-            ->selectRaw("DATE_FORMAT(completed_at,'%Y-%m') as month, COUNT(*) as total, SUM(passed) as lulus")
+            ->selectRaw($this->monthSelect('completed_at').', COUNT(*) as total, SUM(passed) as lulus')
             ->where('completed_at', '>=', now()->subMonths(5)->startOfMonth())
             ->groupBy('month')
             ->orderBy('month')
             ->get()
             ->map(fn ($r) => [
-                'month'     => $r->month,
+                'month' => $r->month,
                 'pass_rate' => $r->total > 0 ? round($r->lulus / $r->total * 100) : 0,
-                'total'     => (int) $r->total,
+                'total' => (int) $r->total,
             ]);
 
         $weakQuestions = AssessmentSessionQuestion::with('question:id,question,departemen,tags')
@@ -651,41 +661,42 @@ class AdminController extends Controller
             ->limit(10)
             ->get()
             ->map(fn ($r) => [
-                'question_id'  => $r->assessment_question_id,
-                'question'     => $r->question?->question,
-                'departemen'   => $r->question?->departemen,
-                'tags'         => $r->question?->tags,
-                'total_attempt'=> (int) $r->total_attempt,
-                'total_salah'  => (int) $r->total_salah,
-                'pct_salah'    => $r->total_attempt > 0
+                'question_id' => $r->assessment_question_id,
+                'question' => $r->question?->question,
+                'departemen' => $r->question?->departemen,
+                'tags' => $r->question?->tags,
+                'total_attempt' => (int) $r->total_attempt,
+                'total_salah' => (int) $r->total_salah,
+                'pct_salah' => $r->total_attempt > 0
                     ? round($r->total_salah / $r->total_attempt * 100)
                     : 0,
             ]);
 
         $uncoveredUsers = User::where('is_admin', false)
-            ->whereNotIn('id', AssessmentSession::select('user_id')->distinct())
+            ->whereNotIn('id', AssessmentSession::completed()->select('user_id')->distinct())
             ->select('id', 'name', 'nik', 'departemen', 'site')
             ->orderBy('departemen')
             ->orderBy('name')
             ->get();
 
         $totalNonAdminUsers = User::where('is_admin', false)->count();
+        $totalSafetyInducted = InductionAttendance::where('type', 'safety')->whereHas('user', fn ($q) => $q->where('is_admin', false))->distinct('user_id')->count('user_id');
         $safetyAttendanceRecords = InductionAttendance::where('type', 'safety')
             ->with('user:id,name,nik,departemen,site')
             ->latest('attended_at')
             ->limit(50)
             ->get()
             ->map(fn ($a) => [
-                'user'       => $a->user,
-                'attended_at'=> $a->attended_at->toIso8601String(),
+                'user' => $a->user,
+                'attended_at' => $a->attended_at->toIso8601String(),
                 'session_id' => $a->assessment_session_id,
             ]);
 
         $attendanceSummary = [
-            'total_tercatat' => InductionAttendance::where('type', 'safety')->count(),
-            'belum_tercatat' => $totalNonAdminUsers - InductionAttendance::where('type', 'safety')->count(),
-            'records'        => $safetyAttendanceRecords,
-            'belum_users'    => User::where('is_admin', false)
+            'total_tercatat' => $totalSafetyInducted,
+            'belum_tercatat' => max(0, $totalNonAdminUsers - $totalSafetyInducted),
+            'records' => $safetyAttendanceRecords,
+            'belum_users' => User::where('is_admin', false)
                 ->whereNotIn('id', InductionAttendance::where('type', 'safety')->select('user_id'))
                 ->select('id', 'name', 'nik', 'departemen', 'site')
                 ->orderBy('departemen')
@@ -694,14 +705,14 @@ class AdminController extends Controller
         ];
 
         return Inertia::render('admin/assessment', [
-            'records'           => $query->paginate(20)->withQueryString(),
-            'filters'           => $request->only('search', 'departemen', 'passed', 'date_from', 'date_to'),
-            'summary'           => $summary,
-            'dept_stats'        => $deptStats,
-            'monthly_trend'     => $monthlyTrend,
-            'weak_questions'    => $weakQuestions,
-            'uncovered_users'   => $uncoveredUsers,
-            'attendance_summary'=> $attendanceSummary,
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('search', 'departemen', 'passed', 'date_from', 'date_to'),
+            'summary' => $summary,
+            'dept_stats' => $deptStats,
+            'monthly_trend' => $monthlyTrend,
+            'weak_questions' => $weakQuestions,
+            'uncovered_users' => $uncoveredUsers,
+            'attendance_summary' => $attendanceSummary,
         ]);
     }
 
@@ -723,30 +734,30 @@ class AdminController extends Controller
         $this->applyDateFilter($query, $request, 'completed_at');
 
         $totalCompleted = HrAssessmentSession::where('status', 'completed')->count();
-        $lulusCount     = HrAssessmentSession::where('status', 'completed')->where('passed', true)->count();
+        $lulusCount = HrAssessmentSession::where('status', 'completed')->where('passed', true)->count();
 
         $summary = [
-            'total'       => $totalCompleted,
-            'lulus'       => $lulusCount,
+            'total' => $totalCompleted,
+            'lulus' => $lulusCount,
             'tidak_lulus' => HrAssessmentSession::where('status', 'completed')->where('passed', false)->count(),
-            'avg_score'   => $totalCompleted > 0
+            'avg_score' => $totalCompleted > 0
                 ? round(HrAssessmentSession::where('status', 'completed')->avg('percentage'), 1)
                 : 0,
             'coverage_pct' => ($totalNonAdmin = User::where('is_admin', false)->count()) > 0
-                ? round(HrAssessmentSession::where('status', 'completed')->distinct('user_id')->count('user_id') / $totalNonAdmin * 100)
+                ? round(HrAssessmentSession::where('status', 'completed')->whereHas('user', fn ($q) => $q->where('is_admin', false))->distinct('user_id')->count('user_id') / $totalNonAdmin * 100)
                 : 0,
         ];
 
         $monthlyTrend = HrAssessmentSession::where('status', 'completed')
-            ->selectRaw("DATE_FORMAT(completed_at,'%Y-%m') as month, COUNT(*) as total, SUM(passed) as lulus")
+            ->selectRaw($this->monthSelect('completed_at').', COUNT(*) as total, SUM(passed) as lulus')
             ->where('completed_at', '>=', now()->subMonths(5)->startOfMonth())
             ->groupBy('month')
             ->orderBy('month')
             ->get()
             ->map(fn ($r) => [
-                'month'     => $r->month,
+                'month' => $r->month,
                 'pass_rate' => $r->total > 0 ? round($r->lulus / $r->total * 100) : 0,
-                'total'     => (int) $r->total,
+                'total' => (int) $r->total,
             ]);
 
         $weakQuestions = HrAssessmentSessionQuestion::with('question:id,question')
@@ -756,11 +767,11 @@ class AdminController extends Controller
             ->limit(10)
             ->get()
             ->map(fn ($r) => [
-                'question_id'   => $r->hr_assessment_question_id,
-                'question'      => $r->question?->question,
+                'question_id' => $r->hr_assessment_question_id,
+                'question' => $r->question?->question,
                 'total_attempt' => (int) $r->total_attempt,
-                'total_salah'   => (int) $r->total_salah,
-                'pct_salah'     => $r->total_attempt > 0
+                'total_salah' => (int) $r->total_salah,
+                'pct_salah' => $r->total_attempt > 0
                     ? round($r->total_salah / $r->total_attempt * 100)
                     : 0,
             ]);
@@ -772,22 +783,23 @@ class AdminController extends Controller
             ->get();
 
         $totalNonAdminUsersHr = User::where('is_admin', false)->count();
+        $totalHrInducted = InductionAttendance::where('type', 'hr')->whereHas('user', fn ($q) => $q->where('is_admin', false))->distinct('user_id')->count('user_id');
         $hrAttendanceRecords = InductionAttendance::where('type', 'hr')
             ->with('user:id,name,nik,jabatan,site')
             ->latest('attended_at')
             ->limit(50)
             ->get()
             ->map(fn ($a) => [
-                'user'       => $a->user,
-                'attended_at'=> $a->attended_at->toIso8601String(),
+                'user' => $a->user,
+                'attended_at' => $a->attended_at->toIso8601String(),
                 'session_id' => $a->assessment_session_id,
             ]);
 
         $hrAttendanceSummary = [
-            'total_tercatat' => InductionAttendance::where('type', 'hr')->count(),
-            'belum_tercatat' => $totalNonAdminUsersHr - InductionAttendance::where('type', 'hr')->count(),
-            'records'        => $hrAttendanceRecords,
-            'belum_users'    => User::where('is_admin', false)
+            'total_tercatat' => $totalHrInducted,
+            'belum_tercatat' => max(0, $totalNonAdminUsersHr - $totalHrInducted),
+            'records' => $hrAttendanceRecords,
+            'belum_users' => User::where('is_admin', false)
                 ->whereNotIn('id', InductionAttendance::where('type', 'hr')->select('user_id'))
                 ->select('id', 'name', 'nik', 'jabatan', 'site')
                 ->orderBy('name')
@@ -795,13 +807,13 @@ class AdminController extends Controller
         ];
 
         return Inertia::render('admin/hr-assessment', [
-            'records'           => $query->paginate(20)->withQueryString(),
-            'filters'           => $request->only('search', 'passed', 'date_from', 'date_to'),
-            'summary'           => $summary,
-            'monthly_trend'     => $monthlyTrend,
-            'weak_questions'    => $weakQuestions,
-            'uncovered_users'   => $uncoveredUsers,
-            'attendance_summary'=> $hrAttendanceSummary,
+            'records' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('search', 'passed', 'date_from', 'date_to'),
+            'summary' => $summary,
+            'monthly_trend' => $monthlyTrend,
+            'weak_questions' => $weakQuestions,
+            'uncovered_users' => $uncoveredUsers,
+            'attendance_summary' => $hrAttendanceSummary,
         ]);
     }
 
@@ -830,8 +842,8 @@ class AdminController extends Controller
         $this->applyDateFilter($query, $request, 'completed_at');
 
         return Excel::download(
-            new \App\Exports\AssessmentSessionsExport($query),
-            'assessment-safety-' . now()->format('Ymd') . '.xlsx',
+            new AssessmentSessionsExport($query),
+            'assessment-safety-'.now()->format('Ymd').'.xlsx',
         );
     }
 
@@ -856,8 +868,8 @@ class AdminController extends Controller
         $this->applyDateFilter($query, $request, 'completed_at');
 
         return Excel::download(
-            new \App\Exports\AssessmentSessionsExport($query, isHr: true),
-            'assessment-hr-' . now()->format('Ymd') . '.xlsx',
+            new AssessmentSessionsExport($query, isHr: true),
+            'assessment-hr-'.now()->format('Ymd').'.xlsx',
         );
     }
 
@@ -867,8 +879,8 @@ class AdminController extends Controller
         set_time_limit(300);
 
         return Excel::download(
-            new \App\Exports\AssessmentQuestionStatsExport(),
-            'analisa-soal-assessment-safety-' . now()->format('Ymd') . '.xlsx',
+            new AssessmentQuestionStatsExport,
+            'analisa-soal-assessment-safety-'.now()->format('Ymd').'.xlsx',
         );
     }
 
@@ -878,8 +890,8 @@ class AdminController extends Controller
         set_time_limit(300);
 
         return Excel::download(
-            new \App\Exports\AssessmentQuestionStatsExport(isHr: true),
-            'analisa-soal-assessment-hr-' . now()->format('Ymd') . '.xlsx',
+            new AssessmentQuestionStatsExport(isHr: true),
+            'analisa-soal-assessment-hr-'.now()->format('Ymd').'.xlsx',
         );
     }
 
@@ -910,7 +922,7 @@ class AdminController extends Controller
 
         $records = $query->get();
 
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
 
         $headers = ['No', 'Tanggal', 'Nama', 'NIK', 'Jabatan', 'Departemen', 'Site', 'Lokasi', 'Shift', 'Durasi (mnt)', 'Kegiatan', 'Judul JSA/SOP/IK', 'Jml Peserta', 'Peserta', 'Team Leader', 'Status', 'Catatan'];
@@ -938,7 +950,7 @@ class AdminController extends Controller
                 $r->teamLeader?->name ?? '-',
                 $r->status,
                 $r->catatan ?? '-',
-            ]], null, 'A' . $rowIndex);
+            ]], null, 'A'.$rowIndex);
             $rowIndex++;
         }
 
@@ -946,9 +958,9 @@ class AdminController extends Controller
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $filename = 'komunikasi-jsa-' . now()->format('Ymd') . '.xlsx';
-        $tmpPath = tempnam(sys_get_temp_dir(), 'jsa_export_') . '.xlsx';
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $filename = 'komunikasi-jsa-'.now()->format('Ymd').'.xlsx';
+        $tmpPath = tempnam(sys_get_temp_dir(), 'jsa_export_').'.xlsx';
+        $writer = new Xlsx($spreadsheet);
         $writer->save($tmpPath);
 
         return response()->download($tmpPath, $filename, [
@@ -967,10 +979,10 @@ class AdminController extends Controller
             ->with('user:id,name,nik,jabatan,departemen,site')
             ->latest('attended_at');
 
-        $label    = $type === 'safety' ? 'safety' : 'hr';
-        $filename = "absensi-induksi-{$label}-" . now()->format('Ymd') . '.xlsx';
+        $label = $type === 'safety' ? 'safety' : 'hr';
+        $filename = "absensi-induksi-{$label}-".now()->format('Ymd').'.xlsx';
 
-        return \Maatwebsite\Excel\Facades\Excel::download(
+        return Excel::download(
             new InductionAttendanceExport($query),
             $filename
         );
@@ -983,7 +995,8 @@ class AdminController extends Controller
 
         $query = InspeksiKantor::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
         $this->applyInspeksiFilters($query, $request);
-        return Excel::download(new InspeksiKantorExport($query), 'inspeksi-kantor-' . now()->format('Ymd') . '.xlsx');
+
+        return Excel::download(new InspeksiKantorExport($query), 'inspeksi-kantor-'.now()->format('Ymd').'.xlsx');
     }
 
     public function exportInspeksiTambang(Request $request)
@@ -993,7 +1006,8 @@ class AdminController extends Controller
 
         $query = InspeksiTambang::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
         $this->applyInspeksiFilters($query, $request);
-        return Excel::download(new InspeksiTambangExport($query), 'inspeksi-tambang-' . now()->format('Ymd') . '.xlsx');
+
+        return Excel::download(new InspeksiTambangExport($query), 'inspeksi-tambang-'.now()->format('Ymd').'.xlsx');
     }
 
     public function exportInspeksiWorkshop(Request $request)
@@ -1003,7 +1017,8 @@ class AdminController extends Controller
 
         $query = InspeksiWorkshop::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
         $this->applyInspeksiFilters($query, $request);
-        return Excel::download(new InspeksiWorkshopExport($query), 'inspeksi-workshop-' . now()->format('Ymd') . '.xlsx');
+
+        return Excel::download(new InspeksiWorkshopExport($query), 'inspeksi-workshop-'.now()->format('Ymd').'.xlsx');
     }
 
     public function exportInspeksiMess(Request $request)
@@ -1013,7 +1028,8 @@ class AdminController extends Controller
 
         $query = InspeksiMess::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
         $this->applyInspeksiFilters($query, $request);
-        return Excel::download(new InspeksiMessExport($query), 'inspeksi-mess-' . now()->format('Ymd') . '.xlsx');
+
+        return Excel::download(new InspeksiMessExport($query), 'inspeksi-mess-'.now()->format('Ymd').'.xlsx');
     }
 
     /**
@@ -1024,6 +1040,7 @@ class AdminController extends Controller
     private function adminSite(Request $request): ?string
     {
         $adminSite = $request->user()->site;
+
         return $adminSite ?: ($request->filled('site') ? $request->site : null);
     }
 
@@ -1046,10 +1063,10 @@ class AdminController extends Controller
 
         if ($request->filled('periode')) {
             match ($request->periode) {
-                'hari_ini'   => $query->whereDate($column, today()),
+                'hari_ini' => $query->whereDate($column, today()),
                 'minggu_ini' => $query->whereBetween($column, [now()->startOfWeek(), now()->endOfWeek()]),
-                'bulan_ini'  => $query->whereMonth($column, now()->month)->whereYear($column, now()->year),
-                default      => null,
+                'bulan_ini' => $query->whereMonth($column, now()->month)->whereYear($column, now()->year),
+                default => null,
             };
         }
     }
@@ -1073,10 +1090,10 @@ class AdminController extends Controller
     private function inspeksiSummary(string $model): array
     {
         return [
-            'total'                  => $model::count(),
-            'menunggu_re_inspeksi'   => $model::where('status', 'menunggu_re_inspeksi')->count(),
-            'selesai'                => $model::where('status', 'selesai')->count(),
-            'ditolak'                => $model::where('status', 'ditolak')->count(),
+            'total' => $model::count(),
+            'menunggu_re_inspeksi' => $model::where('status', 'menunggu_re_inspeksi')->count(),
+            'selesai' => $model::where('status', 'selesai')->count(),
+            'ditolak' => $model::where('status', 'ditolak')->count(),
         ];
     }
 
@@ -1106,7 +1123,7 @@ class AdminController extends Controller
 
         return Excel::download(
             new ObservasiKeselamatanExport($query),
-            'observasi-keselamatan-' . now()->format('Ymd') . '.xlsx'
+            'observasi-keselamatan-'.now()->format('Ymd').'.xlsx'
         );
     }
 
@@ -1114,7 +1131,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'status_tindakan' => ['required', 'in:pending,continue,progress,close'],
-            'pic_user_id'     => ['nullable', 'exists:users,id'],
+            'pic_user_id' => ['nullable', 'exists:users,id'],
         ]);
 
         $oldPicId = $laporanBahaya->pic_user_id;
@@ -1135,8 +1152,8 @@ class AdminController extends Controller
 
         $laporanBahaya->update(array_filter([
             'status_tindakan' => $request->status_tindakan,
-            'pic_user_id'     => $request->has('pic_user_id') ? $request->pic_user_id : $laporanBahaya->pic_user_id,
-        ], fn($v) => $v !== null || $request->has('pic_user_id')));
+            'pic_user_id' => $request->has('pic_user_id') ? $request->pic_user_id : $laporanBahaya->pic_user_id,
+        ], fn ($v) => $v !== null || $request->has('pic_user_id')));
 
         // Kirim notif ke PIC baru jika PIC berubah
         $newPicId = $laporanBahaya->fresh()->pic_user_id;
@@ -1159,7 +1176,7 @@ class AdminController extends Controller
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('nik', 'like', "%{$request->search}%");
+                    ->orWhere('nik', 'like', "%{$request->search}%");
             });
         }
         if ($request->filled('site')) {
@@ -1171,29 +1188,29 @@ class AdminController extends Controller
 
         return Inertia::render('admin/targets', [
             'targets' => $targets,
-            'users'   => $query->paginate(20)->withQueryString(),
+            'users' => $query->paginate(20)->withQueryString(),
             'filters' => $request->only('search', 'site', 'participation_level'),
-            'sites'   => Site::orderBy('label')->get(['value', 'label']),
+            'sites' => Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
 
     public function updateTarget(Request $request, string $level)
     {
         $request->validate([
-            'laporan_per_minggu'  => ['required', 'integer', 'min:0', 'max:20'],
+            'laporan_per_minggu' => ['required', 'integer', 'min:0', 'max:20'],
             'inspeksi_per_minggu' => ['required', 'integer', 'min:0', 'max:20'],
-            'observasi_per_minggu'=> ['required', 'integer', 'min:0', 'max:20'],
-            'bugar_per_hari'      => ['required', 'integer', 'min:0', 'max:3'],
+            'observasi_per_minggu' => ['required', 'integer', 'min:0', 'max:20'],
+            'bugar_per_hari' => ['required', 'integer', 'min:0', 'max:3'],
         ]);
 
         ParticipationTarget::updateOrCreate(
             ['level' => $level],
             [
-                'laporan_per_minggu'  => $request->laporan_per_minggu,
+                'laporan_per_minggu' => $request->laporan_per_minggu,
                 'inspeksi_per_minggu' => $request->inspeksi_per_minggu,
-                'observasi_per_minggu'=> $request->observasi_per_minggu,
-                'bugar_per_hari'      => $request->bugar_per_hari,
-                'updated_by'          => auth()->id(),
+                'observasi_per_minggu' => $request->observasi_per_minggu,
+                'bugar_per_hari' => $request->bugar_per_hari,
+                'updated_by' => auth()->id(),
             ]
         );
 
@@ -1239,7 +1256,7 @@ class AdminController extends Controller
         }
         $this->applyDateFilter($query, $request);
 
-        $filename = 'bugar-selamat-' . now()->format('Y-m-d') . '.xlsx';
+        $filename = 'bugar-selamat-'.now()->format('Y-m-d').'.xlsx';
 
         return Excel::download(new BugarSelamatExport($query), $filename);
     }
@@ -1268,16 +1285,16 @@ class AdminController extends Controller
         }
         $this->applyDateFilter($query, $request);
 
-        $filename = 'laporan-bahaya-' . now()->format('Y-m-d') . '.xlsx';
+        $filename = 'laporan-bahaya-'.now()->format('Y-m-d').'.xlsx';
 
         return Excel::download(new LaporanBahayaExport($query), $filename);
     }
 
     public function users(Request $request)
     {
-        $query     = User::query()->latest();
+        $query = User::query()->latest();
         $adminSite = $request->user()->site;
-        $site      = $this->adminSite($request);
+        $site = $this->adminSite($request);
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
@@ -1296,9 +1313,9 @@ class AdminController extends Controller
         }
 
         return Inertia::render('admin/users', [
-            'users'      => $query->paginate(20)->withQueryString(),
-            'filters'    => $request->only('search', 'site', 'is_admin', 'participation_level'),
-            'sites'      => $adminSite
+            'users' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only('search', 'site', 'is_admin', 'participation_level'),
+            'sites' => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
                 : Site::orderBy('label')->get(['value', 'label']),
             'admin_site' => $adminSite,
@@ -1308,7 +1325,7 @@ class AdminController extends Controller
     public function createUser()
     {
         return Inertia::render('admin/user-form', [
-            'mode'  => 'create',
+            'mode' => 'create',
             'sites' => Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
@@ -1316,28 +1333,28 @@ class AdminController extends Controller
     public function storeUser(Request $request)
     {
         $request->validate([
-            'name'                => ['required', 'string', 'max:255'],
-            'nik'                 => ['required', 'string', 'max:50', 'unique:users,nik'],
-            'email'               => ['nullable', 'email', 'max:255', 'unique:users,email'],
-            'password'            => ['required', 'string', 'min:8', 'confirmed'],
-            'jabatan'             => ['nullable', 'string', 'max:255'],
-            'departemen'          => ['nullable', 'in:Production,Maintenance,Supply Chain,Engineering,HSE,HRGA,Management'],
-            'site'                => ['nullable', 'string', Rule::exists('sites', 'value')],
-            'site_ids'            => ['nullable', 'array'],
-            'site_ids.*'          => ['string', Rule::exists('sites', 'value')],
-            'is_admin'            => ['boolean'],
+            'name' => ['required', 'string', 'max:255'],
+            'nik' => ['required', 'string', 'max:50', 'unique:users,nik'],
+            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'jabatan' => ['nullable', 'string', 'max:255'],
+            'departemen' => ['nullable', 'in:Production,Maintenance,Supply Chain,Engineering,HSE,HRGA,Management'],
+            'site' => ['nullable', 'string', Rule::exists('sites', 'value')],
+            'site_ids' => ['nullable', 'array'],
+            'site_ids.*' => ['string', Rule::exists('sites', 'value')],
+            'is_admin' => ['boolean'],
             'participation_level' => ['required', 'in:nonstaff,staff,srstaff'],
         ]);
 
         $user = User::create([
-            'name'                => $request->name,
-            'nik'                 => $request->nik,
-            'email'               => $request->email,
-            'password'            => Hash::make($request->password),
-            'jabatan'             => $request->jabatan,
-            'departemen'          => $request->departemen,
-            'site'                => $request->site,
-            'is_admin'            => $request->boolean('is_admin'),
+            'name' => $request->name,
+            'nik' => $request->nik,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'jabatan' => $request->jabatan,
+            'departemen' => $request->departemen,
+            'site' => $request->site,
+            'is_admin' => $request->boolean('is_admin'),
             'participation_level' => $request->participation_level,
         ]);
 
@@ -1351,8 +1368,8 @@ class AdminController extends Controller
     public function editUser(User $user)
     {
         return Inertia::render('admin/user-form', [
-            'mode'  => 'edit',
-            'user'  => [
+            'mode' => 'edit',
+            'user' => [
                 ...$user->only('id', 'name', 'nik', 'email', 'jabatan', 'departemen', 'site', 'is_admin', 'participation_level'),
                 'site_ids' => $user->sites()->pluck('sites.value')->all(),
             ],
@@ -1363,27 +1380,27 @@ class AdminController extends Controller
     public function updateUser(Request $request, User $user)
     {
         $request->validate([
-            'name'                => ['required', 'string', 'max:255'],
-            'nik'                 => ['required', 'string', 'max:50', 'unique:users,nik,' . $user->id],
-            'email'               => ['nullable', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'password'            => ['nullable', 'string', 'min:8', 'confirmed'],
-            'jabatan'             => ['nullable', 'string', 'max:255'],
-            'departemen'          => ['nullable', 'in:Production,Maintenance,Supply Chain,Engineering,HSE,HRGA,Management'],
-            'site'                => ['nullable', 'string', Rule::exists('sites', 'value')],
-            'site_ids'            => ['nullable', 'array'],
-            'site_ids.*'          => ['string', Rule::exists('sites', 'value')],
-            'is_admin'            => ['boolean'],
+            'name' => ['required', 'string', 'max:255'],
+            'nik' => ['required', 'string', 'max:50', 'unique:users,nik,'.$user->id],
+            'email' => ['nullable', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'jabatan' => ['nullable', 'string', 'max:255'],
+            'departemen' => ['nullable', 'in:Production,Maintenance,Supply Chain,Engineering,HSE,HRGA,Management'],
+            'site' => ['nullable', 'string', Rule::exists('sites', 'value')],
+            'site_ids' => ['nullable', 'array'],
+            'site_ids.*' => ['string', Rule::exists('sites', 'value')],
+            'is_admin' => ['boolean'],
             'participation_level' => ['required', 'in:nonstaff,staff,srstaff'],
         ]);
 
         $data = [
-            'name'                => $request->name,
-            'nik'                 => $request->nik,
-            'email'               => $request->email,
-            'jabatan'             => $request->jabatan,
-            'departemen'          => $request->departemen,
-            'site'                => $request->site,
-            'is_admin'            => $request->boolean('is_admin'),
+            'name' => $request->name,
+            'nik' => $request->nik,
+            'email' => $request->email,
+            'jabatan' => $request->jabatan,
+            'departemen' => $request->departemen,
+            'site' => $request->site,
+            'is_admin' => $request->boolean('is_admin'),
             'participation_level' => $request->participation_level,
         ];
 
@@ -1447,14 +1464,14 @@ class AdminController extends Controller
             $query->where('participation_level', $request->participation_level);
         }
 
-        $filename = 'users-' . now()->format('Y-m-d') . '.xlsx';
+        $filename = 'users-'.now()->format('Y-m-d').'.xlsx';
 
         return Excel::download(new UsersExport($query), $filename);
     }
 
     public function importTemplate()
     {
-        return Excel::download(new UsersImportTemplate(), 'template-import-users.xlsx');
+        return Excel::download(new UsersImportTemplate, 'template-import-users.xlsx');
     }
 
     public function importUsers(Request $request)
@@ -1463,7 +1480,7 @@ class AdminController extends Controller
             'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:2048'],
         ]);
 
-        $import = new UsersImport();
+        $import = new UsersImport;
         Excel::import($import, $request->file('file'));
 
         $msg = "Import selesai. {$import->imported} pengguna diproses";
@@ -1559,26 +1576,34 @@ class AdminController extends Controller
     public function deleteRangeAssessment(Request $request)
     {
         return $this->deleteRange($request, function ($from, $to) {
-            return DB::transaction(function () use ($from, $to) {
+            [$deleted, $userIds] = DB::transaction(function () use ($from, $to) {
                 $ids = AssessmentSession::whereBetween('completed_at', [$from, $to])->pluck('id');
+                $userIds = AssessmentSession::whereIn('id', $ids)->pluck('user_id')->unique();
                 AssessmentSessionQuestion::whereIn('assessment_session_id', $ids)->delete();
                 InductionAttendance::where('type', 'safety')->whereIn('assessment_session_id', $ids)->delete();
 
-                return AssessmentSession::whereIn('id', $ids)->delete();
+                return [AssessmentSession::whereIn('id', $ids)->delete(), $userIds];
             });
+            $userIds->each(fn ($userId) => $this->syncInductionAttendance($userId, 'safety'));
+
+            return $deleted;
         });
     }
 
     public function deleteRangeHrAssessment(Request $request)
     {
         return $this->deleteRange($request, function ($from, $to) {
-            return DB::transaction(function () use ($from, $to) {
+            [$deleted, $userIds] = DB::transaction(function () use ($from, $to) {
                 $ids = HrAssessmentSession::whereBetween('completed_at', [$from, $to])->pluck('id');
+                $userIds = HrAssessmentSession::whereIn('id', $ids)->pluck('user_id')->unique();
                 HrAssessmentSessionQuestion::whereIn('hr_assessment_session_id', $ids)->delete();
                 InductionAttendance::where('type', 'hr')->whereIn('assessment_session_id', $ids)->delete();
 
-                return HrAssessmentSession::whereIn('id', $ids)->delete();
+                return [HrAssessmentSession::whereIn('id', $ids)->delete(), $userIds];
             });
+            $userIds->each(fn ($userId) => $this->syncInductionAttendance($userId, 'hr'));
+
+            return $deleted;
         });
     }
 
@@ -1591,21 +1616,17 @@ class AdminController extends Controller
     {
         $request->validate([
             'date_from' => ['required', 'date'],
-            'date_to'   => ['required', 'date', 'after_or_equal:date_from'],
-            'password'  => ['required', 'string'],
+            'date_to' => ['required', 'date', 'after_or_equal:date_from'],
+            'password' => ['required', 'string', 'current_password'],
         ]);
 
-        if ($request->input('password') !== 'Kristanto1') {
-            return back()->withErrors(['password' => 'Password salah.']);
-        }
-
         $from = Carbon::parse($request->date_from)->startOfDay();
-        $to   = Carbon::parse($request->date_to)->endOfDay();
+        $to = Carbon::parse($request->date_to)->endOfDay();
 
         $deleted = $delete($from, $to);
 
         Inertia::flash('toast', [
-            'type'    => 'success',
+            'type' => 'success',
             'message' => "{$deleted} data berhasil dihapus (periode {$from->toDateString()} s/d {$to->toDateString()}).",
         ]);
 
@@ -1616,7 +1637,8 @@ class AdminController extends Controller
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
         BugarSelamat::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+
         return back();
     }
 
@@ -1624,7 +1646,8 @@ class AdminController extends Controller
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
         LaporanBahaya::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+
         return back();
     }
 
@@ -1632,7 +1655,8 @@ class AdminController extends Controller
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
         ObservasiKeselamatan::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+
         return back();
     }
 
@@ -1640,7 +1664,8 @@ class AdminController extends Controller
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
         KomunikasiJsa::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+
         return back();
     }
 
@@ -1648,7 +1673,8 @@ class AdminController extends Controller
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
         InspeksiKantor::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+
         return back();
     }
 
@@ -1656,7 +1682,8 @@ class AdminController extends Controller
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
         InspeksiTambang::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+
         return back();
     }
 
@@ -1664,7 +1691,8 @@ class AdminController extends Controller
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
         InspeksiWorkshop::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+
         return back();
     }
 
@@ -1672,77 +1700,112 @@ class AdminController extends Controller
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
         InspeksiMess::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data berhasil dihapus.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+
         return back();
     }
 
     public function destroyAssessmentSession(AssessmentSession $session)
     {
+        $userId = $session->user_id;
         \DB::transaction(function () use ($session) {
             AssessmentSessionQuestion::where('assessment_session_id', $session->id)->delete();
             InductionAttendance::where('type', 'safety')->where('assessment_session_id', $session->id)->delete();
             $session->delete();
         });
+        $this->syncInductionAttendance($userId, 'safety');
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data assessment berhasil dihapus.']);
+
         return back();
     }
 
     public function destroyHrAssessmentSession(HrAssessmentSession $session)
     {
+        $userId = $session->user_id;
         \DB::transaction(function () use ($session) {
             HrAssessmentSessionQuestion::where('hr_assessment_session_id', $session->id)->delete();
             InductionAttendance::where('type', 'hr')->where('assessment_session_id', $session->id)->delete();
             $session->delete();
         });
+        $this->syncInductionAttendance($userId, 'hr');
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data HR assessment berhasil dihapus.']);
+
         return back();
     }
 
     public function batchDestroyAssessmentSession(Request $request)
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        $userIds = AssessmentSession::whereIn('id', $ids)->pluck('user_id')->unique();
         \DB::transaction(function () use ($ids) {
             AssessmentSessionQuestion::whereIn('assessment_session_id', $ids)->delete();
             InductionAttendance::where('type', 'safety')->whereIn('assessment_session_id', $ids)->delete();
             AssessmentSession::whereIn('id', $ids)->delete();
         });
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data assessment berhasil dihapus.']);
+        $userIds->each(fn ($userId) => $this->syncInductionAttendance($userId, 'safety'));
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data assessment berhasil dihapus.']);
+
         return back();
     }
 
     public function batchDestroyHrAssessmentSession(Request $request)
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        $userIds = HrAssessmentSession::whereIn('id', $ids)->pluck('user_id')->unique();
         \DB::transaction(function () use ($ids) {
             HrAssessmentSessionQuestion::whereIn('hr_assessment_session_id', $ids)->delete();
             InductionAttendance::where('type', 'hr')->whereIn('assessment_session_id', $ids)->delete();
             HrAssessmentSession::whereIn('id', $ids)->delete();
         });
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids) . ' data HR assessment berhasil dihapus.']);
+        $userIds->each(fn ($userId) => $this->syncInductionAttendance($userId, 'hr'));
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data HR assessment berhasil dihapus.']);
+
         return back();
+    }
+
+    private function syncInductionAttendance(int $userId, string $type): void
+    {
+        $session = $type === 'safety'
+            ? AssessmentSession::completed()->where('user_id', $userId)->where('passed', true)->oldest('completed_at')->first()
+            : HrAssessmentSession::completed()->where('user_id', $userId)->where('passed', true)->oldest('completed_at')->first();
+
+        if (! $session) {
+            InductionAttendance::where('user_id', $userId)->where('type', $type)->delete();
+
+            return;
+        }
+
+        InductionAttendance::updateOrCreate(
+            ['user_id' => $userId, 'type' => $type],
+            [
+                'assessment_session_id' => $session->id,
+                'assessment_session_type' => $type,
+                'attended_at' => $session->completed_at,
+            ],
+        );
     }
 
     private function buildLeaderboard(Carbon $now): array
     {
-        $sites  = Site::pluck('value')->all();
+        $sites = Site::pluck('value')->all();
         $result = [];
 
         foreach ($sites as $site) {
             $users = User::where('is_admin', false)
                 ->where('site', $site)
                 ->withCount([
-                    'bugarSelamats as bs_count'   => fn ($q) => $q->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year),
-                    'laporanBahayas as lb_count'  => fn ($q) => $q->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year),
+                    'bugarSelamats as bs_count' => fn ($q) => $q->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year),
+                    'laporanBahayas as lb_count' => fn ($q) => $q->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year),
                 ])
                 ->get(['id', 'name', 'jabatan', 'avatar'])
                 ->map(fn ($u) => [
-                    'id'      => $u->id,
-                    'name'    => $u->name,
+                    'id' => $u->id,
+                    'name' => $u->name,
                     'jabatan' => $u->jabatan,
-                    'avatar'  => $u->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($u->avatar) ? asset('storage/' . $u->avatar) : null,
-                    'bs'      => $u->bs_count,
-                    'lb'      => $u->lb_count,
-                    'skor'    => $u->bs_count + ($u->lb_count * 2),
+                    'avatar' => $u->avatar && Storage::disk('public')->exists($u->avatar) ? asset('storage/'.$u->avatar) : null,
+                    'bs' => $u->bs_count,
+                    'lb' => $u->lb_count,
+                    'skor' => $u->bs_count + ($u->lb_count * 2),
                 ])
                 ->filter(fn ($u) => $u['skor'] > 0)
                 ->sortByDesc('skor')
@@ -1757,25 +1820,25 @@ class AdminController extends Controller
 
     private function buildMonthlyTrend(Carbon $now): array
     {
-        $since  = $now->copy()->subMonths(5)->startOfMonth();
+        $since = $now->copy()->subMonths(5)->startOfMonth();
         $months = collect(range(5, 0))->map(fn ($i) => $now->copy()->subMonths($i));
 
         $bugarData = BugarSelamat::where('tanggal', '>=', $since)
-            ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as month, COUNT(*) as total")
+            ->selectRaw($this->monthSelect('tanggal').', COUNT(*) as total')
             ->groupBy('month')->get()->keyBy('month');
 
         $laporanData = LaporanBahaya::where('tanggal', '>=', $since)
-            ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as month, COUNT(*) as total")
+            ->selectRaw($this->monthSelect('tanggal').', COUNT(*) as total')
             ->groupBy('month')->get()->keyBy('month');
 
         $observasiData = ObservasiKeselamatan::where('tanggal', '>=', $since)
-            ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as month, COUNT(*) as total")
+            ->selectRaw($this->monthSelect('tanggal').', COUNT(*) as total')
             ->groupBy('month')->get()->keyBy('month');
 
         $inspeksiData = collect();
         foreach ([InspeksiKantor::class, InspeksiTambang::class, InspeksiWorkshop::class, InspeksiMess::class] as $model) {
             $model::where('tanggal', '>=', $since)
-                ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as month, COUNT(*) as total")
+                ->selectRaw($this->monthSelect('tanggal').', COUNT(*) as total')
                 ->groupBy('month')->get()
                 ->each(function ($row) use (&$inspeksiData) {
                     $existing = $inspeksiData->get($row->month, ['month' => $row->month, 'total' => 0]);
@@ -1785,15 +1848,15 @@ class AdminController extends Controller
         }
 
         return $months->map(function (Carbon $month) use ($bugarData, $laporanData, $observasiData, $inspeksiData) {
-            $key   = $month->format('Y-m');
+            $key = $month->format('Y-m');
             $label = $month->locale('id')->isoFormat('MMM YY');
 
             return [
-                'label'     => $label,
-                'bugar'     => (int) ($bugarData[$key]->total ?? 0),
-                'laporan'   => (int) ($laporanData[$key]->total ?? 0),
+                'label' => $label,
+                'bugar' => (int) ($bugarData[$key]->total ?? 0),
+                'laporan' => (int) ($laporanData[$key]->total ?? 0),
                 'observasi' => (int) ($observasiData[$key]->total ?? 0),
-                'inspeksi'  => (int) ($inspeksiData->get($key, ['total' => 0])['total'] ?? 0),
+                'inspeksi' => (int) ($inspeksiData->get($key, ['total' => 0])['total'] ?? 0),
             ];
         })->values()->toArray();
     }
@@ -1803,13 +1866,13 @@ class AdminController extends Controller
         $sites = Site::pluck('value')->all();
 
         $aggregate = fn (string $table) => \DB::table($table)
-            ->join('users', 'users.id', '=', $table . '.user_id')
+            ->join('users', 'users.id', '=', $table.'.user_id')
             ->selectRaw('users.site, COUNT(*) as total')
             ->groupBy('users.site')
             ->pluck('total', 'users.site');
 
-        $bugar     = $aggregate('bugar_selamat');
-        $laporan   = $aggregate('laporan_bahaya');
+        $bugar = $aggregate('bugar_selamat');
+        $laporan = $aggregate('laporan_bahaya');
         $observasi = $aggregate('observasi_keselamatan');
 
         $inspeksiTables = ['inspeksi_kantor', 'inspeksi_tambang', 'inspeksi_workshop', 'inspeksi_mess'];
@@ -1820,11 +1883,18 @@ class AdminController extends Controller
             ->map(fn ($v) => is_array($v) ? array_sum($v) : $v);
 
         return collect($sites)->map(fn ($site) => [
-            'site'      => $site,
-            'bugar'     => (int) ($bugar[$site] ?? 0),
-            'laporan'   => (int) ($laporan[$site] ?? 0),
+            'site' => $site,
+            'bugar' => (int) ($bugar[$site] ?? 0),
+            'laporan' => (int) ($laporan[$site] ?? 0),
             'observasi' => (int) ($observasi[$site] ?? 0),
-            'inspeksi'  => (int) ($inspeksi[$site] ?? 0),
+            'inspeksi' => (int) ($inspeksi[$site] ?? 0),
         ])->toArray();
+    }
+
+    private function monthSelect(string $column): string
+    {
+        return DB::getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', {$column}) as month"
+            : "DATE_FORMAT({$column}, '%Y-%m') as month";
     }
 }

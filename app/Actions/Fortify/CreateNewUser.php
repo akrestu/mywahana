@@ -28,16 +28,17 @@ class CreateNewUser implements CreatesNewUsers
     {
         Validator::make($input, [
             ...$this->profileRules(),
+            'nik' => $this->nikRules(required: true),
             'password' => $this->passwordRules(),
         ])->validate();
 
         return DB::transaction(function () use ($input) {
             $user = User::create([
-                'name'     => $input['name'],
-                'nik'      => $input['nik'],
-                'email'    => $input['email'] ?? null,
-                'jabatan'  => $input['jabatan'] ?? null,
-                'site'     => $input['site'] ?? null,
+                'name' => $input['name'],
+                'nik' => $input['nik'],
+                'email' => $input['email'] ?? null,
+                'jabatan' => $input['jabatan'] ?? null,
+                'site' => $input['site'] ?? null,
                 'password' => $input['password'],
             ]);
 

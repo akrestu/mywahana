@@ -14,8 +14,11 @@ use Inertia\Inertia;
 class AssessmentController extends Controller
 {
     private const PASSING_PERCENTAGE = 80;
+
     private const STAFF_QUESTION_COUNT = 30;
+
     private const NS_QUESTION_COUNT = 25;
+
     private const MAX_DAILY_ATTEMPTS = 3;
 
     public function index()
@@ -65,6 +68,7 @@ class AssessmentController extends Controller
 
         if ($passedToday) {
             Inertia::flash('toast', ['type' => 'info', 'message' => 'Kamu sudah lulus assessment hari ini. Selamat!']);
+
             return redirect()->route('assessment.index');
         }
 
@@ -74,7 +78,8 @@ class AssessmentController extends Controller
             ->count();
 
         if ($completedToday >= self::MAX_DAILY_ATTEMPTS) {
-            Inertia::flash('toast', ['type' => 'warning', 'message' => 'Kamu sudah mencapai batas maksimal ' . self::MAX_DAILY_ATTEMPTS . 'x percobaan hari ini. Coba lagi besok.']);
+            Inertia::flash('toast', ['type' => 'warning', 'message' => 'Kamu sudah mencapai batas maksimal '.self::MAX_DAILY_ATTEMPTS.'x percobaan hari ini. Coba lagi besok.']);
+
             return redirect()->route('assessment.index');
         }
 
@@ -102,7 +107,7 @@ class AssessmentController extends Controller
 
         abort_if($questions->isEmpty(), 422, 'Belum ada soal tersedia untuk departemen dan level Anda. Hubungi admin HSE.');
 
-        $session = DB::transaction(function () use ($user, $tags, $needed, $questions) {
+        $session = DB::transaction(function () use ($user, $tags, $questions) {
             $session = AssessmentSession::create([
                 'user_id' => $user->id,
                 'departemen' => $user->departemen,
@@ -117,6 +122,12 @@ class AssessmentController extends Controller
                     'assessment_session_id' => $session->id,
                     'assessment_question_id' => $question->id,
                     'urutan' => $index + 1,
+                    'question_snapshot' => $question->question,
+                    'jawaban_1_snapshot' => $question->jawaban_1,
+                    'jawaban_2_snapshot' => $question->jawaban_2,
+                    'jawaban_3_snapshot' => $question->jawaban_3,
+                    'jawaban_4_snapshot' => $question->jawaban_4,
+                    'jawaban_benar_snapshot' => $question->jawaban_benar,
                 ]);
             }
 
@@ -141,14 +152,14 @@ class AssessmentController extends Controller
 
         $session->load(['sessionQuestions.question']);
 
-        $questions = $session->sessionQuestions->map(fn($sq) => [
+        $questions = $session->sessionQuestions->map(fn ($sq) => [
             'session_question_id' => $sq->id,
             'urutan' => $sq->urutan,
-            'question' => $sq->question->question,
-            'jawaban_1' => $sq->question->jawaban_1,
-            'jawaban_2' => $sq->question->jawaban_2,
-            'jawaban_3' => $sq->question->jawaban_3,
-            'jawaban_4' => $sq->question->jawaban_4,
+            'question' => $sq->questionText(),
+            'jawaban_1' => $sq->answerOption(1),
+            'jawaban_2' => $sq->answerOption(2),
+            'jawaban_3' => $sq->answerOption(3),
+            'jawaban_4' => $sq->answerOption(4),
             'jawaban_user' => $sq->jawaban_user,
         ]);
 
@@ -168,10 +179,16 @@ class AssessmentController extends Controller
     {
         $user = Auth::user();
         abort_unless($session->user_id === $user->id, 403);
-        abort_if($session->status === 'completed', 403);
+        abort_unless($session->status === 'in_progress', 403);
+
+        if ($session->started_at->addSeconds(AssessmentSession::DURATION_SECONDS + 15)->isPast()) {
+            $session->autoExpire();
+
+            return redirect()->route('assessment.result', $session);
+        }
 
         $answers = $request->validate([
-            'answers' => ['required', 'array'],
+            'answers' => ['present', 'array'],
             'answers.*' => ['nullable', 'integer', 'min:1', 'max:4'],
         ])['answers'];
 
@@ -181,14 +198,16 @@ class AssessmentController extends Controller
             foreach ($session->sessionQuestions as $sq) {
                 $jawabanUser = $answers[$sq->id] ?? null;
                 $isCorrect = $jawabanUser !== null
-                    && (int) $jawabanUser === (int) $sq->question->jawaban_benar;
+                    && (int) $jawabanUser === $sq->correctAnswer();
 
                 $sq->update([
                     'jawaban_user' => $jawabanUser,
                     'is_correct' => $isCorrect,
                 ]);
 
-                if ($isCorrect) $score++;
+                if ($isCorrect) {
+                    $score++;
+                }
             }
 
             $percentage = $session->total_questions > 0
@@ -226,14 +245,14 @@ class AssessmentController extends Controller
 
         $session->load(['sessionQuestions.question']);
 
-        $review = $session->sessionQuestions->map(fn($sq) => [
+        $review = $session->sessionQuestions->map(fn ($sq) => [
             'urutan' => $sq->urutan,
-            'question' => $sq->question->question,
-            'jawaban_1' => $sq->question->jawaban_1,
-            'jawaban_2' => $sq->question->jawaban_2,
-            'jawaban_3' => $sq->question->jawaban_3,
-            'jawaban_4' => $sq->question->jawaban_4,
-            'jawaban_benar' => $sq->question->jawaban_benar,
+            'question' => $sq->questionText(),
+            'jawaban_1' => $sq->answerOption(1),
+            'jawaban_2' => $sq->answerOption(2),
+            'jawaban_3' => $sq->answerOption(3),
+            'jawaban_4' => $sq->answerOption(4),
+            'jawaban_benar' => $sq->correctAnswer(),
             'jawaban_user' => $sq->jawaban_user,
             'is_correct' => $sq->is_correct,
         ]);

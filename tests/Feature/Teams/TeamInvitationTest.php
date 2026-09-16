@@ -151,7 +151,7 @@ test('team invitations can be accepted', function () {
         ->actingAs($invitedUser)
         ->get(route('invitations.accept', $invitation));
 
-    $response->assertRedirect(route('dashboard'));
+    $response->assertRedirect(route('app.home'));
 
     expect($invitedUser->fresh()->belongsToTeam($team))->toBeTrue();
     expect($invitation->fresh()->accepted_at)->not->toBeNull();

@@ -7,7 +7,6 @@ import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { NotificationBell } from '@/components/notification-bell';
-import { TeamSwitcher } from '@/components/team-switcher';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
@@ -445,9 +444,8 @@ return url === href;
 
 export default function ResponsiveLayout({ children, title, showBack, backHref }: Props) {
     const { url } = usePage();
-    const { auth, currentTeam, sidebarOpen } = usePage<{
+    const { auth, sidebarOpen } = usePage<{
         auth: Auth;
-        currentTeam?: { slug: string } | null;
         sidebarOpen?: boolean;
     }>().props;
 
@@ -518,28 +516,28 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
         <SidebarProvider defaultOpen={sidebarOpen ?? true}>
             {/* ── Desktop sidebar (hidden on mobile) ── */}
             <Sidebar collapsible="icon" variant="inset" className="hidden lg:flex">
-                <SidebarHeader>
+                <SidebarHeader className="border-b border-sidebar-border/50 pb-3">
                     <SidebarMenu>
                         <SidebarMenuItem>
-                            <SidebarMenuButton size="lg" asChild>
+                            <SidebarMenuButton
+                                size="lg"
+                                asChild
+                                className="rounded-xl transition-colors hover:bg-sidebar-accent/50"
+                                tooltip={{ children: 'MyWahana' }}
+                            >
                                 <Link href={dashboardUrl} prefetch="mount">
                                     <AppLogo />
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
-                    <SidebarMenu>
-                        <SidebarMenuItem>
-                            <TeamSwitcher />
-                        </SidebarMenuItem>
-                    </SidebarMenu>
                 </SidebarHeader>
 
-                <SidebarContent>
+                <SidebarContent className="gap-1 px-2 py-2">
                     <NavMain groups={mainNavGroups} />
                 </SidebarContent>
 
-                <SidebarFooter>
+                <SidebarFooter className="gap-2 border-t border-sidebar-border/50 px-2 pt-3 pb-3">
                     <NavUser />
                 </SidebarFooter>
             </Sidebar>

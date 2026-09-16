@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 type InspeksiRecord = {
@@ -68,6 +67,18 @@ return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100
 
     return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-100">Menunggu Re-Inspeksi</Badge>;
 }
+
+const statusRowBorder = (status: InspeksiRecord['status']) => {
+    if (status === 'selesai') {
+        return 'border-l-4 border-l-green-500';
+    }
+
+    if (status === 'ditolak') {
+        return 'border-l-4 border-l-red-500';
+    }
+
+    return 'border-l-4 border-l-yellow-500';
+};
 
 export default function AdminInspeksiKantor({ records, filters, summary, sites }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
@@ -145,16 +156,18 @@ return;
         Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) as Record<string, string>
     ).toString()}`;
 
+    const allSelected = records.data.length > 0 && selectedIds.size === records.data.length;
+
     return (
         <>
             <Head title="Monitoring Inspeksi Kantor" />
             <div className="flex flex-col gap-6">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 className="text-xl font-bold">Inspeksi Area Kantor</h2>
                         <p className="text-sm text-muted-foreground">Monitoring seluruh site</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         {selectMode ? (
                             <>
                                 <Button variant="outline" size="sm" onClick={toggleSelectAll}>
@@ -247,58 +260,66 @@ return;
                 {records.data.length === 0 ? (
                     <p className="py-10 text-center text-muted-foreground">Tidak ada data.</p>
                 ) : (
-                    <Card className="p-0 overflow-hidden">
-                        {records.data.map((record, idx) => (
-                            <div key={record.id}>
-                                <div className={cn(
-                                    'flex items-center gap-3 px-4 py-4',
-                                    record.status === 'selesai'   ? 'border-l-4 border-l-green-500'  :
-                                    record.status === 'ditolak'   ? 'border-l-4 border-l-red-500'    :
-                                                                    'border-l-4 border-l-yellow-500',
-                                )}>
+                    <div className="overflow-x-auto rounded-lg border">
+                        <table className="w-full min-w-[720px] border-collapse text-xs">
+                            <thead>
+                                <tr className="bg-muted/50 text-left">
                                     {selectMode && (
-                                        <Checkbox
-                                            checked={selectedIds.has(record.id)}
-                                            onCheckedChange={() => toggleSelect(record.id)}
-                                            className="shrink-0"
-                                        />
+                                        <th className="w-8 px-2 py-2">
+                                            <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
+                                        </th>
                                     )}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="min-w-0">
-                                                <p className="font-semibold text-sm">
-                                                    {record.user.name}
-                                                    {record.user.site && <span className="ml-2 text-xs text-muted-foreground">· {record.user.site}</span>}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground truncate">{record.project_site} · {record.departemen}</p>
-                                                {record.re_inspektor && (
-                                                    <p className="text-xs text-muted-foreground">RI: {record.re_inspektor.name}</p>
-                                                )}
-                                                <div className="mt-1.5 flex flex-wrap gap-1.5 items-center">
-                                                    <StatusBadge status={record.status} />
-                                                    <RiskBadge level={record.risk_level} pct={record.persentase} />
-                                                </div>
-                                            </div>
-                                            <p className="text-sm font-medium shrink-0">
-                                                {new Date(record.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    {!selectMode && (
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-9 w-9 text-destructive hover:text-destructive shrink-0"
-                                            onClick={() => setToDelete(record)}
-                                        >
-                                            <Trash2 size={16} />
-                                        </Button>
-                                    )}
-                                </div>
-                                {idx < records.data.length - 1 && <Separator />}
-                            </div>
-                        ))}
-                    </Card>
+                                    <th className="px-3 py-2 font-semibold">Karyawan</th>
+                                    <th className="px-2 py-2 font-semibold">Lokasi</th>
+                                    <th className="px-2 py-2 font-semibold">Re-Inspektor</th>
+                                    <th className="px-2 py-2 text-center font-semibold">Status</th>
+                                    <th className="px-2 py-2 text-center font-semibold">Risk</th>
+                                    <th className="px-2 py-2 font-semibold">Tanggal</th>
+                                    {!selectMode && <th className="px-2 py-2 text-right font-semibold">Aksi</th>}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {records.data.map((record, idx) => (
+                                    <tr key={record.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/10'}>
+                                        {selectMode && (
+                                            <td className="px-2 py-2">
+                                                <Checkbox
+                                                    checked={selectedIds.has(record.id)}
+                                                    onCheckedChange={() => toggleSelect(record.id)}
+                                                />
+                                            </td>
+                                        )}
+                                        <td className={cn('px-3 py-2', statusRowBorder(record.status))}>
+                                            <p className="truncate max-w-[160px] font-medium">{record.user.name}</p>
+                                            {record.user.site && <p className="text-[10px] text-muted-foreground">{record.user.site}</p>}
+                                        </td>
+                                        <td className="px-2 py-2 text-muted-foreground">
+                                            <p className="truncate max-w-[140px]">{record.project_site}</p>
+                                            <p className="text-[10px]">{record.departemen}</p>
+                                        </td>
+                                        <td className="px-2 py-2 text-muted-foreground">{record.re_inspektor?.name ?? '—'}</td>
+                                        <td className="px-2 py-2 text-center"><StatusBadge status={record.status} /></td>
+                                        <td className="px-2 py-2 text-center"><RiskBadge level={record.risk_level} pct={record.persentase} /></td>
+                                        <td className="px-2 py-2 text-muted-foreground">
+                                            {new Date(record.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </td>
+                                        {!selectMode && (
+                                            <td className="px-2 py-2 text-right">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 text-destructive hover:text-destructive"
+                                                    onClick={() => setToDelete(record)}
+                                                >
+                                                    <Trash2 size={13} />
+                                                </Button>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
 
                 {(records.prev_page_url || records.next_page_url) && (

@@ -1,4 +1,4 @@
-﻿import { Head, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { BookOpen, Calendar, Camera, Check, ChevronsUpDown, Images, MapPin, PenLine, Plus, Trash2, UserCheck, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
@@ -312,7 +312,7 @@ formData.append('supervisor_signature', supervisorSig);
         setUploadProgress(0);
         router.post('/sap/komunikasi-jsa', formData, {
             forceFormData: true,
-            onProgress: (e) => setUploadProgress(e.percentage ?? null),
+            onProgress: (e) => setUploadProgress(e?.percentage ?? null),
             onError: (errs) => {
  setErrors(errs); setProcessing(false); setUploadProgress(null); 
 },

@@ -19,6 +19,7 @@ const config: AssessmentConfig = {
     historyLabel: 'Riwayat Assessment',
     exportUrl: '/admin/assessment/export',
     questionStatsExportUrl: '/admin/assessment/export-soal',
+    manageQuestionsUrl: '/admin/assessment/questions',
     inductionLabel: 'Safety',
     inductionExportUrl: '/admin/induction-attendance/export/safety',
     attendanceShowDept: true,

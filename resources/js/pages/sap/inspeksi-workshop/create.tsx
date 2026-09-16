@@ -1,7 +1,8 @@
-﻿import { Head, useForm } from '@inertiajs/react';
-import { ArrowLeft, ArrowRight, Calendar, Camera, Check, ChevronsUpDown, Images, Plus, Trash2, X } from 'lucide-react';
+import { Head, router, useForm } from '@inertiajs/react';
+import { ArrowLeft, ArrowRight, Camera, Check, ChevronsUpDown, Images, Plus, Trash2, X } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
+import { SiteCombobox } from '@/components/site-combobox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -9,7 +10,6 @@ import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { SiteCombobox } from '@/components/site-combobox';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { UploadOverlay } from '@/components/upload-overlay';
@@ -100,7 +100,7 @@ const CATEGORIES = [
 
 type ScoreKey = 'bangunan_1'|'bangunan_2'|'bangunan_3'|'bangunan_4'|'bangunan_5'|'bangunan_6'|'bangunan_7'|'bangunan_8'|'bangunan_9'|'bangunan_10'|'bangunan_11'|'bangunan_12'|'bangunan_13'|'bangunan_14'|'bangunan_15'|'bangunan_16'|'bangunan_17'|'bangunan_18'|'bangunan_19'|'bangunan_20'|'bangunan_21'|'kelistrikan_1'|'kelistrikan_2'|'kelistrikan_3'|'kelistrikan_4'|'kelistrikan_5'|'kelistrikan_6'|'kelistrikan_7'|'kelistrikan_8'|'welder_1'|'welder_2'|'welder_3'|'welder_4'|'welder_5'|'welder_6'|'tabung_1'|'tabung_2'|'tabung_3'|'tabung_4'|'tabung_5'|'tabung_6'|'alat_angkat_1'|'alat_angkat_2'|'alat_angkat_3'|'alat_angkat_4'|'alat_angkat_5'|'tps_1'|'tps_2'|'tps_3'|'tps_4'|'tps_5'|'tps_6'|'tps_7'|'tps_8'|'tps_9'|'tps_10'|'tps_11'|'tps_12'|'tyre_1'|'tyre_2'|'tyre_3';
 type TindakanRow = { tindakan: string; pic: string; due_date: string; remark: string };
-type FormData = { re_inspektor_id: string; peserta_ids: number[]; tanggal: string; project_site: string; departemen: string } & { [K in ScoreKey]: string } & { tindakan_perbaikan: TindakanRow[]; ttd_inspektor: string; [key: string]: unknown };
+type FormData = { re_inspektor_id: string; peserta_ids: number[]; tanggal: string; project_site: string; departemen: string } & { [K in ScoreKey]: string } & { tindakan_perbaikan: TindakanRow[]; ttd_inspektor: string };
 
 const ALL_SCORE_KEYS: ScoreKey[] = ['bangunan_1','bangunan_2','bangunan_3','bangunan_4','bangunan_5','bangunan_6','bangunan_7','bangunan_8','bangunan_9','bangunan_10','bangunan_11','bangunan_12','bangunan_13','bangunan_14','bangunan_15','bangunan_16','bangunan_17','bangunan_18','bangunan_19','bangunan_20','bangunan_21','kelistrikan_1','kelistrikan_2','kelistrikan_3','kelistrikan_4','kelistrikan_5','kelistrikan_6','kelistrikan_7','kelistrikan_8','welder_1','welder_2','welder_3','welder_4','welder_5','welder_6','tabung_1','tabung_2','tabung_3','tabung_4','tabung_5','tabung_6','alat_angkat_1','alat_angkat_2','alat_angkat_3','alat_angkat_4','alat_angkat_5','tps_1','tps_2','tps_3','tps_4','tps_5','tps_6','tps_7','tps_8','tps_9','tps_10','tps_11','tps_12','tyre_1','tyre_2','tyre_3'];
 
@@ -179,12 +179,12 @@ export default function InspeksiWorkshopCreate({ user, staffUsers, sites }: Prop
 }, [step]);
     const [riOpen, setRiOpen] = useState(false);
     const [pesertaOpen, setPesertaOpen] = useState(false);
-    const [siteOpen, setSiteOpen] = useState(false);
     const [fotoFiles, setFotoFiles] = useState<Record<string, File>>({});
     const fotoGalleryRef = useRef<HTMLInputElement>(null);
     const [photoSheet, setPhotoSheet] = useState(false);
     const [showCamera, setShowCamera] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [processing, setProcessing] = useState(false);
     const [pendingFotoKey, setPendingFotoKey] = useState<string | null>(null);
     function openFotoPicker(key: string) {
  setPendingFotoKey(key); setPhotoSheet(true); 
@@ -204,7 +204,7 @@ fotoGalleryRef.current?.click();
     };
     const initialScores = Object.fromEntries(ALL_SCORE_KEYS.map(k => [k, ''])) as { [K in ScoreKey]: string };
     const defaultSite = sites.find(s => s.value === user.site)?.label ?? '';
-    const { data, setData, post, processing, errors } = useForm<FormData>({ re_inspektor_id: '', peserta_ids: [], tanggal: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }), project_site: defaultSite, departemen: user.departemen ?? '', ...initialScores, tindakan_perbaikan: [], ttd_inspektor: '' });
+    const { data, setData, errors } = useForm<FormData>({ re_inspektor_id: '', peserta_ids: [], tanggal: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }), project_site: defaultSite, departemen: user.departemen ?? '', ...initialScores, tindakan_perbaikan: [], ttd_inspektor: '' });
     const selectedSiteValue = sites.find(s => s.label === data.project_site)?.value;
     const availableStaffUsers = staffUsers.filter(u => selectedSiteValue && u.sites.includes(selectedSiteValue));
     const selectedRI = availableStaffUsers.find(u => String(u.id) === data.re_inspektor_id);
@@ -232,10 +232,12 @@ fd.append(k, String(v ?? ''));
         });
         Object.entries(fotoFiles).forEach(([k, f]) => fd.append(`foto[${k}]`, f));
         setUploadProgress(0);
-        post('/sap/inspeksi-workshop', {
-            data: fd as unknown as FormData,
-            onProgress: (e) => setUploadProgress(e.percentage ?? null),
-            onFinish: () => setUploadProgress(null),
+        router.post('/sap/inspeksi-workshop', fd, {
+            onStart: () => setProcessing(true),
+            onProgress: (e) => setUploadProgress(e?.percentage ?? null),
+            onFinish: () => {
+ setUploadProgress(null); setProcessing(false);
+},
         });
     };
 

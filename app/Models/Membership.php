@@ -3,14 +3,19 @@
 namespace App\Models;
 
 use App\Enums\TeamRole;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
-#[Fillable(['team_id', 'user_id', 'role'])]
 class Membership extends Pivot
 {
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = ['team_id', 'user_id', 'role'];
+
     /**
      * The table associated with the model.
      *

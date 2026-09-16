@@ -6,14 +6,13 @@ use App\Models\Site;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
-use Maatwebsite\Excel\Concerns\SkipsOnError;
 use Maatwebsite\Excel\Concerns\SkipsErrors;
+use Maatwebsite\Excel\Concerns\SkipsOnError;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnError
+class UsersImport implements SkipsOnError, ToModel, WithChunkReading, WithHeadingRow
 {
     use SkipsErrors;
 
@@ -23,9 +22,9 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
     }
 
     public int $imported = 0;
+
     public int $skipped = 0;
 
-    private bool $headersLogged = false;
     private ?Collection $validSites = null;
 
     private function getValidSites(): Collection
@@ -33,6 +32,7 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
         if ($this->validSites === null) {
             $this->validSites = Site::pluck('value');
         }
+
         return $this->validSites;
     }
 
@@ -46,31 +46,28 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
                 return $row[$key];
             }
         }
+
         return $default;
     }
 
     public function model(array $row): ?User
     {
-        // Log header keys once for debugging
-        if (!$this->headersLogged) {
-            Log::info('[UsersImport] Row keys: ' . implode(', ', array_keys($row)));
-            Log::info('[UsersImport] First row values: ' . json_encode($row));
-            $this->headersLogged = true;
-        }
 
         // Support both import-template format and export format
-        $nama     = trim($this->resolve($row, ['nama', 'nama_1']) ?? '');
-        $nik      = trim((string) ($this->resolve($row, ['nik', 'nik_1']) ?? ''));
-        $password = trim($this->resolve($row, ['password', 'password_hash']) ?? '');
+        $nama = trim($this->resolve($row, ['nama', 'nama_1']) ?? '');
+        $nik = trim((string) ($this->resolve($row, ['nik', 'nik_1']) ?? ''));
+        $password = trim($this->resolve($row, ['password', 'password_hash', 'password_opsional_untuk_reset']) ?? '');
 
-        if (empty($nama) || empty($nik) || empty($password)) {
+        if (empty($nama) || empty($nik)) {
+            $this->skipped++;
+
             return null;
         }
 
         // Site: find any column key starting with 'site' (heading slug varies by DB values)
-        $siteKey = collect(array_keys($row))->first(fn($k) => str_starts_with($k, 'site'));
+        $siteKey = collect(array_keys($row))->first(fn ($k) => str_starts_with($k, 'site'));
         $siteRaw = strtolower(trim($siteKey ? ($row[$siteKey] ?? '') : ''));
-        $siteMatch = $this->getValidSites()->first(fn($v) => strtolower($v) === $siteRaw);
+        $siteMatch = $this->getValidSites()->first(fn ($v) => strtolower($v) === $siteRaw);
         $site = $siteMatch ?? null;
 
         // Level: null if blank/invalid — avoids accidental downgrade on import
@@ -101,7 +98,8 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
             ? in_array($adminRaw, ['1', 'true', 'yes', 'ya'], true)
             : null;
 
-        $isPlainPassword = !str_starts_with($password, '$2y$') && !str_starts_with($password, '$2b$');
+        $passwordProvided = $password !== '';
+        $isPlainPassword = $passwordProvided && ! str_starts_with($password, '$2y$') && ! str_starts_with($password, '$2b$');
 
         // Use lower bcrypt cost for bulk import to avoid execution timeout
         $hashOptions = ['rounds' => 6];
@@ -109,16 +107,6 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
         $existing = User::where('nik', $nik)->first();
 
         if ($existing) {
-            Log::info('[UsersImport] Checking update for NIK: ' . $nik, [
-                'jabatan_excel'    => $jabatan,
-                'jabatan_db'       => $existing->jabatan,
-                'site_raw'         => $siteRaw,
-                'site_match'       => $siteMatch,
-                'site_db'          => $existing->site,
-                'departemen_excel' => $departemen,
-                'departemen_db'    => $existing->departemen,
-            ]);
-
             $changes = [];
 
             if ($existing->name !== $nama) {
@@ -145,16 +133,17 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
             }
 
             $passwordChanged = false;
-            if ($isPlainPassword && !Hash::check($password, $existing->password)) {
+            if ($isPlainPassword && ! Hash::check($password, $existing->password)) {
                 $passwordChanged = true;
             }
 
-            if (empty($changes) && !$passwordChanged) {
+            if (empty($changes) && ! $passwordChanged) {
                 $this->skipped++;
+
                 return null;
             }
 
-            if (!empty($changes)) {
+            if (! empty($changes)) {
                 $existing->getConnection()
                     ->table('users')
                     ->where('id', $existing->id)
@@ -169,23 +158,28 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
             }
 
             $this->imported++;
+
             return null;
         }
 
         // New user
-        $hashedPassword = $isPlainPassword
-            ? Hash::make($password, $hashOptions)
-            : $password;
+        if (! $isPlainPassword) {
+            $this->skipped++;
+
+            return null;
+        }
+
+        $hashedPassword = Hash::make($password, $hashOptions);
 
         $user = new User([
-            'name'                => $nama,
-            'nik'                 => $nik,
-            'email'               => $email,
-            'jabatan'             => $jabatan,
-            'departemen'          => $departemen,
-            'site'                => $site,
+            'name' => $nama,
+            'nik' => $nik,
+            'email' => $email,
+            'jabatan' => $jabatan,
+            'departemen' => $departemen,
+            'site' => $site,
             'participation_level' => $levelExplicit ?? 'nonstaff',
-            'is_admin'            => $isAdminExplicit ?? false,
+            'is_admin' => $isAdminExplicit ?? false,
         ]);
 
         // Set raw hashed password directly to bypass the 'hashed' cast (avoid double-hashing)
@@ -193,6 +187,7 @@ class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsOnE
         $user->save();
 
         $this->imported++;
+
         return null;
     }
 }

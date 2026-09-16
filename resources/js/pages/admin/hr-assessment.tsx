@@ -19,6 +19,7 @@ const config: AssessmentConfig = {
     historyLabel: 'Riwayat HR Assessment',
     exportUrl: '/admin/hr-assessment/export',
     questionStatsExportUrl: '/admin/hr-assessment/export-soal',
+    manageQuestionsUrl: '/admin/hr-assessment/questions',
     inductionLabel: 'HR',
     inductionExportUrl: '/admin/induction-attendance/export/hr',
     attendanceShowDept: false,

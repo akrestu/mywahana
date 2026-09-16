@@ -1,5 +1,5 @@
-import { router } from '@inertiajs/react';
-import { CheckCircle2, ChevronDown, ChevronUp, ClipboardCheck, Download, Lock, Search, Trash2, XCircle } from 'lucide-react';
+import { Link, router } from '@inertiajs/react';
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, ClipboardCheck, Download, FileQuestion, Lock, Search, Trash2, Users, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import {
     Bar, BarChart, CartesianGrid, Line, LineChart,
@@ -94,6 +94,7 @@ export type AssessmentConfig = {
     historyLabel: string;
     exportUrl: string;
     questionStatsExportUrl: string;
+    manageQuestionsUrl: string;
     inductionLabel: string;
     inductionExportUrl: string;
     attendanceShowDept: boolean;
@@ -135,6 +136,9 @@ export default function AssessmentMonitor({
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [batchDeleting, setBatchDeleting] = useState(false);
     const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+    const passRate = summary.total > 0 ? Math.round(summary.lulus / summary.total * 100) : 0;
+    const topWeakQuestion = weak_questions[0];
+    const allRecordsSelected = records.data.length > 0 && records.data.every(r => selectedIds.has(r.id));
 
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
@@ -150,7 +154,7 @@ next.add(id);
         });
     };
     const toggleSelectAll = () => {
-        if (selectedIds.size === records.data.length) {
+        if (allRecordsSelected) {
 setSelectedIds(new Set());
 } else {
 setSelectedIds(new Set(records.data.map(r => r.id)));
@@ -236,12 +240,18 @@ return;
         <div className="flex flex-col gap-6">
 
             {/* Header */}
-            <div className="flex items-start justify-between gap-3">
-                <div>
-                    <h2 className="text-xl font-bold">{config.heading}</h2>
+            <div className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:p-5 xl:flex-row xl:items-center xl:justify-between">
+                <div className="space-y-1">
+                    <Badge variant="outline" className="text-[11px]">Dashboard Assessment</Badge>
+                    <h2 className="text-2xl font-bold tracking-tight">{config.heading}</h2>
                     <p className="text-sm text-muted-foreground">{config.subtitle}</p>
                 </div>
-                <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                <div className="flex flex-wrap gap-2 xl:justify-end">
+                    <Link href={config.manageQuestionsUrl}>
+                        <Button size="sm" variant="outline" className="gap-1">
+                            <FileQuestion size={14} /> Kelola Bank Soal
+                        </Button>
+                    </Link>
                     <a href={config.questionStatsExportUrl}>
                         <Button size="sm" variant="outline" className="gap-1">
                             <Download size={14} /> Analisa Soal
@@ -264,22 +274,57 @@ return;
                 </div>
             </div>
 
-            {/* ── KPI Cards ── */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {/* Ringkasan utama */}
+            <div className="-mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Ringkasan Seluruh Data</h3>
+                <span className="text-xs text-muted-foreground">Tidak mengikuti filter riwayat</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
                 {[
-                    { label: 'Total Attempt',    value: summary.total,        color: config.kpiTotalColor, suffix: '' },
-                    { label: 'Lulus',             value: summary.lulus,        color: 'text-green-600',     suffix: '' },
-                    { label: 'Tidak Lulus',       value: summary.tidak_lulus,  color: 'text-red-600',       suffix: '' },
-                    { label: 'Rata-rata Skor',    value: summary.avg_score,    color: config.kpiAvgColor,   suffix: '%' },
-                    { label: 'Coverage Karyawan', value: summary.coverage_pct, color: 'text-orange-600',    suffix: '%' },
+                    { label: 'Total Assessment', value: summary.total, color: config.kpiTotalColor, suffix: '', detail: 'Percobaan tercatat' },
+                    { label: 'Tingkat Kelulusan', value: passRate, color: 'text-emerald-600', suffix: '%', detail: `${summary.lulus} lulus · ${summary.tidak_lulus} belum lulus` },
+                    { label: 'Rata-rata Skor', value: summary.avg_score, color: config.kpiAvgColor, suffix: '%', detail: 'Dari seluruh percobaan' },
+                    { label: 'Coverage Karyawan', value: summary.coverage_pct, color: 'text-amber-600', suffix: '%', detail: `${uncovered_users.length} belum assessment` },
+                    { label: 'Sudah Induksi', value: attendance_summary.total_tercatat, color: 'text-teal-600', suffix: '', detail: `Induksi ${config.inductionLabel}` },
+                    { label: 'Belum Induksi', value: attendance_summary.belum_tercatat, color: 'text-orange-600', suffix: '', detail: 'Perlu tindak lanjut' },
                 ].map(item => (
-                    <Card key={item.label}>
-                        <CardContent className="pt-4 pb-4">
-                            <p className={cn('text-2xl font-bold', item.color)}>{item.value}{item.suffix}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
+                    <Card key={item.label} className="shadow-none">
+                        <CardContent className="space-y-1 p-4">
+                            <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
+                            <p className={cn('text-2xl font-bold tabular-nums', item.color)}>{item.value}{item.suffix}</p>
+                            <p className="text-xs text-muted-foreground">{item.detail}</p>
                         </CardContent>
                     </Card>
                 ))}
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+                <Card className={cn('shadow-none', uncovered_users.length > 0 && 'border-amber-200 dark:border-amber-900')}>
+                    <CardContent className="flex items-start gap-3 p-4">
+                        <div className="rounded-lg bg-amber-50 p-2 text-amber-600 dark:bg-amber-950/40"><Users className="h-5 w-5" /></div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold">{config.uncoveredLabel}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{uncovered_users.length > 0 ? `${uncovered_users.length} karyawan belum tercakup. ${uncovered_users.slice(0, 2).map(u => u.name).join(', ')}${uncovered_users.length > 2 ? ' dan lainnya' : ''}.` : 'Semua karyawan sudah tercakup.'}</p>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => {
+                            setShowUncovered(true);
+                            document.getElementById('uncovered-assessment')?.scrollIntoView({ behavior: 'smooth' });
+                        }} disabled={uncovered_users.length === 0}>Lihat</Button>
+                    </CardContent>
+                </Card>
+                <Card className={cn('shadow-none', topWeakQuestion && 'border-rose-200 dark:border-rose-900')}>
+                    <CardContent className="flex items-start gap-3 p-4">
+                        <div className="rounded-lg bg-rose-50 p-2 text-rose-600 dark:bg-rose-950/40"><AlertTriangle className="h-5 w-5" /></div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold">Soal Paling Sering Salah</p>
+                            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{topWeakQuestion ? `${topWeakQuestion.pct_salah}% salah dari ${topWeakQuestion.total_attempt} percobaan · ${topWeakQuestion.question ?? 'Soal tidak tersedia'}` : 'Belum ada data jawaban soal.'}</p>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => {
+                            setShowWeak(true);
+                            document.getElementById('weak-assessment-questions')?.scrollIntoView({ behavior: 'smooth' });
+                        }} disabled={!topWeakQuestion}>Lihat</Button>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* ── Charts ── */}
@@ -330,7 +375,7 @@ return;
             </div>
 
             {/* ── Soal Lemah ── */}
-            <Card>
+            <Card id="weak-assessment-questions">
                 <CardHeader className="pb-2 cursor-pointer select-none" onClick={() => setShowWeak(v => !v)}>
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-sm font-semibold">
@@ -389,7 +434,7 @@ return;
             </Card>
 
             {/* ── Coverage Gap ── */}
-            <Card>
+            <Card id="uncovered-assessment">
                 <CardHeader className="pb-2 cursor-pointer select-none" onClick={() => setShowUncovered(v => !v)}>
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-sm font-semibold">
@@ -432,15 +477,19 @@ return;
             </Card>
 
             {/* ── Filters ── */}
-            <div>
-                <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold">{config.historyLabel}</h3>
+            <Card className="shadow-none">
+                <CardContent className="space-y-3 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h3 className="text-base font-semibold">{config.historyLabel}</h3>
+                        <p className="text-xs text-muted-foreground">{records.total} hasil sesuai filter · klik nama untuk melihat riwayat pada halaman ini</p>
+                    </div>
                     {config.deleteRoute && (
                         <div className="flex gap-2">
                             {selectMode ? (
                                 <>
                                     <Button size="sm" variant="outline" onClick={toggleSelectAll}>
-                                        {selectedIds.size === records.data.length ? 'Batal Semua' : 'Pilih Semua'}
+                                        {allRecordsSelected ? 'Batal Semua' : 'Pilih Semua'}
                                     </Button>
                                     <Button size="sm" variant="outline" onClick={exitSelectMode}>Selesai</Button>
                                 </>
@@ -450,13 +499,13 @@ return;
                         </div>
                     )}
                 </div>
-                <div className="flex flex-wrap gap-3">
-                    <form onSubmit={handleSearch} className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-3">
+                    <form onSubmit={handleSearch} className="flex min-w-56 flex-1 gap-2 sm:flex-none">
                         <Input
                             placeholder="Cari nama / NIK..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="w-52"
+                            className="min-w-0 flex-1 sm:w-52"
                         />
                         <Button type="submit" variant="outline" size="icon">
                             <Search className="h-4 w-4" />
@@ -482,14 +531,15 @@ return;
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="mt-3 max-w-md">
+                <div className="max-w-md">
                     <DateRangeFilter
                         dateFrom={filters.date_from}
                         dateTo={filters.date_to}
                         onChange={(v) => applyFilters(v)}
                     />
                 </div>
-            </div>
+                </CardContent>
+            </Card>
 
             {/* ── Table ── */}
             <Card>
@@ -500,7 +550,7 @@ return;
                                 {selectMode && (
                                     <th className="px-4 py-3 w-10">
                                         <Checkbox
-                                            checked={selectedIds.size === records.data.length && records.data.length > 0}
+                                            checked={allRecordsSelected}
                                             onCheckedChange={toggleSelectAll}
                                         />
                                     </th>

@@ -1,7 +1,8 @@
-﻿import { Head, useForm } from '@inertiajs/react';
-import { ArrowLeft, ArrowRight, Calendar, Camera, Check, ChevronsUpDown, Images, Plus, Trash2, X } from 'lucide-react';
+import { Head, router, useForm } from '@inertiajs/react';
+import { ArrowLeft, ArrowRight, Camera, Check, ChevronsUpDown, Images, Plus, Trash2, X } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
+import { SiteCombobox } from '@/components/site-combobox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -9,7 +10,6 @@ import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { SiteCombobox } from '@/components/site-combobox';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { UploadOverlay } from '@/components/upload-overlay';
@@ -59,7 +59,7 @@ const CATEGORIES = [
 
 type ScoreKey = 'situasi_1'|'situasi_2'|'situasi_3'|'situasi_4'|'situasi_5'|'situasi_6'|'situasi_7'|'situasi_8'|'situasi_9'|'situasi_10'|'situasi_11'|'situasi_12'|'situasi_13'|'individu_1'|'individu_2'|'alat_1'|'alat_2'|'alat_3'|'alat_4'|'alat_5'|'alat_6'|'prosedur_1'|'prosedur_2'|'prosedur_3'|'prosedur_4'|'prosedur_5';
 type TindakanRow = { tindakan: string; pic: string; due_date: string; remark: string };
-type FormData = { re_inspektor_id: string; peserta_ids: number[]; tanggal: string; project_site: string; departemen: string; lokasi: string } & { [K in ScoreKey]: string } & { tindakan_perbaikan: TindakanRow[]; ttd_inspektor: string; [key: string]: unknown };
+type FormData = { re_inspektor_id: string; peserta_ids: number[]; tanggal: string; project_site: string; departemen: string; lokasi: string } & { [K in ScoreKey]: string } & { tindakan_perbaikan: TindakanRow[]; ttd_inspektor: string };
 
 const ALL_SCORE_KEYS: ScoreKey[] = ['situasi_1','situasi_2','situasi_3','situasi_4','situasi_5','situasi_6','situasi_7','situasi_8','situasi_9','situasi_10','situasi_11','situasi_12','situasi_13','individu_1','individu_2','alat_1','alat_2','alat_3','alat_4','alat_5','alat_6','prosedur_1','prosedur_2','prosedur_3','prosedur_4','prosedur_5'];
 
@@ -142,12 +142,12 @@ export default function InspeksiTambangCreate({ user, staffUsers, sites }: Props
 }, [step]);
     const [riOpen, setRiOpen] = useState(false);
     const [pesertaOpen, setPesertaOpen] = useState(false);
-    const [siteOpen, setSiteOpen] = useState(false);
     const [fotoFiles, setFotoFiles] = useState<Record<string, File>>({});
     const fotoGalleryRef = useRef<HTMLInputElement>(null);
     const [photoSheet, setPhotoSheet] = useState(false);
     const [showCamera, setShowCamera] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [processing, setProcessing] = useState(false);
     const [pendingFotoKey, setPendingFotoKey] = useState<string | null>(null);
     function openFotoPicker(key: string) {
  setPendingFotoKey(key); setPhotoSheet(true); 
@@ -167,7 +167,7 @@ fotoGalleryRef.current?.click();
     };
     const initialScores = Object.fromEntries(ALL_SCORE_KEYS.map(k => [k, ''])) as { [K in ScoreKey]: string };
     const defaultSite = sites.find(s => s.value === user.site)?.label ?? '';
-    const { data, setData, post, processing, errors } = useForm<FormData>({ re_inspektor_id: '', peserta_ids: [], tanggal: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }), project_site: defaultSite, departemen: user.departemen ?? '', lokasi: '', ...initialScores, tindakan_perbaikan: [], ttd_inspektor: '' });
+    const { data, setData, errors } = useForm<FormData>({ re_inspektor_id: '', peserta_ids: [], tanggal: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }), project_site: defaultSite, departemen: user.departemen ?? '', lokasi: '', ...initialScores, tindakan_perbaikan: [], ttd_inspektor: '' });
     const selectedSiteValue = sites.find(s => s.label === data.project_site)?.value;
     const availableStaffUsers = staffUsers.filter(u => selectedSiteValue && u.sites.includes(selectedSiteValue));
     const selectedRI = availableStaffUsers.find(u => String(u.id) === data.re_inspektor_id);
@@ -195,10 +195,12 @@ fd.append(k, String(v ?? ''));
         });
         Object.entries(fotoFiles).forEach(([k, f]) => fd.append(`foto[${k}]`, f));
         setUploadProgress(0);
-        post('/sap/inspeksi-tambang', {
-            data: fd as unknown as FormData,
-            onProgress: (e) => setUploadProgress(e.percentage ?? null),
-            onFinish: () => setUploadProgress(null),
+        router.post('/sap/inspeksi-tambang', fd, {
+            onStart: () => setProcessing(true),
+            onProgress: (e) => setUploadProgress(e?.percentage ?? null),
+            onFinish: () => {
+ setUploadProgress(null); setProcessing(false);
+},
         });
     };
 
