@@ -243,9 +243,13 @@ class AssessmentController extends Controller
         abort_unless($session->user_id === $user->id, 403);
         abort_unless($session->status === 'completed', 403);
 
+        if (! $session->feedback()->exists()) {
+            return redirect()->route('assessment.feedback', $session);
+        }
+
         $session->load(['sessionQuestions.question']);
 
-        $review = $session->sessionQuestions->map(fn ($sq) => [
+        $review =$session->sessionQuestions->map(fn ($sq) => [
             'urutan' => $sq->urutan,
             'question' => $sq->questionText(),
             'jawaban_1' => $sq->answerOption(1),

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AssessmentController;
+use App\Http\Controllers\AssessmentFeedbackController;
 use App\Http\Controllers\AssessmentQuestionController;
 use App\Http\Controllers\HrAssessmentController;
 use App\Http\Controllers\HrAssessmentQuestionController;
@@ -99,6 +100,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/start', [AssessmentController::class, 'start'])->name('start');
         Route::get('/{session}/quiz', [AssessmentController::class, 'quiz'])->name('quiz');
         Route::post('/{session}/submit', [AssessmentController::class, 'submit'])->name('submit');
+        Route::get('/{session}/feedback', [AssessmentFeedbackController::class, 'create'])->name('feedback');
+        Route::post('/{session}/feedback', [AssessmentFeedbackController::class, 'store'])->name('feedback.store');
         Route::get('/{session}/result', [AssessmentController::class, 'result'])->name('result');
     });
 
@@ -178,6 +181,8 @@ Route::middleware(['auth'])->group(function () {
         // Assessment monitoring
         Route::get('/assessment', [AdminController::class, 'assessment'])->name('assessment');
         Route::get('/assessment/export', [AdminController::class, 'exportAssessment'])->name('assessment.export');
+        Route::get('/assessment/feedback', [AssessmentFeedbackController::class, 'adminIndex'])->name('assessment.feedback');
+        Route::get('/assessment/feedback/export', [AssessmentFeedbackController::class, 'export'])->name('assessment.feedback.export');
         Route::get('/assessment/export-soal', [AdminController::class, 'exportAssessmentQuestionStats'])->name('assessment.export-soal');
         Route::delete('/assessment/batch', [AdminController::class, 'batchDestroyAssessmentSession'])->name('assessment.batch-destroy');
         Route::post('/assessment/delete-range', [AdminController::class, 'deleteRangeAssessment'])->name('assessment.delete-range');

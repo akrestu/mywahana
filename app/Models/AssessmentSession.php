@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
 
 class AssessmentSession extends Model
@@ -34,6 +35,11 @@ class AssessmentSession extends Model
     public function sessionQuestions(): HasMany
     {
         return $this->hasMany(AssessmentSessionQuestion::class)->orderBy('urutan');
+    }
+
+    public function feedback(): HasOne
+    {
+        return $this->hasOne(AssessmentFeedback::class);
     }
 
     public function scopeCompleted(Builder $query): Builder

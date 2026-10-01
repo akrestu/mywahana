@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, FileQuestion, GraduationCap, HeartPulse, LayoutGrid, MapPin, Mountain, ShieldCheck, Target, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, FileQuestion, GraduationCap, HeartPulse, LayoutGrid, MapPin, Mountain, ShieldCheck, Star, Target, Users, Wrench } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import type { NavGroup } from '@/components/nav-main';
@@ -53,6 +53,7 @@ export function AppSidebar() {
                     { title: 'Inspeksi Workshop',       href: '/admin/inspeksi-workshop',       icon: Wrench },
                     { title: 'Inspeksi Mess',           href: '/admin/inspeksi-mess',           icon: BedDouble },
                     { title: 'Assessment Safety',       href: '/admin/assessment',              icon: GraduationCap },
+                    { title: 'Lembar Penilaian',        href: '/admin/assessment/feedback',     icon: Star },
                 ],
             },
             {
