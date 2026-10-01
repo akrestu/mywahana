@@ -169,14 +169,14 @@ function HarianView({ tanggal, users, entries, summary, filters, sites }: Extrac
 
             {/* Date Navigator */}
             <div className="flex items-center justify-between gap-2">
-                <Button size="icon" variant="outline" onClick={() => navigate({ tanggal: prevDay })}>
+                <Button aria-label="Sebelumnya" size="icon" variant="outline" onClick={() => navigate({ tanggal: prevDay })}>
                     <ChevronLeft size={16} />
                 </Button>
                 <div className="text-center">
                     <p className="text-sm font-semibold leading-tight">{formatTanggal(tanggal)}</p>
                     {isToday(tanggal) && <span className="text-xs text-primary font-medium">Hari Ini</span>}
                 </div>
-                <Button size="icon" variant="outline" onClick={() => navigate({ tanggal: nextDay })} disabled={!isFuture(nextDay) && isToday(tanggal)}>
+                <Button aria-label="Berikutnya" size="icon" variant="outline" onClick={() => navigate({ tanggal: nextDay })} disabled={!isFuture(nextDay) && isToday(tanggal)}>
                     <ChevronRight size={16} />
                 </Button>
             </div>
@@ -308,11 +308,11 @@ function KalenderView({ tanggal, users, dates, entries, summary, filters, sites 
         <div className="space-y-4">
             {/* Month Navigator */}
             <div className="flex items-center justify-between gap-2">
-                <Button size="icon" variant="outline" onClick={() => navigate({ tanggal: prevMonth })}>
+                <Button aria-label="Sebelumnya" size="icon" variant="outline" onClick={() => navigate({ tanggal: prevMonth })}>
                     <ChevronLeft size={16} />
                 </Button>
                 <p className="text-sm font-semibold">{summary.bulan}</p>
-                <Button size="icon" variant="outline" onClick={() => navigate({ tanggal: nextMonth })}>
+                <Button aria-label="Berikutnya" size="icon" variant="outline" onClick={() => navigate({ tanggal: nextMonth })}>
                     <ChevronRight size={16} />
                 </Button>
             </div>
@@ -769,7 +769,7 @@ p.set('date_to', filters.date_to);
                 onOpenChange={setShowDeleteRange}
                 endpoint="/admin/bugar-selamat/delete-range"
                 title="Hapus Data Bugar Selamat"
-                description="Ini akan menghapus permanen seluruh data Bugar Selamat pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
+                description="Ini akan menghapus permanen seluruh data Bugar Selamat yang disubmit pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
             />
         </>
     );

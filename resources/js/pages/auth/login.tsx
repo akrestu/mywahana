@@ -79,7 +79,7 @@ type Props = {
     canResetPassword: boolean;
 };
 
-export default function Login({ status, canResetPassword }: Props) {
+export default function Login({ status }: Props) {
     const greeting = useTypingGreeting(GREETINGS);
     const [remember, setRemember] = useState(false);
 

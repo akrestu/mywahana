@@ -1,5 +1,5 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { BookOpen, CalendarDays, ChevronRight, Clock, MapPin, Plus, Users } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { BookOpen, CalendarDays, ChevronRight, MapPin, Plus, Users } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

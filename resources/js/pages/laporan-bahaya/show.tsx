@@ -385,8 +385,8 @@ data.append('tanda_tangan', signature);
                     </div>
                 )}
 
-                {/* Form Review PIC (hanya untuk PIC) */}
-                {is_pic && (
+                {/* Form Review PIC (hanya untuk PIC, selama laporan belum ditutup) */}
+                {is_pic && record.status_tindakan !== 'close' && (
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between">
                             <h3 className="text-base font-bold">✍️ Tambah Review</h3>

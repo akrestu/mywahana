@@ -6,6 +6,7 @@ use App\Models\InspeksiMess;
 use App\Models\Site;
 use App\Models\User;
 use App\Notifications\InspeksiMessDibuat;
+use App\Rules\Signature;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,7 +18,7 @@ class InspeksiMessController extends Controller
         $user = $request->user();
 
         $myRecords = InspeksiMess::where('user_id', $user->id)
-            ->orWhereHas('peserta', fn($q) => $q->where('user_id', $user->id))
+            ->orWhereHas('peserta', fn ($q) => $q->where('user_id', $user->id))
             ->with('reInspektor:id,name,jabatan')
             ->orderByDesc('tanggal')->orderByDesc('created_at')
             ->paginate(15, pageName: 'my_page');
@@ -35,9 +36,9 @@ class InspeksiMessController extends Controller
             ->paginate(15, pageName: 'ri_done_page');
 
         return Inertia::render('sap/inspeksi-mess/index', [
-            'myRecords'         => $myRecords,
+            'myRecords' => $myRecords,
             'pendingReInspeksi' => $pendingReInspeksi,
-            'selesaiAsRI'       => $selesaiAsRI,
+            'selesaiAsRI' => $selesaiAsRI,
         ]);
     }
 
@@ -61,9 +62,9 @@ class InspeksiMessController extends Controller
             ]);
 
         return Inertia::render('sap/inspeksi-mess/create', [
-            'user'       => $user->only('name', 'nik', 'jabatan', 'site'),
+            'user' => $user->only('name', 'nik', 'jabatan', 'site'),
             'staffUsers' => $staffUsers,
-            'sites'      => Site::whereIn('value', $siteValues)->orderBy('label')->get(['value', 'label']),
+            'sites' => Site::whereIn('value', $siteValues)->orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -73,11 +74,11 @@ class InspeksiMessController extends Controller
 
         $validated = $request->validate([
             're_inspektor_id' => ['nullable', 'exists:users,id'],
-            'peserta_ids'     => ['nullable', 'array'],
-            'peserta_ids.*'   => ['exists:users,id'],
-            'tanggal'         => ['required', 'date'],
-            'project_site'    => ['required', 'string', 'max:255'],
-            'lokasi'          => ['required', 'string', 'max:255'],
+            'peserta_ids' => ['nullable', 'array'],
+            'peserta_ids.*' => ['exists:users,id'],
+            'tanggal' => ['required', 'date', 'before_or_equal:today'],
+            'project_site' => ['required', 'string', 'max:255'],
+            'lokasi' => ['required', 'string', 'max:255'],
             // Sanitasi (10)
             'sanitasi_1' => $scoreRule, 'sanitasi_2' => $scoreRule, 'sanitasi_3' => $scoreRule,
             'sanitasi_4' => $scoreRule, 'sanitasi_5' => $scoreRule, 'sanitasi_6' => $scoreRule,
@@ -93,14 +94,14 @@ class InspeksiMessController extends Controller
             // Sampah (5)
             'sampah_1' => $scoreRule, 'sampah_2' => $scoreRule, 'sampah_3' => $scoreRule,
             'sampah_4' => $scoreRule, 'sampah_5' => $scoreRule,
-            'tindakan_perbaikan'            => ['nullable', 'array'],
+            'tindakan_perbaikan' => ['nullable', 'array'],
             'tindakan_perbaikan.*.tindakan' => ['nullable', 'string', 'max:500'],
-            'tindakan_perbaikan.*.pic'       => ['nullable', 'string', 'max:255'],
-            'tindakan_perbaikan.*.due_date'  => ['nullable', 'string', 'max:50'],
-            'tindakan_perbaikan.*.remark'    => ['nullable', 'string', 'max:500'],
-            'foto'   => ['nullable', 'array'],
+            'tindakan_perbaikan.*.pic' => ['nullable', 'string', 'max:255'],
+            'tindakan_perbaikan.*.due_date' => ['nullable', 'string', 'max:50'],
+            'tindakan_perbaikan.*.remark' => ['nullable', 'string', 'max:500'],
+            'foto' => ['nullable', 'array'],
             'foto.*' => ['nullable', 'image', 'max:5120'],
-            'ttd_inspektor' => ['nullable', 'string'],
+            'ttd_inspektor' => ['nullable', new Signature],
         ]);
 
         $actor = $request->user()->load('sites:id,value');
@@ -117,26 +118,26 @@ class InspeksiMessController extends Controller
         abort_unless($eligibleAssignees === count(array_unique($assigneeIds)), 403);
 
         $scores = collect(InspeksiMess::$scoreKeys)
-            ->map(fn($k) => $validated[$k] ?? null)->filter(fn($v) => $v !== null);
+            ->map(fn ($k) => $validated[$k] ?? null)->filter(fn ($v) => $v !== null);
 
-        $totalPoin  = $scores->sum();
-        $maxPoin    = count(InspeksiMess::$scoreKeys) * 4;
+        $totalPoin = $scores->sum();
+        $maxPoin = count(InspeksiMess::$scoreKeys) * 4;
         $persentase = $scores->count() > 0 ? round(($totalPoin / $maxPoin) * 100, 1) : 0;
-        $riskLevel  = match (true) {
+        $riskLevel = match (true) {
             $persentase >= 85 => 'L',
             $persentase >= 70 => 'M',
             $persentase >= 50 => 'H',
-            default           => 'VH',
+            default => 'VH',
         };
 
         $pesertaIds = $validated['peserta_ids'] ?? [];
         unset($validated['peserta_ids'], $validated['foto']);
 
         $record = InspeksiMess::create(array_merge($validated, [
-            'user_id'    => $request->user()->id,
+            'user_id' => $request->user()->id,
             'total_poin' => $totalPoin, 'max_poin' => $maxPoin,
             'persentase' => $persentase, 'risk_level' => $riskLevel,
-            'status'     => $validated['re_inspektor_id'] ? 'menunggu_re_inspeksi' : 'selesai',
+            'status' => $validated['re_inspektor_id'] ? 'menunggu_re_inspeksi' : 'selesai',
         ]));
 
         if ($request->hasFile('foto')) {
@@ -179,7 +180,7 @@ class InspeksiMessController extends Controller
 
         return Inertia::render('sap/inspeksi-mess/show', [
             'record' => $inspeksiMess,
-            'is_ri'  => $user->id === $inspeksiMess->re_inspektor_id,
+            'is_ri' => $user->id === $inspeksiMess->re_inspektor_id,
         ]);
     }
 
@@ -188,6 +189,7 @@ class InspeksiMessController extends Controller
         abort_unless($request->user()->id === $inspeksiMess->re_inspektor_id, 403);
         if ($inspeksiMess->status !== 'menunggu_re_inspeksi') {
             Inertia::flash('toast', ['type' => 'info', 'message' => 'Form ini sudah diproses.']);
+
             return redirect()->route('sap.inspeksi-mess.show', $inspeksiMess);
         }
 
@@ -201,12 +203,12 @@ class InspeksiMessController extends Controller
         abort_unless($request->user()->id === $inspeksiMess->re_inspektor_id, 403);
         abort_if($inspeksiMess->status !== 'menunggu_re_inspeksi', 403, 'Form ini sudah diproses.');
 
-        $validated = $request->validate(['ttd_re_inspektor' => ['required', 'string']]);
+        $validated = $request->validate(['ttd_re_inspektor' => ['required', new Signature]]);
 
         $inspeksiMess->update([
             'ttd_re_inspektor' => $validated['ttd_re_inspektor'],
-            'status'           => 'selesai',
-            're_inspeksi_at'   => now(),
+            'status' => 'selesai',
+            're_inspeksi_at' => now(),
         ]);
 
         $request->user()->unreadNotifications()

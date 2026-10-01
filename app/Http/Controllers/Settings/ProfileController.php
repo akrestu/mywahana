@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\Site;
 use App\Models\UserBadge;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -26,18 +27,18 @@ class ProfileController extends Controller
             ->orderByDesc('earned_at')
             ->get()
             ->map(fn ($b) => [
-                'key'       => $b->badge_key,
-                'nama'      => UserBadge::$definitions[$b->badge_key]['nama'] ?? $b->badge_key,
-                'icon'      => UserBadge::$definitions[$b->badge_key]['icon'] ?? '🏅',
-                'desc'      => UserBadge::$definitions[$b->badge_key]['desc'] ?? '',
+                'key' => $b->badge_key,
+                'nama' => UserBadge::$definitions[$b->badge_key]['nama'] ?? $b->badge_key,
+                'icon' => UserBadge::$definitions[$b->badge_key]['icon'] ?? '🏅',
+                'desc' => UserBadge::$definitions[$b->badge_key]['desc'] ?? '',
                 'earned_at' => $b->earned_at,
             ]);
 
         return Inertia::render('settings/profile', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status'  => $request->session()->get('status'),
-            'badges'  => $badges,
-            'sites'   => \App\Models\Site::orderBy('label')->get(['value', 'label']),
+            'status' => $request->session()->get('status'),
+            'badges' => $badges,
+            'sites' => Site::orderBy('label')->get(['value', 'label']),
         ]);
     }
 

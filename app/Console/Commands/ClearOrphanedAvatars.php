@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 class ClearOrphanedAvatars extends Command
 {
     protected $signature = 'avatars:clear-orphaned';
+
     protected $description = 'Reset avatar users yang file-nya tidak ada di storage';
 
     public function handle(): void

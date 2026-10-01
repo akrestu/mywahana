@@ -8,6 +8,7 @@ use App\Models\Site;
 use App\Models\User;
 use App\Notifications\LaporanBahayaPicDitugaskan;
 use App\Notifications\LaporanBahayaStatusDiperbarui;
+use App\Rules\Signature;
 use App\Services\BadgeService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -72,7 +73,7 @@ class LaporanBahayaController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'tanggal' => ['required', 'date'],
+            'tanggal' => ['required', 'date', 'before_or_equal:today'],
             'site' => ['required', 'string', Rule::exists('sites', 'value')],
             'waktu_pengamatan' => ['required', 'date_format:H:i'],
             'kategori' => ['required', 'in:KTA,TTA'],
@@ -168,11 +169,12 @@ class LaporanBahayaController extends Controller
     public function submitReview(Request $request, LaporanBahaya $laporanBahaya)
     {
         abort_unless($request->user()->id === $laporanBahaya->pic_user_id, 403);
+        abort_if($laporanBahaya->status_tindakan === 'close', 403, 'Laporan sudah ditutup.');
 
         $validated = $request->validate([
             'comment' => ['nullable', 'string', 'max:2000'],
             'status_tindakan' => ['required', 'in:pending,continue,progress,close'],
-            'tanda_tangan' => ['nullable', 'string'],
+            'tanda_tangan' => ['nullable', new Signature],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx'],
         ]);

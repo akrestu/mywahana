@@ -351,14 +351,14 @@ fileRef.current.value = '';
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-1">
-                                                <Button
+                                                <Button aria-label="Ubah"
                                                     size="icon" variant="ghost"
                                                     className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                                     onClick={() => setFormTarget(q)}
                                                 >
                                                     <Pencil size={14} />
                                                 </Button>
-                                                <Button
+                                                <Button aria-label="Hapus"
                                                     size="icon" variant="ghost"
                                                     className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                                                     onClick={() => setToDelete(q)}

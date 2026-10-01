@@ -16,9 +16,9 @@ return new class extends Migration
             $table->unsignedBigInteger('hr_assessment_session_id');
             $table->unsignedBigInteger('hr_assessment_question_id');
             $table->foreign('hr_assessment_session_id', 'hr_asq_session_fk')
-                  ->references('id')->on('hr_assessment_sessions')->onDelete('cascade');
+                ->references('id')->on('hr_assessment_sessions')->onDelete('cascade');
             $table->foreign('hr_assessment_question_id', 'hr_asq_question_fk')
-                  ->references('id')->on('hr_assessment_questions')->onDelete('cascade');
+                ->references('id')->on('hr_assessment_questions')->onDelete('cascade');
             $table->unsignedSmallInteger('urutan');
             $table->unsignedTinyInteger('jawaban_user')->nullable();
             $table->boolean('is_correct')->nullable();

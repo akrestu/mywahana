@@ -596,7 +596,7 @@ p.set('date_to', filters.date_to);
                 onOpenChange={setShowDeleteRange}
                 endpoint="/admin/laporan-bahaya/delete-range"
                 title="Hapus Data Laporan Bahaya"
-                description="Ini akan menghapus permanen seluruh Laporan Bahaya pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
+                description="Ini akan menghapus permanen seluruh Laporan Bahaya yang disubmit pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
             />
         </>
     );

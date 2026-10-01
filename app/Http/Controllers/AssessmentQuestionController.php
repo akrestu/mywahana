@@ -14,6 +14,7 @@ use Maatwebsite\Excel\Facades\Excel;
 class AssessmentQuestionController extends Controller
 {
     private const VALID_DEPARTEMEN = ['Production', 'Maintenance', 'Supply Chain', 'Engineering', 'HSE', 'HRGA'];
+
     private const ANSWER_MAP = ['A' => 1, 'B' => 2, 'C' => 3, 'D' => 4];
 
     public function index(Request $request)
@@ -33,8 +34,8 @@ class AssessmentQuestionController extends Controller
         }
 
         return Inertia::render('admin/assessment-questions', [
-            'questions'   => $query->paginate(20)->withQueryString(),
-            'filters'     => $request->only(['search', 'departemen', 'tags']),
+            'questions' => $query->paginate(20)->withQueryString(),
+            'filters' => $request->only(['search', 'departemen', 'tags']),
             'departemenOptions' => self::VALID_DEPARTEMEN,
         ]);
     }
@@ -42,15 +43,15 @@ class AssessmentQuestionController extends Controller
     private function validated(Request $request): array
     {
         $validated = $request->validate([
-            'departemen'    => ['required', Rule::in(self::VALID_DEPARTEMEN)],
-            'tags'          => ['required', Rule::in(['S', 'NS'])],
-            'question'      => ['required', 'string'],
-            'jawaban_1'     => ['required', 'string'],
-            'jawaban_2'     => ['required', 'string'],
-            'jawaban_3'     => ['required', 'string'],
-            'jawaban_4'     => ['required', 'string'],
+            'departemen' => ['required', Rule::in(self::VALID_DEPARTEMEN)],
+            'tags' => ['required', Rule::in(['S', 'NS'])],
+            'question' => ['required', 'string'],
+            'jawaban_1' => ['required', 'string'],
+            'jawaban_2' => ['required', 'string'],
+            'jawaban_3' => ['required', 'string'],
+            'jawaban_4' => ['required', 'string'],
             'kunci_jawaban' => ['required', Rule::in(['A', 'B', 'C', 'D'])],
-            'keterangan'    => ['nullable', 'string'],
+            'keterangan' => ['nullable', 'string'],
         ]);
 
         $validated['jawaban_benar'] = self::ANSWER_MAP[$validated['kunci_jawaban']];
@@ -103,14 +104,14 @@ class AssessmentQuestionController extends Controller
     public function export()
     {
         return Excel::download(
-            new AssessmentQuestionBankExport(),
-            'bank-soal-assessment-safety-' . now()->format('Ymd') . '.xlsx',
+            new AssessmentQuestionBankExport,
+            'bank-soal-assessment-safety-'.now()->format('Ymd').'.xlsx',
         );
     }
 
     public function importTemplate()
     {
-        return Excel::download(new AssessmentQuestionImportTemplate(), 'template-import-soal-safety.xlsx');
+        return Excel::download(new AssessmentQuestionImportTemplate, 'template-import-soal-safety.xlsx');
     }
 
     public function import(Request $request)
@@ -119,7 +120,7 @@ class AssessmentQuestionController extends Controller
             'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:2048'],
         ]);
 
-        $import = new AssessmentQuestionImport();
+        $import = new AssessmentQuestionImport;
         Excel::import($import, $request->file('file'));
 
         $msg = "Import selesai. {$import->created} soal ditambahkan, {$import->updated} soal diperbarui";

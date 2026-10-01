@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { CheckCircle2, Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, Upload, UserCheck, Users, X } from 'lucide-react';
+import { Download, FileSpreadsheet, Pencil, Plus, Search, Trash2, Upload, UserCheck, Users, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -286,11 +286,11 @@ params.set('participation_level', filters.participation_level);
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-1">
                                                 <Link href={`/admin/users/${user.id}/edit`}>
-                                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                                    <Button aria-label="Ubah" size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                                                         <Pencil size={14} />
                                                     </Button>
                                                 </Link>
-                                                <Button
+                                                <Button aria-label="Hapus"
                                                     size="icon"
                                                     variant="ghost"
                                                     className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"

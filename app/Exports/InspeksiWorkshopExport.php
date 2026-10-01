@@ -2,16 +2,17 @@
 
 namespace App\Exports;
 
+use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
-class InspeksiWorkshopExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
+class InspeksiWorkshopExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     private int $no = 0;
 
-    public function __construct(private readonly \Illuminate\Database\Eloquent\Builder $query) {}
+    public function __construct(private readonly Builder $query) {}
 
     public function query()
     {
@@ -30,19 +31,20 @@ class InspeksiWorkshopExport implements FromQuery, WithHeadings, WithMapping, Sh
     public function map($row): array
     {
         $this->no++;
-        $riskLabel = match($row->risk_level) {
-            'L'  => 'Baik',
-            'M'  => 'Cukup',
-            'H'  => 'Perhatian',
+        $riskLabel = match ($row->risk_level) {
+            'L' => 'Baik',
+            'M' => 'Cukup',
+            'H' => 'Perhatian',
             'VH' => 'Perlu Tindakan',
             default => '',
         };
-        $statusLabel = match($row->status) {
-            'selesai'             => 'Selesai',
-            'ditolak'             => 'Ditolak',
+        $statusLabel = match ($row->status) {
+            'selesai' => 'Selesai',
+            'ditolak' => 'Ditolak',
             'menunggu_re_inspeksi' => 'Menunggu Re-Inspeksi',
             default => $row->status,
         };
+
         return [
             $this->no,
             $row->user->name ?? '',
@@ -55,11 +57,11 @@ class InspeksiWorkshopExport implements FromQuery, WithHeadings, WithMapping, Sh
             $row->created_at?->format('d/m/Y H:i') ?? '',
             $row->project_site,
             $row->departemen,
-            $row->persentase !== null ? $row->persentase . '%' : '',
+            $row->persentase !== null ? $row->persentase.'%' : '',
             $riskLabel,
             $statusLabel,
             $row->peserta->pluck('name')->join(', '),
-            collect($row->tindakan_perbaikan ?? [])->map(fn($t) => $t['tindakan'] ?? '')->filter()->join('; '),
+            collect($row->tindakan_perbaikan ?? [])->map(fn ($t) => $t['tindakan'] ?? '')->filter()->join('; '),
         ];
     }
 }

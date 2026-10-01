@@ -8,10 +8,10 @@ use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithTitle;
 
-class QuestionStatsSheet implements FromArray, WithHeadings, WithTitle, ShouldAutoSize, WithColumnWidths
+class QuestionStatsSheet implements FromArray, ShouldAutoSize, WithColumnWidths, WithHeadings, WithTitle
 {
     /**
-     * @param array<int, array<int, mixed>> $rows
+     * @param  array<int, array<int, mixed>>  $rows
      */
     public function __construct(
         private readonly string $title,

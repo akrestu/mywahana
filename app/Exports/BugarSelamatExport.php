@@ -2,16 +2,17 @@
 
 namespace App\Exports;
 
+use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
-class BugarSelamatExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
+class BugarSelamatExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     private int $no = 0;
 
-    public function __construct(private readonly \Illuminate\Database\Eloquent\Builder $query) {}
+    public function __construct(private readonly Builder $query) {}
 
     public function query()
     {
@@ -30,6 +31,7 @@ class BugarSelamatExport implements FromQuery, WithHeadings, WithMapping, Should
     public function map($row): array
     {
         $this->no++;
+
         return [
             $this->no,
             $row->user->name ?? '',

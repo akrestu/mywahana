@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -42,17 +43,17 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $user ? array_merge($user->toArray(), [
-                    'avatar_url' => $user->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar)
-                        ? \Illuminate\Support\Facades\Storage::disk('public')->url($user->avatar)
+                    'avatar_url' => $user->avatar && Storage::disk('public')->exists($user->avatar)
+                        ? Storage::disk('public')->url($user->avatar)
                         : null,
                 ]) : null,
             ],
             'notifications' => fn () => $user
                 ? $user->notifications()->latest()->take(15)->get()->map(fn ($n) => [
-                    'id'         => $n->id,
-                    'message'    => $n->data['message'],
-                    'url'        => $n->data['url'] ?? null,
-                    'read_at'    => $n->read_at,
+                    'id' => $n->id,
+                    'message' => $n->data['message'],
+                    'url' => $n->data['url'] ?? null,
+                    'read_at' => $n->read_at,
                     'created_at' => $n->created_at,
                 ])
                 : [],

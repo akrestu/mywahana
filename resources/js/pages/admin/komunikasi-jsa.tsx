@@ -459,7 +459,7 @@ p.set('date_to', filters.date_to);
                 onOpenChange={setShowDeleteRange}
                 endpoint="/admin/komunikasi-jsa/delete-range"
                 title="Hapus Data Komunikasi JSA"
-                description="Ini akan menghapus permanen seluruh form Komunikasi JSA/SOP/IK pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
+                description="Ini akan menghapus permanen seluruh form Komunikasi JSA/SOP/IK yang disubmit pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
             />
         </>
     );

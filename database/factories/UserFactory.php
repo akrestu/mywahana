@@ -27,18 +27,18 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name'                       => $this->faker->name(),
-            'nik'                        => $this->faker->unique()->numerify('######'),
-            'email'                      => null,
-            'email_verified_at'          => null,
-            'jabatan'                    => $this->faker->randomElement(['Operator', 'Supervisor', 'Teknisi', 'Staff HSE', 'Driver']),
-            'site'                       => $this->faker->randomElement(['baratama', 'bandhawa']),
-            'is_admin'                   => false,
-            'password'                   => static::$password ??= Hash::make('password'),
-            'remember_token'             => Str::random(10),
-            'two_factor_secret'          => null,
-            'two_factor_recovery_codes'  => null,
-            'two_factor_confirmed_at'    => null,
+            'name' => $this->faker->name(),
+            'nik' => $this->faker->unique()->numerify('######'),
+            'email' => null,
+            'email_verified_at' => null,
+            'jabatan' => $this->faker->randomElement(['Operator', 'Supervisor', 'Teknisi', 'Staff HSE', 'Driver']),
+            'site' => $this->faker->randomElement(['baratama', 'bandhawa']),
+            'is_admin' => false,
+            'password' => static::$password ??= Hash::make('password'),
+            'remember_token' => Str::random(10),
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+            'two_factor_confirmed_at' => null,
         ];
     }
 

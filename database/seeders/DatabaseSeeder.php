@@ -14,43 +14,43 @@ class DatabaseSeeder extends Seeder
     {
         // Admin
         User::factory()->create([
-            'name'     => 'Admin MyWahana',
-            'nik'      => 'ADM-001',
-            'jabatan'  => 'HSE Manager',
-            'site'     => 'baratama',
+            'name' => 'Admin MyWahana',
+            'nik' => 'ADM-001',
+            'jabatan' => 'HSE Manager',
+            'site' => 'baratama',
             'is_admin' => true,
         ]);
 
         // Staff HSE Baratama
         User::factory()->create([
-            'name'    => 'Budi Santoso',
-            'nik'     => 'BRT-1001',
+            'name' => 'Budi Santoso',
+            'nik' => 'BRT-1001',
             'jabatan' => 'Operator',
-            'site'    => 'baratama',
+            'site' => 'baratama',
         ]);
 
         // Staff HSE Baratama 2
         User::factory()->create([
-            'name'    => 'Agus Prasetyo',
-            'nik'     => 'BRT-1002',
+            'name' => 'Agus Prasetyo',
+            'nik' => 'BRT-1002',
             'jabatan' => 'Teknisi',
-            'site'    => 'baratama',
+            'site' => 'baratama',
         ]);
 
         // Staff HSE Bandhawa
         User::factory()->create([
-            'name'    => 'Siti Rahayu',
-            'nik'     => 'BDW-2001',
+            'name' => 'Siti Rahayu',
+            'nik' => 'BDW-2001',
             'jabatan' => 'Supervisor',
-            'site'    => 'bandhawa',
+            'site' => 'bandhawa',
         ]);
 
         // Staff HSE Bandhawa 2
         User::factory()->create([
-            'name'    => 'Dewi Lestari',
-            'nik'     => 'BDW-2002',
+            'name' => 'Dewi Lestari',
+            'nik' => 'BDW-2002',
             'jabatan' => 'Staff HSE',
-            'site'    => 'bandhawa',
+            'site' => 'bandhawa',
         ]);
 
         $this->call([

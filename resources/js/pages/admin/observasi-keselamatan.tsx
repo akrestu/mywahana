@@ -180,7 +180,7 @@ return;
                             placeholder="Cari nama / NIK..."
                             className="h-10"
                         />
-                        <Button type="submit" size="icon" className="h-10 w-10 shrink-0">
+                        <Button aria-label="Cari" type="submit" size="icon" className="h-10 w-10 shrink-0">
                             <Search size={16} />
                         </Button>
                     </form>
@@ -277,7 +277,7 @@ return;
                                         </td>
                                         {!selectMode && (
                                             <td className="px-2 py-2 text-right">
-                                                <Button
+                                                <Button aria-label="Hapus"
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-7 w-7 text-destructive hover:text-destructive"
@@ -357,7 +357,7 @@ return;
                 onOpenChange={setShowDeleteRange}
                 endpoint="/admin/observasi-keselamatan/delete-range"
                 title="Hapus Data Observasi Keselamatan"
-                description="Ini akan menghapus permanen seluruh data OK pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
+                description="Ini akan menghapus permanen seluruh data OK yang disubmit pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
             />
         </>
     );

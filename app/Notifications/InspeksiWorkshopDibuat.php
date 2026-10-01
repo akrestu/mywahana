@@ -24,13 +24,13 @@ class InspeksiWorkshopDibuat extends Notification
         if ($this->role === 're_inspektor') {
             return [
                 'message' => "Form Inspeksi Workshop dari {$this->record->user->name} pada {$this->record->tanggal->format('d/m/Y')} menunggu re-inspeksi Anda.",
-                'url'     => "/sap/inspeksi-workshop/{$this->record->id}/re-inspeksi",
+                'url' => "/sap/inspeksi-workshop/{$this->record->id}/re-inspeksi",
             ];
         }
 
         return [
             'message' => "Anda ditambahkan sebagai peserta Inspeksi Workshop oleh {$this->record->user->name} pada {$this->record->tanggal->format('d/m/Y')}.",
-            'url'     => "/sap/inspeksi-workshop/{$this->record->id}",
+            'url' => "/sap/inspeksi-workshop/{$this->record->id}",
         ];
     }
 

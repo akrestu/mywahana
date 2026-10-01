@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -88,10 +89,10 @@ class ObservasiKeselamatan extends Model
     ];
 
     protected $casts = [
-        'tanggal'           => 'date',
-        'status_temuan'     => 'array',
-        'pj_dikonfirmasi_at'=> 'datetime',
-        'pj_ditolak_at'     => 'datetime',
+        'tanggal' => 'date',
+        'status_temuan' => 'array',
+        'pj_dikonfirmasi_at' => 'datetime',
+        'pj_ditolak_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -106,10 +107,18 @@ class ObservasiKeselamatan extends Model
 
     public function hasBeresiko(): bool
     {
-        $checklistKeys = array_filter($this->fillable, fn($k) => str_starts_with($k, 'cl_') || str_starts_with($k, 'll_') && str_ends_with($k, '_nilai'));
+        $checklistKeys = array_filter($this->fillable, fn ($k) => str_starts_with($k, 'cl_') || str_starts_with($k, 'll_') && str_ends_with($k, '_nilai'));
         foreach ($checklistKeys as $key) {
-            if ($this->$key === 'beresiko') return true;
+            if ($this->$key === 'beresiko') {
+                return true;
+            }
         }
+
         return false;
+    }
+
+    public function scopeAtSite(Builder $query, string $site): Builder
+    {
+        return $query->where('site', $site);
     }
 }

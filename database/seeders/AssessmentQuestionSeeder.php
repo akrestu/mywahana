@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\AssessmentQuestion;
+use Illuminate\Database\Seeder;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class AssessmentQuestionSeeder extends Seeder
@@ -25,32 +25,40 @@ class AssessmentQuestionSeeder extends Seeder
         $inserted = 0;
 
         foreach ($rows as $i => $row) {
-            if ($i === 0) continue; // skip header
+            if ($i === 0) {
+                continue;
+            } // skip header
 
             $departemen = trim((string) ($row[1] ?? ''));
-            $tags       = strtoupper(trim((string) ($row[2] ?? '')));
-            $question   = trim((string) ($row[3] ?? ''));
+            $tags = strtoupper(trim((string) ($row[2] ?? '')));
+            $question = trim((string) ($row[3] ?? ''));
             $jawabanBenar = (int) ($row[4] ?? 0);
-            $jawaban1   = trim((string) ($row[5] ?? ''));
-            $jawaban2   = trim((string) ($row[6] ?? ''));
-            $jawaban3   = trim((string) ($row[7] ?? ''));
-            $jawaban4   = trim((string) ($row[8] ?? ''));
+            $jawaban1 = trim((string) ($row[5] ?? ''));
+            $jawaban2 = trim((string) ($row[6] ?? ''));
+            $jawaban3 = trim((string) ($row[7] ?? ''));
+            $jawaban4 = trim((string) ($row[8] ?? ''));
             $keterangan = trim((string) ($row[9] ?? '')) ?: null;
 
-            if (! in_array($departemen, $validDepts)) continue;
-            if (! in_array($tags, ['S', 'NS'])) continue;
-            if (empty($question) || $jawabanBenar < 1 || $jawabanBenar > 4) continue;
+            if (! in_array($departemen, $validDepts)) {
+                continue;
+            }
+            if (! in_array($tags, ['S', 'NS'])) {
+                continue;
+            }
+            if (empty($question) || $jawabanBenar < 1 || $jawabanBenar > 4) {
+                continue;
+            }
 
             AssessmentQuestion::create([
-                'departemen'   => $departemen,
-                'tags'         => $tags,
-                'question'     => $question,
+                'departemen' => $departemen,
+                'tags' => $tags,
+                'question' => $question,
                 'jawaban_benar' => $jawabanBenar,
-                'jawaban_1'    => $jawaban1,
-                'jawaban_2'    => $jawaban2,
-                'jawaban_3'    => $jawaban3,
-                'jawaban_4'    => $jawaban4,
-                'keterangan'   => $keterangan,
+                'jawaban_1' => $jawaban1,
+                'jawaban_2' => $jawaban2,
+                'jawaban_3' => $jawaban3,
+                'jawaban_4' => $jawaban4,
+                'keterangan' => $keterangan,
             ]);
 
             $inserted++;

@@ -9,7 +9,7 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class AssessmentFeedbackExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
+class AssessmentFeedbackExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     private int $no = 0;
 

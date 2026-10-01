@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\DeletesStoredFiles;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class LaporanBahaya extends Model
 {
+    use DeletesStoredFiles;
+
     protected $table = 'laporan_bahaya';
 
     protected $fillable = [
@@ -36,9 +40,9 @@ class LaporanBahaya extends Model
     {
         return match (true) {
             $nilai >= 125 => 'AA',
-            $nilai >= 25  => 'A',
-            $nilai >= 10  => 'B',
-            default       => 'C',
+            $nilai >= 25 => 'A',
+            $nilai >= 10 => 'B',
+            default => 'C',
         };
     }
 
@@ -60,5 +64,21 @@ class LaporanBahaya extends Model
     public function latestReview()
     {
         return $this->hasOne(LaporanBahayaReview::class)->latestOfMany();
+    }
+
+    public function scopeAtSite(Builder $query, string $site): Builder
+    {
+        return $query->where('site', $site);
+    }
+
+    /**
+     * Foto laporan beserta lampiran semua review-nya
+     * (review ikut terhapus lewat cascade di database).
+     */
+    public function storedFilePaths(): array
+    {
+        $reviewPaths = $this->reviews()->get(['attachment_paths'])->pluck('attachment_paths')->flatten()->all();
+
+        return [$this->foto_path, ...$reviewPaths];
     }
 }

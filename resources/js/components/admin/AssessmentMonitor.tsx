@@ -507,7 +507,7 @@ return;
                             onChange={e => setSearch(e.target.value)}
                             className="min-w-0 flex-1 sm:w-52"
                         />
-                        <Button type="submit" variant="outline" size="icon">
+                        <Button aria-label="Cari" type="submit" variant="outline" size="icon">
                             <Search className="h-4 w-4" />
                         </Button>
                     </form>
@@ -611,7 +611,7 @@ return;
                                     </td>
                                     {config.deleteRoute && !selectMode && (
                                         <td className="px-4 py-3 text-center">
-                                            <Button
+                                            <Button aria-label="Hapus"
                                                 variant="ghost"
                                                 size="icon"
                                                 className="h-8 w-8 text-destructive hover:text-destructive"

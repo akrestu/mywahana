@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\InspeksiRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class InspeksiKantor extends Model
 {
+    use InspeksiRecord;
+
     protected $table = 'inspeksi_kantor';
 
     protected $fillable = [
@@ -30,18 +33,18 @@ class InspeksiKantor extends Model
     ];
 
     protected $casts = [
-        'tanggal'            => 'date',
+        'tanggal' => 'date',
         'tindakan_perbaikan' => 'array',
-        'foto_items'         => 'array',
-        're_inspeksi_at'     => 'datetime',
-        'persentase'         => 'float',
+        'foto_items' => 'array',
+        're_inspeksi_at' => 'datetime',
+        'persentase' => 'float',
     ];
 
     public static array $scoreKeys = [
-        'situasi_1','situasi_2','situasi_3','situasi_4','situasi_5','situasi_6','situasi_7',
+        'situasi_1', 'situasi_2', 'situasi_3', 'situasi_4', 'situasi_5', 'situasi_6', 'situasi_7',
         'individu_1',
-        'alat_1','alat_2','alat_3','alat_4','alat_5','alat_6','alat_7',
-        'prosedur_1','prosedur_2','prosedur_3','prosedur_4','prosedur_5','prosedur_6','prosedur_7',
+        'alat_1', 'alat_2', 'alat_3', 'alat_4', 'alat_5', 'alat_6', 'alat_7',
+        'prosedur_1', 'prosedur_2', 'prosedur_3', 'prosedur_4', 'prosedur_5', 'prosedur_6', 'prosedur_7',
     ];
 
     public function user(): BelongsTo

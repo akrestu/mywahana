@@ -19,6 +19,7 @@ class ParticipationTarget extends Model
     public function targetBulanIni(): int
     {
         $weeks = (int) ceil(now()->daysInMonth / 7);
+
         return $this->laporan_per_minggu * $weeks;
     }
 }

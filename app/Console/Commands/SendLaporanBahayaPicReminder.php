@@ -24,7 +24,9 @@ class SendLaporanBahayaPicReminder extends Command
 
         $count = 0;
         foreach ($laporan as $record) {
-            if (! $record->pic) continue;
+            if (! $record->pic) {
+                continue;
+            }
             $record->pic->notify(new LaporanBahayaPicDitugaskan($record));
             $count++;
         }

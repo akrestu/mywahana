@@ -249,7 +249,7 @@ class AssessmentController extends Controller
 
         $session->load(['sessionQuestions.question']);
 
-        $review =$session->sessionQuestions->map(fn ($sq) => [
+        $review = $session->sessionQuestions->map(fn ($sq) => [
             'urutan' => $sq->urutan,
             'question' => $sq->questionText(),
             'jawaban_1' => $sq->answerOption(1),

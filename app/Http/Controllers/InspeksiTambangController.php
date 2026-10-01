@@ -6,6 +6,7 @@ use App\Models\InspeksiTambang;
 use App\Models\Site;
 use App\Models\User;
 use App\Notifications\InspeksiTambangDibuat;
+use App\Rules\Signature;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,7 +18,7 @@ class InspeksiTambangController extends Controller
         $user = $request->user();
 
         $myRecords = InspeksiTambang::where('user_id', $user->id)
-            ->orWhereHas('peserta', fn($q) => $q->where('user_id', $user->id))
+            ->orWhereHas('peserta', fn ($q) => $q->where('user_id', $user->id))
             ->with('reInspektor:id,name,jabatan')
             ->orderByDesc('tanggal')->orderByDesc('created_at')
             ->paginate(15, pageName: 'my_page');
@@ -35,9 +36,9 @@ class InspeksiTambangController extends Controller
             ->paginate(15, pageName: 'ri_done_page');
 
         return Inertia::render('sap/inspeksi-tambang/index', [
-            'myRecords'         => $myRecords,
+            'myRecords' => $myRecords,
             'pendingReInspeksi' => $pendingReInspeksi,
-            'selesaiAsRI'       => $selesaiAsRI,
+            'selesaiAsRI' => $selesaiAsRI,
         ]);
     }
 
@@ -61,9 +62,9 @@ class InspeksiTambangController extends Controller
             ]);
 
         return Inertia::render('sap/inspeksi-tambang/create', [
-            'user'       => $user->only('name', 'nik', 'jabatan', 'departemen', 'site'),
+            'user' => $user->only('name', 'nik', 'jabatan', 'departemen', 'site'),
             'staffUsers' => $staffUsers,
-            'sites'      => Site::whereIn('value', $siteValues)->orderBy('label')->get(['value', 'label']),
+            'sites' => Site::whereIn('value', $siteValues)->orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -73,12 +74,12 @@ class InspeksiTambangController extends Controller
 
         $validated = $request->validate([
             're_inspektor_id' => ['nullable', 'exists:users,id'],
-            'peserta_ids'     => ['nullable', 'array'],
-            'peserta_ids.*'   => ['exists:users,id'],
-            'tanggal'         => ['required', 'date'],
-            'project_site'    => ['required', 'string', 'max:255'],
-            'departemen'      => ['required', 'string', 'max:255'],
-            'lokasi'          => ['nullable', 'string', 'max:255'],
+            'peserta_ids' => ['nullable', 'array'],
+            'peserta_ids.*' => ['exists:users,id'],
+            'tanggal' => ['required', 'date', 'before_or_equal:today'],
+            'project_site' => ['required', 'string', 'max:255'],
+            'departemen' => ['required', 'string', 'max:255'],
+            'lokasi' => ['nullable', 'string', 'max:255'],
             'situasi_1' => $scoreRule, 'situasi_2' => $scoreRule, 'situasi_3' => $scoreRule,
             'situasi_4' => $scoreRule, 'situasi_5' => $scoreRule, 'situasi_6' => $scoreRule,
             'situasi_7' => $scoreRule, 'situasi_8' => $scoreRule, 'situasi_9' => $scoreRule,
@@ -89,14 +90,14 @@ class InspeksiTambangController extends Controller
             'alat_4' => $scoreRule, 'alat_5' => $scoreRule, 'alat_6' => $scoreRule,
             'prosedur_1' => $scoreRule, 'prosedur_2' => $scoreRule, 'prosedur_3' => $scoreRule,
             'prosedur_4' => $scoreRule, 'prosedur_5' => $scoreRule,
-            'tindakan_perbaikan'            => ['nullable', 'array'],
+            'tindakan_perbaikan' => ['nullable', 'array'],
             'tindakan_perbaikan.*.tindakan' => ['nullable', 'string', 'max:500'],
-            'tindakan_perbaikan.*.pic'       => ['nullable', 'string', 'max:255'],
-            'tindakan_perbaikan.*.due_date'  => ['nullable', 'string', 'max:50'],
-            'tindakan_perbaikan.*.remark'    => ['nullable', 'string', 'max:500'],
-            'foto'   => ['nullable', 'array'],
+            'tindakan_perbaikan.*.pic' => ['nullable', 'string', 'max:255'],
+            'tindakan_perbaikan.*.due_date' => ['nullable', 'string', 'max:50'],
+            'tindakan_perbaikan.*.remark' => ['nullable', 'string', 'max:500'],
+            'foto' => ['nullable', 'array'],
             'foto.*' => ['nullable', 'image', 'max:5120'],
-            'ttd_inspektor' => ['nullable', 'string'],
+            'ttd_inspektor' => ['nullable', new Signature],
         ]);
 
         $actor = $request->user()->load('sites:id,value');
@@ -113,26 +114,26 @@ class InspeksiTambangController extends Controller
         abort_unless($eligibleAssignees === count(array_unique($assigneeIds)), 403);
 
         $scores = collect(InspeksiTambang::$scoreKeys)
-            ->map(fn($k) => $validated[$k] ?? null)->filter(fn($v) => $v !== null);
+            ->map(fn ($k) => $validated[$k] ?? null)->filter(fn ($v) => $v !== null);
 
-        $totalPoin  = $scores->sum();
-        $maxPoin    = count(InspeksiTambang::$scoreKeys) * 4;
+        $totalPoin = $scores->sum();
+        $maxPoin = count(InspeksiTambang::$scoreKeys) * 4;
         $persentase = $scores->count() > 0 ? round(($totalPoin / $maxPoin) * 100, 1) : 0;
-        $riskLevel  = match (true) {
+        $riskLevel = match (true) {
             $persentase >= 85 => 'L',
             $persentase >= 70 => 'M',
             $persentase >= 50 => 'H',
-            default           => 'VH',
+            default => 'VH',
         };
 
         $pesertaIds = $validated['peserta_ids'] ?? [];
         unset($validated['peserta_ids'], $validated['foto']);
 
         $record = InspeksiTambang::create(array_merge($validated, [
-            'user_id'    => $request->user()->id,
+            'user_id' => $request->user()->id,
             'total_poin' => $totalPoin, 'max_poin' => $maxPoin,
             'persentase' => $persentase, 'risk_level' => $riskLevel,
-            'status'     => $validated['re_inspektor_id'] ? 'menunggu_re_inspeksi' : 'selesai',
+            'status' => $validated['re_inspektor_id'] ? 'menunggu_re_inspeksi' : 'selesai',
         ]));
 
         if ($request->hasFile('foto')) {
@@ -175,7 +176,7 @@ class InspeksiTambangController extends Controller
 
         return Inertia::render('sap/inspeksi-tambang/show', [
             'record' => $inspeksiTambang,
-            'is_ri'  => $user->id === $inspeksiTambang->re_inspektor_id,
+            'is_ri' => $user->id === $inspeksiTambang->re_inspektor_id,
         ]);
     }
 
@@ -184,6 +185,7 @@ class InspeksiTambangController extends Controller
         abort_unless($request->user()->id === $inspeksiTambang->re_inspektor_id, 403);
         if ($inspeksiTambang->status !== 'menunggu_re_inspeksi') {
             Inertia::flash('toast', ['type' => 'info', 'message' => 'Form ini sudah diproses.']);
+
             return redirect()->route('sap.inspeksi-tambang.show', $inspeksiTambang);
         }
 
@@ -197,12 +199,12 @@ class InspeksiTambangController extends Controller
         abort_unless($request->user()->id === $inspeksiTambang->re_inspektor_id, 403);
         abort_if($inspeksiTambang->status !== 'menunggu_re_inspeksi', 403, 'Form ini sudah diproses.');
 
-        $validated = $request->validate(['ttd_re_inspektor' => ['required', 'string']]);
+        $validated = $request->validate(['ttd_re_inspektor' => ['required', new Signature]]);
 
         $inspeksiTambang->update([
             'ttd_re_inspektor' => $validated['ttd_re_inspektor'],
-            'status'           => 'selesai',
-            're_inspeksi_at'   => now(),
+            'status' => 'selesai',
+            're_inspeksi_at' => now(),
         ]);
 
         $request->user()->unreadNotifications()

@@ -24,13 +24,13 @@ class InspeksiKantorDibuat extends Notification
         if ($this->role === 're_inspektor') {
             return [
                 'message' => "Form Inspeksi Kantor dari {$this->record->user->name} pada {$this->record->tanggal->format('d/m/Y')} menunggu re-inspeksi Anda.",
-                'url'     => "/sap/inspeksi-kantor/{$this->record->id}/re-inspeksi",
+                'url' => "/sap/inspeksi-kantor/{$this->record->id}/re-inspeksi",
             ];
         }
 
         return [
             'message' => "Anda ditambahkan sebagai peserta Inspeksi Kantor oleh {$this->record->user->name} pada {$this->record->tanggal->format('d/m/Y')}.",
-            'url'     => "/sap/inspeksi-kantor/{$this->record->id}",
+            'url' => "/sap/inspeksi-kantor/{$this->record->id}",
         ];
     }
 

@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\HrAssessmentQuestion;
+use Illuminate\Database\Seeder;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class HrAssessmentQuestionSeeder extends Seeder
@@ -27,29 +27,35 @@ class HrAssessmentQuestionSeeder extends Seeder
         $inserted = 0;
 
         foreach ($rows as $i => $row) {
-            if ($i === 0) continue; // skip header
+            if ($i === 0) {
+                continue;
+            } // skip header
 
-            $question   = trim((string) ($row[1] ?? ''));
-            $jawaban1   = trim((string) ($row[2] ?? ''));
-            $jawaban2   = trim((string) ($row[3] ?? ''));
-            $jawaban3   = trim((string) ($row[4] ?? ''));
-            $jawaban4   = trim((string) ($row[5] ?? ''));
-            $kunciRaw   = strtoupper(trim((string) ($row[6] ?? '')));
+            $question = trim((string) ($row[1] ?? ''));
+            $jawaban1 = trim((string) ($row[2] ?? ''));
+            $jawaban2 = trim((string) ($row[3] ?? ''));
+            $jawaban3 = trim((string) ($row[4] ?? ''));
+            $jawaban4 = trim((string) ($row[5] ?? ''));
+            $kunciRaw = strtoupper(trim((string) ($row[6] ?? '')));
             $keterangan = trim((string) ($row[7] ?? '')) ?: null;
 
-            if (empty($question)) continue;
-            if (! isset(self::ANSWER_MAP[$kunciRaw])) continue;
+            if (empty($question)) {
+                continue;
+            }
+            if (! isset(self::ANSWER_MAP[$kunciRaw])) {
+                continue;
+            }
 
             $jawabanBenar = self::ANSWER_MAP[$kunciRaw];
 
             HrAssessmentQuestion::create([
-                'question'      => $question,
+                'question' => $question,
                 'jawaban_benar' => $jawabanBenar,
-                'jawaban_1'     => $jawaban1,
-                'jawaban_2'     => $jawaban2,
-                'jawaban_3'     => $jawaban3,
-                'jawaban_4'     => $jawaban4,
-                'keterangan'    => $keterangan,
+                'jawaban_1' => $jawaban1,
+                'jawaban_2' => $jawaban2,
+                'jawaban_3' => $jawaban3,
+                'jawaban_4' => $jawaban4,
+                'keterangan' => $keterangan,
             ]);
 
             $inserted++;

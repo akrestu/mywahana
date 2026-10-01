@@ -2,7 +2,6 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { Bell, BookOpen, ClipboardCheck, ClipboardList, Home, LogOut, TriangleAlert, User } from 'lucide-react';
 import {  useState } from 'react';
 import type {ReactNode} from 'react';
-import { Separator } from '@/components/ui/separator';
 import { useAutoHideNav } from '@/hooks/use-auto-hide-nav';
 import { usePushNotification } from '@/hooks/use-push-notification';
 import type { Auth } from '@/types';

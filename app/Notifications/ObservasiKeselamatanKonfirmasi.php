@@ -22,7 +22,7 @@ class ObservasiKeselamatanKonfirmasi extends Notification
     {
         return [
             'message' => "Form Observasi Keselamatan dari {$this->ok->user->name} pada {$this->ok->tanggal->format('d/m/Y')} menunggu konfirmasi Anda.",
-            'url'     => "/sap/observasi-keselamatan/{$this->ok->id}/konfirmasi",
+            'url' => "/sap/observasi-keselamatan/{$this->ok->id}/konfirmasi",
         ];
     }
 

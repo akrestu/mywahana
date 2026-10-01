@@ -9,7 +9,7 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class AssessmentQuestionBankExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
+class AssessmentQuestionBankExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping
 {
     private const ANSWER_LETTER = [1 => 'A', 2 => 'B', 3 => 'C', 4 => 'D'];
 

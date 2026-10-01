@@ -1,9 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import {
-    AlertTriangle, BedDouble, Brain, CalendarIcon, Check, CheckCircle2,
-    ChevronLeft, ChevronRight, Coffee, FlaskConical,
-    Moon, Pen, Pill, ShieldAlert, ShieldCheck, Sun, X, XCircle,
-} from 'lucide-react';
+import { AlertTriangle, BedDouble, Brain, Check, CheckCircle2, ChevronLeft, ChevronRight, Coffee, FlaskConical, Moon, Pen, Pill, ShieldAlert, ShieldCheck, Sun, X, XCircle } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -265,7 +261,7 @@ return;
     };
 
     // ── Step indicator ────────────────────────────────────────────
-    const StepBar = () => (
+    const renderStepBar = () => (
         <div className="flex items-center gap-0">
             {STEPS.map((s, i) => (
                 <Fragment key={s.label}>
@@ -297,7 +293,7 @@ return;
     );
 
     // ── Nav buttons ────────────────────────────────────────────────
-    const NavButtons = () => (
+    const renderNavButtons = () => (
         <div className={cn('flex gap-3 pt-4', step === 0 ? 'justify-end' : 'justify-between')}>
             {step > 0 && (
                 <Button
@@ -342,7 +338,7 @@ return;
                     <p className="text-xs text-muted-foreground mt-0.5">WBK-HSE-FO-021 · Formulir Kesehatan Harian</p>
                 </div>
 
-                <StepBar />
+                {renderStepBar()}
                 <Separator />
 
                 {/* ════════════════════════════════════════════════
@@ -444,7 +440,7 @@ return;
                             {errors.hari_ke && <p className="text-sm text-destructive">{errors.hari_ke}</p>}
                         </div>
 
-                        <NavButtons />
+                        {renderNavButtons()}
                     </div>
                 )}
 
@@ -545,7 +541,7 @@ return;
                             );
                         })}
 
-                        <NavButtons />
+                        {renderNavButtons()}
                     </div>
                 )}
 
@@ -652,7 +648,7 @@ return;
                             </p>
                         </div>
 
-                        <NavButtons />
+                        {renderNavButtons()}
                     </div>
                 )}
             </form>

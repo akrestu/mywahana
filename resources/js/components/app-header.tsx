@@ -82,7 +82,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     <div className="lg:hidden">
                         <Sheet>
                             <SheetTrigger asChild>
-                                <Button
+                                <Button aria-label="Buka menu"
                                     variant="ghost"
                                     size="icon"
                                     className="mr-2 h-[34px] w-[34px]"
@@ -185,7 +185,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         <div className="relative flex items-center space-x-1">
                             <NotificationBell />
                             <AppearanceToggleButton />
-                            <Button
+                            <Button aria-label="Cari"
                                 variant="ghost"
                                 size="icon"
                                 className="group h-9 w-9 cursor-pointer"

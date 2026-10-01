@@ -4,10 +4,10 @@ namespace App\Exports;
 
 use App\Models\Site;
 use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class UsersImportTemplate implements FromArray, WithHeadings, ShouldAutoSize
+class UsersImportTemplate implements FromArray, ShouldAutoSize, WithHeadings
 {
     public function array(): array
     {
@@ -21,7 +21,7 @@ class UsersImportTemplate implements FromArray, WithHeadings, ShouldAutoSize
     public function headings(): array
     {
         $siteValues = Site::pluck('value')->join('/');
-        $siteHint   = $siteValues ?: 'sesuai site';
+        $siteHint = $siteValues ?: 'sesuai site';
 
         return [
             'nama*', 'nik*', 'email', 'password*', 'jabatan', 'departemen',

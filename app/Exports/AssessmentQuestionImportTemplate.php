@@ -6,7 +6,7 @@ use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class AssessmentQuestionImportTemplate implements FromArray, WithHeadings, ShouldAutoSize
+class AssessmentQuestionImportTemplate implements FromArray, ShouldAutoSize, WithHeadings
 {
     public function array(): array
     {

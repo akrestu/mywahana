@@ -80,33 +80,47 @@ class AssessmentFeedbackController extends Controller
 
     public function adminIndex(Request $request)
     {
-        $feedbacks = $this->filteredQuery($request)->get();
-        $count = $feedbacks->count();
+        // Agregasi dihitung di database agar tidak memuat semua baris ke memori.
+        $base = fn () => $this->filteredQuery($request)->reorder()->setEagerLoads([]);
 
-        $aspectAverages = fn (string $key, array $labels) => collect($labels)
-            ->map(fn ($label, $i) => [
+        $totals = $base()
+            ->selectRaw('COUNT(*) as total, AVG(trainer_avg) as trainer_avg, AVG(effectiveness_avg) as effectiveness_avg')
+            ->toBase()
+            ->first();
+        $count = (int) $totals->total;
+
+        $aspectAverages = function (string $column, array $labels) use ($base, $count) {
+            $selects = collect($labels)->keys()
+                ->map(fn ($i) => "AVG(JSON_EXTRACT({$column}, '$[{$i}]')) as a{$i}")
+                ->join(', ');
+            $row = $count > 0 ? $base()->selectRaw($selects)->toBase()->first() : null;
+
+            return collect($labels)->map(fn ($label, $i) => [
                 'label' => $label,
-                'avg' => $count > 0 ? round($feedbacks->avg(fn ($f) => $f->{$key}[$i] ?? 0), 2) : 0,
-            ])
-            ->values();
+                'avg' => $row ? round((float) $row->{"a{$i}"}, 2) : 0,
+            ])->values();
+        };
 
-        $trainerStats = $feedbacks->groupBy('trainer_name')
-            ->map(fn ($group, $name) => [
-                'trainer_name' => $name,
-                'total' => $group->count(),
-                'trainer_avg' => round($group->avg('trainer_avg'), 2),
-                'effectiveness_avg' => round($group->avg('effectiveness_avg'), 2),
-            ])
-            ->sortByDesc('trainer_avg')
-            ->values();
+        $trainerStats = $base()
+            ->selectRaw('trainer_name, COUNT(*) as total, AVG(trainer_avg) as trainer_avg, AVG(effectiveness_avg) as effectiveness_avg')
+            ->groupBy('trainer_name')
+            ->orderByDesc('trainer_avg')
+            ->toBase()
+            ->get()
+            ->map(fn ($r) => [
+                'trainer_name' => $r->trainer_name,
+                'total' => (int) $r->total,
+                'trainer_avg' => round((float) $r->trainer_avg, 2),
+                'effectiveness_avg' => round((float) $r->effectiveness_avg, 2),
+            ]);
 
         return Inertia::render('admin/assessment-feedback', [
             'records' => $this->filteredQuery($request)->paginate(20)->withQueryString(),
             'filters' => $request->only('search', 'trainer', 'date_from', 'date_to'),
             'summary' => [
                 'total' => $count,
-                'trainer_avg' => $count > 0 ? round($feedbacks->avg('trainer_avg'), 2) : 0,
-                'effectiveness_avg' => $count > 0 ? round($feedbacks->avg('effectiveness_avg'), 2) : 0,
+                'trainer_avg' => round((float) $totals->trainer_avg, 2),
+                'effectiveness_avg' => round((float) $totals->effectiveness_avg, 2),
             ],
             'trainer_aspects' => $aspectAverages('trainer_scores', AssessmentFeedback::TRAINER_ASPECTS),
             'effectiveness_aspects' => $aspectAverages('effectiveness_scores', AssessmentFeedback::EFFECTIVENESS_STATEMENTS),

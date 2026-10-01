@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\DeletesStoredFiles;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class KomunikasiJsa extends Model
 {
+    use DeletesStoredFiles;
+
     protected $table = 'komunikasi_jsa';
 
     protected $fillable = [
@@ -43,5 +47,15 @@ class KomunikasiJsa extends Model
     public function teamLeader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'team_leader_id');
+    }
+
+    public function scopeAtSite(Builder $query, string $site): Builder
+    {
+        return $query->where('site', $site);
+    }
+
+    public function storedFilePaths(): array
+    {
+        return [$this->foto_kelompok, $this->foto_dokumen];
     }
 }

@@ -1,7 +1,8 @@
 import { Head, router } from '@inertiajs/react';
-import { BookOpen, Calendar, Camera, Check, ChevronsUpDown, Images, MapPin, PenLine, Plus, Trash2, UserCheck, X } from 'lucide-react';
+import { BookOpen, Camera, Check, ChevronsUpDown, Images, MapPin, PenLine, Plus, Trash2, UserCheck, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
+import { SiteCombobox } from '@/components/site-combobox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -10,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { SiteCombobox } from '@/components/site-combobox';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
@@ -579,7 +579,7 @@ formData.append('supervisor_signature', supervisorSig);
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm font-semibold text-muted-foreground">Peserta {idx + 1}</span>
                                         {peserta.length > 1 && (
-                                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removePeserta(idx)}>
+                                            <Button aria-label="Hapus" type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removePeserta(idx)}>
                                                 <Trash2 size={14} />
                                             </Button>
                                         )}

@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { BookOpen, Calendar, Clock, MapPin, PenLine, Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -98,12 +99,6 @@ return;
 };
     }, []);
 
-    function getTouchPos(e: TouchEvent, canvas: HTMLCanvasElement) {
-        const rect = canvas.getBoundingClientRect();
-
-        return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-    }
-
     function clear() {
         canvasRef.current!.getContext('2d')!.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height);
         onClear();
@@ -142,6 +137,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     );
 }
 
+function getTouchPos(e: TouchEvent, canvas: HTMLCanvasElement) {
+    const rect = canvas.getBoundingClientRect();
+
+    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+}
+
 export default function KomunikasiJsaKonfirmasi({ record }: Props) {
     const [signature, setSignature] = useState('');
     const [sigSaved, setSigSaved] = useState(false);
@@ -158,11 +159,9 @@ return;
         });
     }
 
-    function handleTolak() {
-        if (!confirm('Yakin ingin menolak form komunikasi JSA ini?')) {
-return;
-}
+    const [tolakOpen, setTolakOpen] = useState(false);
 
+    function handleTolak() {
         setProcessing(true);
         router.post(`/sap/komunikasi-jsa/${record.id}/tolak`, {}, {
             onFinish: () => setProcessing(false),
@@ -172,6 +171,15 @@ return;
     return (
         <>
             <Head title="Konfirmasi Komunikasi JSA" />
+            <ConfirmDialog
+                open={tolakOpen}
+                onOpenChange={setTolakOpen}
+                title="Tolak form komunikasi JSA?"
+                description="Status form akan menjadi ditolak dan tidak dapat dikonfirmasi lagi."
+                confirmLabel="Ya, tolak"
+                destructive
+                onConfirm={handleTolak}
+            />
             <div className="flex flex-col gap-5 max-w-2xl">
                 <div>
                     <h2 className="text-xl font-bold">Konfirmasi Lembar Komunikasi JSA</h2>
@@ -286,7 +294,7 @@ return;
                     </Button>
                     <Button
                         variant="outline"
-                        onClick={handleTolak}
+                        onClick={() => setTolakOpen(true)}
                         disabled={processing}
                         className="h-12 text-base font-medium text-destructive border-destructive/40 hover:bg-destructive/10"
                     >

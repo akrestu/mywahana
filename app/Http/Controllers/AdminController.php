@@ -32,6 +32,8 @@ use App\Models\ParticipationTarget;
 use App\Models\Site;
 use App\Models\User;
 use App\Notifications\LaporanBahayaPicDitugaskan;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -48,96 +50,6 @@ class AdminController extends Controller
     public function index()
     {
         return redirect()->route('app.home');
-
-        $now = Carbon::now();
-        $todayDate = $now->toDateString();
-
-        $inspeksiTotal = InspeksiKantor::count() + InspeksiTambang::count() + InspeksiWorkshop::count() + InspeksiMess::count();
-        $inspeksiBulanIni = InspeksiKantor::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count()
-            + InspeksiTambang::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count()
-            + InspeksiWorkshop::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count()
-            + InspeksiMess::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count();
-
-        $totalKaryawan = User::where('is_admin', false)->count();
-        $sudahSubmitBs = BugarSelamat::whereDate('tanggal', $todayDate)->distinct()->count('user_id');
-
-        $dilarangHariIni = BugarSelamat::whereDate('tanggal', $todayDate)
-            ->whereIn('id', function ($q) use ($todayDate) {
-                $q->selectRaw('MAX(id)')
-                    ->from('bugar_selamat')
-                    ->whereDate('tanggal', $todayDate)
-                    ->groupBy('user_id');
-            })
-            ->where('status_kelayakan', 'dilarang')
-            ->with('user:id,name,jabatan,site,avatar')
-            ->get()
-            ->map(fn ($bs) => [
-                'id' => $bs->user->id ?? null,
-                'name' => $bs->user->name ?? '-',
-                'jabatan' => $bs->user->jabatan ?? null,
-                'site' => $bs->user->site ?? null,
-                'avatar' => $bs->user->avatar ? asset('storage/'.$bs->user->avatar) : null,
-            ])
-            ->values();
-
-        $stats = [
-            'bugar_selamat' => [
-                'total' => BugarSelamat::count(),
-                'bulan_ini' => BugarSelamat::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
-                'layak' => BugarSelamat::where('status_kelayakan', 'layak')->count(),
-                'catatan' => BugarSelamat::where('status_kelayakan', 'catatan')->count(),
-                'dilarang' => BugarSelamat::where('status_kelayakan', 'dilarang')->count(),
-            ],
-            'laporan_bahaya' => [
-                'total' => LaporanBahaya::count(),
-                'bulan_ini' => LaporanBahaya::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
-                'AA' => LaporanBahaya::where('tingkat_risiko', 'AA')->count(),
-                'A' => LaporanBahaya::where('tingkat_risiko', 'A')->count(),
-                'B' => LaporanBahaya::where('tingkat_risiko', 'B')->count(),
-                'C' => LaporanBahaya::where('tingkat_risiko', 'C')->count(),
-                'pending' => LaporanBahaya::where('status_tindakan', 'pending')->count(),
-                'selesai' => LaporanBahaya::where('status_tindakan', 'close')->count(),
-            ],
-            'observasi_keselamatan' => [
-                'total' => ObservasiKeselamatan::count(),
-                'bulan_ini' => ObservasiKeselamatan::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
-                'menunggu_konfirmasi' => ObservasiKeselamatan::where('status', 'menunggu_konfirmasi')->count(),
-            ],
-            'inspeksi' => [
-                'total' => $inspeksiTotal,
-                'bulan_ini' => $inspeksiBulanIni,
-                'kantor' => InspeksiKantor::count(),
-                'tambang' => InspeksiTambang::count(),
-                'workshop' => InspeksiWorkshop::count(),
-                'mess' => InspeksiMess::count(),
-            ],
-            'users' => [
-                'total' => $totalKaryawan,
-                'baratama' => User::where('is_admin', false)->where('site', 'baratama')->count(),
-                'bandhawa' => User::where('is_admin', false)->where('site', 'bandhawa')->count(),
-            ],
-            'komunikasi_jsa' => [
-                'total' => KomunikasiJsa::count(),
-                'bulan_ini' => KomunikasiJsa::whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
-                'menunggu_konfirmasi' => KomunikasiJsa::where('status', 'menunggu_konfirmasi')->count(),
-            ],
-        ];
-
-        $leaderboard = $this->buildLeaderboard($now);
-        $participation_targets = ParticipationTarget::all(['level', 'laporan_per_minggu', 'inspeksi_per_minggu', 'observasi_per_minggu', 'bugar_per_hari']);
-
-        return Inertia::render('admin/index', [
-            'stats' => $stats,
-            'trend' => $this->buildMonthlyTrend($now),
-            'site_breakdown' => $this->buildSiteBreakdown(),
-            'leaderboard' => $leaderboard,
-            'participation_targets' => $participation_targets,
-            'compliance' => [
-                'total_karyawan' => $totalKaryawan,
-                'sudah_submit_bs' => $sudahSubmitBs,
-                'dilarang_list' => $dilarangHariIni,
-            ],
-        ]);
     }
 
     public function bugarSelamat(Request $request)
@@ -155,7 +67,7 @@ class AdminController extends Controller
             $tanggal = $request->filled('tanggal') ? $request->tanggal : today()->toDateString();
 
             $users = User::where('is_admin', false)
-                ->when($site, fn ($q) => $q->where('site', $site))
+                ->when($site, fn ($q) => $q->assignedToSite($site))
                 ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%$search%")
                         ->orWhere('nik', 'like', "%$search%");
@@ -207,7 +119,7 @@ class AdminController extends Controller
             $endDate = $carbon->copy()->endOfMonth()->min(today());
 
             $users = User::where('is_admin', false)
-                ->when($site, fn ($q) => $q->where('site', $site))
+                ->when($site, fn ($q) => $q->assignedToSite($site))
                 ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%$search%")
                         ->orWhere('nik', 'like', "%$search%");
@@ -255,7 +167,7 @@ class AdminController extends Controller
         $query = BugarSelamat::with('user')->latest('created_at');
 
         if ($site) {
-            $query->whereHas('user', fn ($q) => $q->assignedToSite($site));
+            $query->atSite($site);
         }
 
         if ($search) {
@@ -301,7 +213,7 @@ class AdminController extends Controller
         $site = $this->adminSite($request);
 
         if ($site) {
-            $query->where('site', $site);
+            $query->atSite($site);
         }
 
         if ($request->filled('search')) {
@@ -356,8 +268,9 @@ class AdminController extends Controller
         ]);
     }
 
-    public function destroyBugarSelamat(BugarSelamat $bugarSelamat)
+    public function destroyBugarSelamat(Request $request, BugarSelamat $bugarSelamat)
     {
+        $this->ensureSameSite($request, $bugarSelamat);
         $bugarSelamat->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
@@ -365,8 +278,9 @@ class AdminController extends Controller
         return back();
     }
 
-    public function destroyLaporanBahaya(LaporanBahaya $laporanBahaya)
+    public function destroyLaporanBahaya(Request $request, LaporanBahaya $laporanBahaya)
     {
+        $this->ensureSameSite($request, $laporanBahaya);
         $laporanBahaya->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
@@ -381,7 +295,7 @@ class AdminController extends Controller
         $site = $this->adminSite($request);
 
         if ($site) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $site));
+            $query->atSite($site);
         }
 
         if ($request->filled('search')) {
@@ -397,10 +311,11 @@ class AdminController extends Controller
 
         $this->applyDateFilter($query, $request, 'created_at');
 
+        $summaryQuery = ObservasiKeselamatan::query()->when($site, fn ($q) => $q->atSite($site));
         $summary = [
-            'total' => ObservasiKeselamatan::count(),
-            'menunggu_konfirmasi' => ObservasiKeselamatan::where('status', 'menunggu_konfirmasi')->count(),
-            'dikonfirmasi' => ObservasiKeselamatan::where('status', 'dikonfirmasi')->count(),
+            'total' => (clone $summaryQuery)->count(),
+            'menunggu_konfirmasi' => (clone $summaryQuery)->where('status', 'menunggu_konfirmasi')->count(),
+            'dikonfirmasi' => (clone $summaryQuery)->where('status', 'dikonfirmasi')->count(),
         ];
 
         return Inertia::render('admin/observasi-keselamatan', [
@@ -414,8 +329,9 @@ class AdminController extends Controller
         ]);
     }
 
-    public function destroyObservasiKeselamatan(ObservasiKeselamatan $observasiKeselamatan)
+    public function destroyObservasiKeselamatan(Request $request, ObservasiKeselamatan $observasiKeselamatan)
     {
+        $this->ensureSameSite($request, $observasiKeselamatan);
         $observasiKeselamatan->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
@@ -429,7 +345,7 @@ class AdminController extends Controller
         $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
-        $summary = $this->inspeksiSummary(InspeksiKantor::class);
+        $summary = $this->inspeksiSummary(InspeksiKantor::class, $this->adminSite($request));
 
         return Inertia::render('admin/inspeksi-kantor', [
             'records' => $query->paginate(20)->withQueryString(),
@@ -442,8 +358,9 @@ class AdminController extends Controller
         ]);
     }
 
-    public function destroyInspeksiKantor(InspeksiKantor $inspeksiKantor)
+    public function destroyInspeksiKantor(Request $request, InspeksiKantor $inspeksiKantor)
     {
+        $this->ensureSameSite($request, $inspeksiKantor);
         $inspeksiKantor->delete();
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
 
@@ -456,7 +373,7 @@ class AdminController extends Controller
         $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
-        $summary = $this->inspeksiSummary(InspeksiTambang::class);
+        $summary = $this->inspeksiSummary(InspeksiTambang::class, $this->adminSite($request));
 
         return Inertia::render('admin/inspeksi-tambang', [
             'records' => $query->paginate(20)->withQueryString(),
@@ -469,8 +386,9 @@ class AdminController extends Controller
         ]);
     }
 
-    public function destroyInspeksiTambang(InspeksiTambang $inspeksiTambang)
+    public function destroyInspeksiTambang(Request $request, InspeksiTambang $inspeksiTambang)
     {
+        $this->ensureSameSite($request, $inspeksiTambang);
         $inspeksiTambang->delete();
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
 
@@ -483,7 +401,7 @@ class AdminController extends Controller
         $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
-        $summary = $this->inspeksiSummary(InspeksiWorkshop::class);
+        $summary = $this->inspeksiSummary(InspeksiWorkshop::class, $this->adminSite($request));
 
         return Inertia::render('admin/inspeksi-workshop', [
             'records' => $query->paginate(20)->withQueryString(),
@@ -496,8 +414,9 @@ class AdminController extends Controller
         ]);
     }
 
-    public function destroyInspeksiWorkshop(InspeksiWorkshop $inspeksiWorkshop)
+    public function destroyInspeksiWorkshop(Request $request, InspeksiWorkshop $inspeksiWorkshop)
     {
+        $this->ensureSameSite($request, $inspeksiWorkshop);
         $inspeksiWorkshop->delete();
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
 
@@ -510,7 +429,7 @@ class AdminController extends Controller
         $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
-        $summary = $this->inspeksiSummary(InspeksiMess::class);
+        $summary = $this->inspeksiSummary(InspeksiMess::class, $this->adminSite($request));
 
         return Inertia::render('admin/inspeksi-mess', [
             'records' => $query->paginate(20)->withQueryString(),
@@ -523,8 +442,9 @@ class AdminController extends Controller
         ]);
     }
 
-    public function destroyInspeksiMess(InspeksiMess $inspeksiMess)
+    public function destroyInspeksiMess(Request $request, InspeksiMess $inspeksiMess)
     {
+        $this->ensureSameSite($request, $inspeksiMess);
         $inspeksiMess->delete();
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
 
@@ -539,7 +459,7 @@ class AdminController extends Controller
         $site = $this->adminSite($request);
 
         if ($site) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $site));
+            $query->atSite($site);
         }
 
         if ($request->filled('status')) {
@@ -563,7 +483,7 @@ class AdminController extends Controller
 
         $summaryQuery = KomunikasiJsa::query();
         if ($site) {
-            $summaryQuery->whereHas('user', fn ($q) => $q->where('site', $site));
+            $summaryQuery->atSite($site);
         }
 
         $summary = [
@@ -585,8 +505,9 @@ class AdminController extends Controller
         ]);
     }
 
-    public function destroyKomunikasiJsa(KomunikasiJsa $komunikasiJsa)
+    public function destroyKomunikasiJsa(Request $request, KomunikasiJsa $komunikasiJsa)
     {
+        $this->ensureSameSite($request, $komunikasiJsa);
         $komunikasiJsa->delete();
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data berhasil dihapus.']);
 
@@ -903,7 +824,7 @@ class AdminController extends Controller
             ->oldest('created_at');
 
         if ($site = $this->adminSite($request)) {
-            $query->where('site', $site);
+            $query->atSite($site);
         }
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -1075,7 +996,7 @@ class AdminController extends Controller
     {
         $site = $this->adminSite($request);
         if ($site) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $site));
+            $query->atSite($site);
         }
         if ($request->filled('search')) {
             $query->whereHas('user', fn ($q) => $q->where('name', 'like', "%{$request->search}%")
@@ -1087,13 +1008,15 @@ class AdminController extends Controller
         $this->applyDateFilter($query, $request, 'created_at');
     }
 
-    private function inspeksiSummary(string $model): array
+    private function inspeksiSummary(string $model, ?string $site): array
     {
+        $query = $model::query()->when($site, fn ($q) => $q->atSite($site));
+
         return [
-            'total' => $model::count(),
-            'menunggu_re_inspeksi' => $model::where('status', 'menunggu_re_inspeksi')->count(),
-            'selesai' => $model::where('status', 'selesai')->count(),
-            'ditolak' => $model::where('status', 'ditolak')->count(),
+            'total' => (clone $query)->count(),
+            'menunggu_re_inspeksi' => (clone $query)->where('status', 'menunggu_re_inspeksi')->count(),
+            'selesai' => (clone $query)->where('status', 'selesai')->count(),
+            'ditolak' => (clone $query)->where('status', 'ditolak')->count(),
         ];
     }
 
@@ -1105,7 +1028,7 @@ class AdminController extends Controller
         $query = ObservasiKeselamatan::with(['user', 'penanggungJawab'])->oldest('created_at');
 
         if ($site = $this->adminSite($request)) {
-            $query->whereHas('user', fn ($q) => $q->where('site', $site));
+            $query->atSite($site);
         }
 
         if ($request->filled('search')) {
@@ -1129,6 +1052,8 @@ class AdminController extends Controller
 
     public function updateStatus(Request $request, LaporanBahaya $laporanBahaya)
     {
+        $this->ensureSameSite($request, $laporanBahaya);
+
         $request->validate([
             'status_tindakan' => ['required', 'in:pending,continue,progress,close'],
             'pic_user_id' => ['nullable', 'exists:users,id'],
@@ -1243,7 +1168,7 @@ class AdminController extends Controller
         $query = BugarSelamat::with('user')->oldest('created_at');
 
         if ($site = $this->adminSite($request)) {
-            $query->whereHas('user', fn ($q) => $q->assignedToSite($site));
+            $query->atSite($site);
         }
         if ($request->filled('status')) {
             $query->where('status_kelayakan', $request->status);
@@ -1269,7 +1194,7 @@ class AdminController extends Controller
         $query = LaporanBahaya::with(['user', 'pic'])->oldest('created_at');
 
         if ($site = $this->adminSite($request)) {
-            $query->where('site', $site);
+            $query->atSite($site);
         }
         if ($request->filled('tingkat_risiko')) {
             $query->where('tingkat_risiko', $request->tingkat_risiko);
@@ -1496,48 +1421,48 @@ class AdminController extends Controller
     public function deleteRangeBugarSelamat(Request $request)
     {
         return $this->deleteRange($request, function ($from, $to) use ($request) {
-            $query = BugarSelamat::whereBetween('tanggal', [$from, $to]);
+            $query = BugarSelamat::whereBetween('created_at', [$from, $to]);
             if ($site = $this->adminSite($request)) {
-                $query->whereHas('user', fn ($q) => $q->assignedToSite($site));
+                $query->atSite($site);
             }
 
-            return $query->delete();
+            return $this->deleteEach($query);
         });
     }
 
     public function deleteRangeLaporanBahaya(Request $request)
     {
         return $this->deleteRange($request, function ($from, $to) use ($request) {
-            $query = LaporanBahaya::whereBetween('tanggal', [$from, $to]);
+            $query = LaporanBahaya::whereBetween('created_at', [$from, $to]);
             if ($site = $this->adminSite($request)) {
-                $query->where('site', $site);
+                $query->atSite($site);
             }
 
-            return $query->delete();
+            return $this->deleteEach($query);
         });
     }
 
     public function deleteRangeObservasiKeselamatan(Request $request)
     {
         return $this->deleteRange($request, function ($from, $to) use ($request) {
-            $query = ObservasiKeselamatan::whereBetween('tanggal', [$from, $to]);
+            $query = ObservasiKeselamatan::whereBetween('created_at', [$from, $to]);
             if ($site = $this->adminSite($request)) {
-                $query->whereHas('user', fn ($q) => $q->where('site', $site));
+                $query->atSite($site);
             }
 
-            return $query->delete();
+            return $this->deleteEach($query);
         });
     }
 
     public function deleteRangeKomunikasiJsa(Request $request)
     {
         return $this->deleteRange($request, function ($from, $to) use ($request) {
-            $query = KomunikasiJsa::whereBetween('tanggal', [$from, $to]);
+            $query = KomunikasiJsa::whereBetween('created_at', [$from, $to]);
             if ($site = $this->adminSite($request)) {
-                $query->where('site', $site);
+                $query->atSite($site);
             }
 
-            return $query->delete();
+            return $this->deleteEach($query);
         });
     }
 
@@ -1564,12 +1489,12 @@ class AdminController extends Controller
     private function deleteRangeInspeksi(Request $request, string $modelClass)
     {
         return $this->deleteRange($request, function ($from, $to) use ($request, $modelClass) {
-            $query = $modelClass::whereBetween('tanggal', [$from, $to]);
+            $query = $modelClass::whereBetween('created_at', [$from, $to]);
             if ($site = $this->adminSite($request)) {
-                $query->whereHas('user', fn ($q) => $q->where('site', $site));
+                $query->atSite($site);
             }
 
-            return $query->delete();
+            return $this->deleteEach($query);
         });
     }
 
@@ -1608,6 +1533,44 @@ class AdminController extends Controller
     }
 
     /**
+     * Admin yang terikat site hanya boleh mengelola data site-nya sendiri.
+     */
+    private function ensureSameSite(Request $request, Model $record): void
+    {
+        $adminSite = $request->user()->site;
+
+        if ($adminSite) {
+            abort_unless($record->newQuery()->whereKey($record->getKey())->atSite($adminSite)->exists(), 403);
+        }
+    }
+
+    /**
+     * Hapus record satu per satu agar event model (hapus file upload) ikut berjalan.
+     */
+    private function deleteEach(Builder $query): int
+    {
+        $deleted = 0;
+        $query->lazyById()->each(function (Model $record) use (&$deleted) {
+            $record->delete();
+            $deleted++;
+        });
+
+        return $deleted;
+    }
+
+    private function destroyRecords(Request $request, string $modelClass): int
+    {
+        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        $query = $modelClass::whereIn('id', $ids);
+
+        if ($site = $request->user()->site) {
+            $query->atSite($site);
+        }
+
+        return $this->deleteEach($query);
+    }
+
+    /**
      * Shared handler for the password-gated "delete by date range" actions
      * used across the admin history pages. $delete receives (Carbon $from,
      * Carbon $to) and must return the number of rows deleted.
@@ -1635,72 +1598,64 @@ class AdminController extends Controller
 
     public function batchDestroyBugarSelamat(Request $request)
     {
-        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
-        BugarSelamat::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+        $deleted = $this->destroyRecords($request, BugarSelamat::class);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $deleted.' data berhasil dihapus.']);
 
         return back();
     }
 
     public function batchDestroyLaporanBahaya(Request $request)
     {
-        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
-        LaporanBahaya::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+        $deleted = $this->destroyRecords($request, LaporanBahaya::class);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $deleted.' data berhasil dihapus.']);
 
         return back();
     }
 
     public function batchDestroyObservasiKeselamatan(Request $request)
     {
-        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
-        ObservasiKeselamatan::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+        $deleted = $this->destroyRecords($request, ObservasiKeselamatan::class);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $deleted.' data berhasil dihapus.']);
 
         return back();
     }
 
     public function batchDestroyKomunikasiJsa(Request $request)
     {
-        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
-        KomunikasiJsa::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+        $deleted = $this->destroyRecords($request, KomunikasiJsa::class);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $deleted.' data berhasil dihapus.']);
 
         return back();
     }
 
     public function batchDestroyInspeksiKantor(Request $request)
     {
-        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
-        InspeksiKantor::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+        $deleted = $this->destroyRecords($request, InspeksiKantor::class);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $deleted.' data berhasil dihapus.']);
 
         return back();
     }
 
     public function batchDestroyInspeksiTambang(Request $request)
     {
-        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
-        InspeksiTambang::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+        $deleted = $this->destroyRecords($request, InspeksiTambang::class);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $deleted.' data berhasil dihapus.']);
 
         return back();
     }
 
     public function batchDestroyInspeksiWorkshop(Request $request)
     {
-        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
-        InspeksiWorkshop::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+        $deleted = $this->destroyRecords($request, InspeksiWorkshop::class);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $deleted.' data berhasil dihapus.']);
 
         return back();
     }
 
     public function batchDestroyInspeksiMess(Request $request)
     {
-        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
-        InspeksiMess::whereIn('id', $ids)->delete();
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' data berhasil dihapus.']);
+        $deleted = $this->destroyRecords($request, InspeksiMess::class);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $deleted.' data berhasil dihapus.']);
 
         return back();
     }

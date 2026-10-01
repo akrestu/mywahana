@@ -15,44 +15,55 @@ export function CameraCapture({ open, onCapture, onClose }: Props) {
     const [capturing, setCapturing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    function stopStream() {
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+    }
+
     useEffect(() => {
         if (!open) {
-            stopStream();
-            setReady(false);
-            setError(null);
-
             return;
         }
 
-        startCamera();
+        // Jika modal ditutup sebelum izin kamera selesai, stream yang
+        // terlanjur didapat harus langsung dimatikan agar kamera tidak menyala terus.
+        let cancelled = false;
 
-        return stopStream;
-    }, [open]);
-
-    async function startCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
+        navigator.mediaDevices
+            .getUserMedia({
                 video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
                 audio: false,
+            })
+            .then((stream) => {
+                if (cancelled) {
+                    stream.getTracks().forEach((t) => t.stop());
+
+                    return;
+                }
+
+                streamRef.current = stream;
+
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                    videoRef.current.onloadedmetadata = () => {
+                        videoRef.current?.play();
+                        setReady(true);
+                    };
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setError('Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan di pengaturan aplikasi.');
+                }
             });
-            streamRef.current = stream;
 
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                videoRef.current.onloadedmetadata = () => {
-                    videoRef.current?.play();
-                    setReady(true);
-                };
-            }
-        } catch {
-            setError('Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan di pengaturan aplikasi.');
-        }
-    }
-
-    function stopStream() {
-        streamRef.current?.getTracks().forEach(t => t.stop());
-        streamRef.current = null;
-    }
+        return () => {
+            cancelled = true;
+            stopStream();
+            setReady(false);
+            setError(null);
+        };
+    }, [open]);
 
     function capture() {
         const video = videoRef.current;

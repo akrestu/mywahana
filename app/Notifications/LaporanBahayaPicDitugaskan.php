@@ -20,7 +20,7 @@ class LaporanBahayaPicDitugaskan extends Notification
     {
         return [
             'message' => "Anda ditugaskan sebagai PIC untuk laporan bahaya di {$this->record->lokasi} oleh {$this->record->user->name}.",
-            'url'     => "/laporan-bahaya/{$this->record->id}",
+            'url' => "/laporan-bahaya/{$this->record->id}",
         ];
     }
 

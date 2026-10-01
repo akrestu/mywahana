@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, ClipboardCheck, MapPin, Wrench } from 'lucide-react';
 import { Fragment, useEffect, useState } from 'react';
+import { SiteCombobox } from '@/components/site-combobox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -8,7 +9,6 @@ import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { SiteCombobox } from '@/components/site-combobox';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { UploadOverlay } from '@/components/upload-overlay';
@@ -278,7 +278,7 @@ return;
         });
     };
 
-    const StepBar = () => (
+    const renderStepBar = () => (
         <div className="flex items-center gap-0 mb-6">
             {STEPS.map((s, i) => (
                 <Fragment key={s.label}>
@@ -304,7 +304,7 @@ return;
         </div>
     );
 
-    const NavButtons = ({ canNext = true }: { canNext?: boolean }) => (
+    const renderNavButtons = ({ canNext = true }: { canNext?: boolean } = {}) => (
         <div className="flex items-center justify-between gap-3 pt-2">
             {step > 0
                 ? <Button type="button" variant="outline" className="h-12 px-6 text-base gap-2" onClick={() => setStep(s => s - 1)}>
@@ -330,7 +330,7 @@ return;
                     <p className="text-sm text-muted-foreground mt-0.5">WBK-HSE-FO-037 · {user.name}</p>
                 </div>
 
-                <StepBar />
+                {renderStepBar()}
 
                 {/* ── STEP 1: Informasi Umum ── */}
                 {step === 0 && (
@@ -474,7 +474,7 @@ return;
                             />
                         </div>
 
-                        <NavButtons canNext={step1OK} />
+                        {renderNavButtons({ canNext: step1OK })}
                     </div>
                 )}
 
@@ -560,7 +560,7 @@ return;
                             </CardContent>
                         </Card>
 
-                        <NavButtons />
+                        {renderNavButtons()}
                     </div>
                 )}
 
@@ -647,7 +647,7 @@ return;
                             )}
                         </div>
 
-                        <NavButtons />
+                        {renderNavButtons()}
                     </div>
                 )}
             </form>

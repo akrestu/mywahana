@@ -24,13 +24,13 @@ class InspeksiMessDibuat extends Notification
         if ($this->role === 're_inspektor') {
             return [
                 'message' => "Form Inspeksi Mess dari {$this->record->user->name} pada {$this->record->tanggal->format('d/m/Y')} menunggu re-inspeksi Anda.",
-                'url'     => "/sap/inspeksi-mess/{$this->record->id}/re-inspeksi",
+                'url' => "/sap/inspeksi-mess/{$this->record->id}/re-inspeksi",
             ];
         }
 
         return [
             'message' => "Anda ditambahkan sebagai peserta Inspeksi Mess oleh {$this->record->user->name} pada {$this->record->tanggal->format('d/m/Y')}.",
-            'url'     => "/sap/inspeksi-mess/{$this->record->id}",
+            'url' => "/sap/inspeksi-mess/{$this->record->id}",
         ];
     }
 

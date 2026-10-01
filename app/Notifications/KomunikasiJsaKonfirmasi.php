@@ -22,7 +22,7 @@ class KomunikasiJsaKonfirmasi extends Notification
     {
         return [
             'message' => "Form Komunikasi JSA dari {$this->form->user->name} pada {$this->form->tanggal->format('d/m/Y')} menunggu konfirmasi Anda.",
-            'url'     => "/sap/komunikasi-jsa/{$this->form->id}/konfirmasi",
+            'url' => "/sap/komunikasi-jsa/{$this->form->id}/konfirmasi",
         ];
     }
 

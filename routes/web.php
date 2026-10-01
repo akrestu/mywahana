@@ -4,19 +4,20 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AssessmentFeedbackController;
 use App\Http\Controllers\AssessmentQuestionController;
+use App\Http\Controllers\BugarSelamatController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HrAssessmentController;
 use App\Http\Controllers\HrAssessmentQuestionController;
-use App\Http\Controllers\BugarSelamatController;
-use App\Http\Controllers\SiteController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\LaporanBahayaController;
 use App\Http\Controllers\InspeksiKantorController;
 use App\Http\Controllers\InspeksiMessController;
 use App\Http\Controllers\InspeksiTambangController;
 use App\Http\Controllers\InspeksiWorkshopController;
 use App\Http\Controllers\KomunikasiJsaController;
-use App\Http\Controllers\ObservasiKeselamatanController;
+use App\Http\Controllers\LaporanBahayaController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ObservasiKeselamatanController;
+use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\SiteController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use Illuminate\Support\Facades\Route;
 
@@ -80,9 +81,9 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('komunikasi-jsa', KomunikasiJsaController::class)
             ->only(['index', 'create', 'store', 'show'])
             ->parameters(['komunikasi-jsa' => 'komunikasiJsa']);
-        Route::get('komunikasi-jsa/{komunikasiJsa}/konfirmasi',  [KomunikasiJsaController::class, 'konfirmasi'])       ->name('komunikasi-jsa.konfirmasi');
-        Route::post('komunikasi-jsa/{komunikasiJsa}/konfirmasi', [KomunikasiJsaController::class, 'storeKonfirmasi'])  ->name('komunikasi-jsa.konfirmasi.store');
-        Route::post('komunikasi-jsa/{komunikasiJsa}/tolak',      [KomunikasiJsaController::class, 'tolakKonfirmasi'])  ->name('komunikasi-jsa.tolak');
+        Route::get('komunikasi-jsa/{komunikasiJsa}/konfirmasi', [KomunikasiJsaController::class, 'konfirmasi'])->name('komunikasi-jsa.konfirmasi');
+        Route::post('komunikasi-jsa/{komunikasiJsa}/konfirmasi', [KomunikasiJsaController::class, 'storeKonfirmasi'])->name('komunikasi-jsa.konfirmasi.store');
+        Route::post('komunikasi-jsa/{komunikasiJsa}/tolak', [KomunikasiJsaController::class, 'tolakKonfirmasi'])->name('komunikasi-jsa.tolak');
 
         // Inspeksi Mess
         Route::resource('inspeksi-mess', InspeksiMessController::class)
@@ -120,8 +121,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
 
     // Push Subscriptions (Web Push / VAPID)
-    Route::post('push-subscription', [\App\Http\Controllers\PushSubscriptionController::class, 'store'])->name('push-subscription.store');
-    Route::delete('push-subscription', [\App\Http\Controllers\PushSubscriptionController::class, 'destroy'])->name('push-subscription.destroy');
+    Route::post('push-subscription', [PushSubscriptionController::class, 'store'])->name('push-subscription.store');
+    Route::delete('push-subscription', [PushSubscriptionController::class, 'destroy'])->name('push-subscription.destroy');
 
     // Admin
     Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {

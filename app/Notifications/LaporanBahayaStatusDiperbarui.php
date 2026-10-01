@@ -21,16 +21,16 @@ class LaporanBahayaStatusDiperbarui extends Notification
         $laporan = $this->review->laporanBahaya;
         $pic = $this->review->user;
         $statusLabel = match ($this->review->status_tindakan) {
-            'pending'  => 'Pending',
+            'pending' => 'Pending',
             'continue' => 'Continue',
             'progress' => 'Progress',
-            'close'    => 'Close',
-            default    => $this->review->status_tindakan,
+            'close' => 'Close',
+            default => $this->review->status_tindakan,
         };
 
         return [
             'message' => "PIC {$pic->name} memperbarui status laporan bahaya di {$laporan->lokasi} menjadi {$statusLabel}.",
-            'url'     => "/laporan-bahaya/{$laporan->id}",
+            'url' => "/laporan-bahaya/{$laporan->id}",
         ];
     }
 

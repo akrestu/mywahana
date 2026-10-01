@@ -3,7 +3,7 @@ import {
     AlertTriangle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp,
     Download, FileText, Minus, SlidersHorizontal, TrendingUp, Users,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Fragment } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -372,23 +372,6 @@ return <span className="text-[10px] text-muted-foreground/50">—</span>;
     );
 }
 
-// ─── DeptScoreBar ─────────────────────────────────────────────────────────────
-
-function DeptScoreBar({ avg }: { avg: number }) {
-    const barCls = avg >= 80 ? 'bg-green-500' : avg >= 50 ? 'bg-amber-400' : 'bg-red-400';
-
-    return (
-        <div className="flex items-center gap-1.5 min-w-[60px]">
-            <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
-                <div className={`h-full rounded-full ${barCls}`} style={{ width: `${avg}%` }} />
-            </div>
-            <span className={`text-[11px] font-bold tabular-nums ${avg >= 80 ? 'text-green-700' : avg >= 50 ? 'text-amber-700' : 'text-red-600'}`}>
-                {avg}%
-            </span>
-        </div>
-    );
-}
-
 // ─── EmployeeRecapTable ───────────────────────────────────────────────────────
 
 const PAGE_SIZE = 50;
@@ -464,10 +447,13 @@ return -1;
         rows.map(r => ({ ...r, dept }))
     ), [deptGroups]);
 
-    // Reset to page 0 when employees change
-    useEffect(() => {
- setPage(0); 
-}, [employees]);
+    // Reset ke halaman pertama saat data karyawan berubah (tanpa efek berantai)
+    const [prevEmployees, setPrevEmployees] = useState(employees);
+
+    if (employees !== prevEmployees) {
+        setPrevEmployees(employees);
+        setPage(0);
+    }
 
     const totalPages = Math.ceil(flatRows.length / PAGE_SIZE);
     const pageRows   = flatRows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);

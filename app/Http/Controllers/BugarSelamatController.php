@@ -34,16 +34,16 @@ class BugarSelamatController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'tanggal'         => ['required', 'date', 'date_equals:today'],
-            'shift'           => ['required', 'in:Pagi,Siang,Malam'],
-            'hari_ke'         => ['required', 'integer', 'min:1'],
-            'jam_tidur'       => ['required', 'in:<5,5-6,>6'],
-            'kondisi_sakit'   => ['required', 'boolean'],
-            'minum_obat'      => ['required', 'boolean'],
+            'tanggal' => ['required', 'date', 'date_equals:today'],
+            'shift' => ['required', 'in:Pagi,Siang,Malam'],
+            'hari_ke' => ['required', 'integer', 'min:1'],
+            'jam_tidur' => ['required', 'in:<5,5-6,>6'],
+            'kondisi_sakit' => ['required', 'boolean'],
+            'minum_obat' => ['required', 'boolean'],
             'masalah_pribadi' => ['required', 'boolean'],
-            'pengaruh_alkohol'=> ['required', 'boolean'],
-            'siap_bekerja'    => ['required', 'boolean'],
-            'catatan'         => ['nullable', 'string', 'max:1000'],
+            'pengaruh_alkohol' => ['required', 'boolean'],
+            'siap_bekerja' => ['required', 'boolean'],
+            'catatan' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $exists = $request->user()->bugarSelamats()
@@ -85,7 +85,7 @@ class BugarSelamatController extends Controller
         }
 
         return Inertia::render('bugar-selamat/show', [
-            'record'   => $bugarSelamat,
+            'record' => $bugarSelamat,
             'back_url' => $backUrl,
         ]);
     }

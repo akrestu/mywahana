@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class BugarSelamat extends Model
@@ -48,5 +49,13 @@ class BugarSelamat extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Bugar Selamat tidak menyimpan site; ikut site penugasan karyawan.
+     */
+    public function scopeAtSite(Builder $query, string $site): Builder
+    {
+        return $query->whereHas('user', fn ($q) => $q->assignedToSite($site));
     }
 }

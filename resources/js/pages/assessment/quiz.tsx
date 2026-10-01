@@ -1,5 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -55,6 +56,11 @@ init[q.session_question_id] = q.jawaban_user;
 
     const [remaining, setRemaining] = useState(calcRemaining);
     const submittingRef = useRef(false);
+    const answersRef = useRef(answers);
+
+    useEffect(() => {
+        answersRef.current = answers;
+    }, [answers]);
 
     useEffect(() => {
         const tick = setInterval(() => {
@@ -74,11 +80,6 @@ init[q.session_question_id] = q.jawaban_user;
         return () => clearInterval(tick);
     }, [calcRemaining, session.id]);
 
-    const answersRef = useRef(answers);
-    useEffect(() => {
- answersRef.current = answers; 
-}, [answers]);
-
     const answeredCount = Object.keys(answers).length;
     const total = session.total_questions;
 
@@ -86,13 +87,19 @@ init[q.session_question_id] = q.jawaban_user;
         setAnswers(prev => ({ ...prev, [sqId]: value }));
     }
 
+    const [confirmOpen, setConfirmOpen] = useState(false);
+
     function handleSubmit() {
         if (answeredCount < total) {
-            if (!confirm(`Masih ada ${total - answeredCount} soal yang belum dijawab. Lanjutkan submit?`)) {
-return;
-}
+            setConfirmOpen(true);
+
+            return;
         }
 
+        submitAnswers();
+    }
+
+    function submitAnswers() {
         setSubmitting(true);
         router.post(`/assessment/${session.id}/submit`, { answers }, {
             onFinish: () => setSubmitting(false),
@@ -108,6 +115,15 @@ return;
     return (
         <>
             <Head title="Assessment Safety" />
+            <ConfirmDialog
+                open={confirmOpen}
+                onOpenChange={setConfirmOpen}
+                title="Masih ada soal yang belum dijawab"
+                description={`${total - answeredCount} soal belum dijawab dan akan dihitung salah. Tetap submit sekarang?`}
+                confirmLabel="Ya, submit"
+                cancelLabel="Kembali menjawab"
+                onConfirm={submitAnswers}
+            />
             <div className="mx-auto max-w-2xl px-4 py-6 space-y-5">
 
                 {/* Sticky progress header */}

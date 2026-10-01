@@ -65,15 +65,15 @@ class AssessmentQuestionStatsExport implements WithMultipleSheets
             $pct = $ditampilkan > 0 ? round($benar / $ditampilkan * 100, 1) : null;
 
             return array_values(array_filter([
-                'no'          => $no,
-                'pertanyaan'  => $question->question,
-                'tags'        => $withTags ? ($question->tags ?? '') : null,
+                'no' => $no,
+                'pertanyaan' => $question->question,
+                'tags' => $withTags ? ($question->tags ?? '') : null,
                 'ditampilkan' => $ditampilkan,
-                'dijawab'     => $dijawab,
-                'benar'       => $benar,
-                'salah'       => $ditampilkan - $benar,
-                'pct'         => $pct ?? '-',
-                'kesulitan'   => $this->difficulty($pct),
+                'dijawab' => $dijawab,
+                'benar' => $benar,
+                'salah' => $ditampilkan - $benar,
+                'pct' => $pct ?? '-',
+                'kesulitan' => $this->difficulty($pct),
             ], fn ($v) => $v !== null));
         })->all();
     }
@@ -87,7 +87,7 @@ class AssessmentQuestionStatsExport implements WithMultipleSheets
         return match (true) {
             $pct >= 80 => 'Mudah',
             $pct >= 50 => 'Sedang',
-            default    => 'Sulit',
+            default => 'Sulit',
         };
     }
 }

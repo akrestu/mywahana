@@ -6,6 +6,7 @@ use App\Models\InspeksiWorkshop;
 use App\Models\Site;
 use App\Models\User;
 use App\Notifications\InspeksiWorkshopDibuat;
+use App\Rules\Signature;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,7 +18,7 @@ class InspeksiWorkshopController extends Controller
         $user = $request->user();
 
         $myRecords = InspeksiWorkshop::where('user_id', $user->id)
-            ->orWhereHas('peserta', fn($q) => $q->where('user_id', $user->id))
+            ->orWhereHas('peserta', fn ($q) => $q->where('user_id', $user->id))
             ->with('reInspektor:id,name,jabatan')
             ->orderByDesc('tanggal')->orderByDesc('created_at')
             ->paginate(15, pageName: 'my_page');
@@ -35,9 +36,9 @@ class InspeksiWorkshopController extends Controller
             ->paginate(15, pageName: 'ri_done_page');
 
         return Inertia::render('sap/inspeksi-workshop/index', [
-            'myRecords'         => $myRecords,
+            'myRecords' => $myRecords,
             'pendingReInspeksi' => $pendingReInspeksi,
-            'selesaiAsRI'       => $selesaiAsRI,
+            'selesaiAsRI' => $selesaiAsRI,
         ]);
     }
 
@@ -61,9 +62,9 @@ class InspeksiWorkshopController extends Controller
             ]);
 
         return Inertia::render('sap/inspeksi-workshop/create', [
-            'user'       => $user->only('name', 'nik', 'jabatan', 'departemen', 'site'),
+            'user' => $user->only('name', 'nik', 'jabatan', 'departemen', 'site'),
             'staffUsers' => $staffUsers,
-            'sites'      => Site::whereIn('value', $siteValues)->orderBy('label')->get(['value', 'label']),
+            'sites' => Site::whereIn('value', $siteValues)->orderBy('label')->get(['value', 'label']),
         ]);
     }
 
@@ -73,15 +74,15 @@ class InspeksiWorkshopController extends Controller
 
         $validated = $request->validate([
             're_inspektor_id' => ['nullable', 'exists:users,id'],
-            'peserta_ids'     => ['nullable', 'array'],
-            'peserta_ids.*'   => ['exists:users,id'],
-            'tanggal'         => ['required', 'date'],
-            'project_site'    => ['required', 'string', 'max:255'],
-            'departemen'      => ['required', 'string', 'max:255'],
+            'peserta_ids' => ['nullable', 'array'],
+            'peserta_ids.*' => ['exists:users,id'],
+            'tanggal' => ['required', 'date', 'before_or_equal:today'],
+            'project_site' => ['required', 'string', 'max:255'],
+            'departemen' => ['required', 'string', 'max:255'],
             // Bangunan (21)
-            'bangunan_1'  => $scoreRule, 'bangunan_2'  => $scoreRule, 'bangunan_3'  => $scoreRule,
-            'bangunan_4'  => $scoreRule, 'bangunan_5'  => $scoreRule, 'bangunan_6'  => $scoreRule,
-            'bangunan_7'  => $scoreRule, 'bangunan_8'  => $scoreRule, 'bangunan_9'  => $scoreRule,
+            'bangunan_1' => $scoreRule, 'bangunan_2' => $scoreRule, 'bangunan_3' => $scoreRule,
+            'bangunan_4' => $scoreRule, 'bangunan_5' => $scoreRule, 'bangunan_6' => $scoreRule,
+            'bangunan_7' => $scoreRule, 'bangunan_8' => $scoreRule, 'bangunan_9' => $scoreRule,
             'bangunan_10' => $scoreRule, 'bangunan_11' => $scoreRule, 'bangunan_12' => $scoreRule,
             'bangunan_13' => $scoreRule, 'bangunan_14' => $scoreRule, 'bangunan_15' => $scoreRule,
             'bangunan_16' => $scoreRule, 'bangunan_17' => $scoreRule, 'bangunan_18' => $scoreRule,
@@ -100,20 +101,20 @@ class InspeksiWorkshopController extends Controller
             'alat_angkat_1' => $scoreRule, 'alat_angkat_2' => $scoreRule, 'alat_angkat_3' => $scoreRule,
             'alat_angkat_4' => $scoreRule, 'alat_angkat_5' => $scoreRule,
             // TPS (12)
-            'tps_1'  => $scoreRule, 'tps_2'  => $scoreRule, 'tps_3'  => $scoreRule,
-            'tps_4'  => $scoreRule, 'tps_5'  => $scoreRule, 'tps_6'  => $scoreRule,
-            'tps_7'  => $scoreRule, 'tps_8'  => $scoreRule, 'tps_9'  => $scoreRule,
+            'tps_1' => $scoreRule, 'tps_2' => $scoreRule, 'tps_3' => $scoreRule,
+            'tps_4' => $scoreRule, 'tps_5' => $scoreRule, 'tps_6' => $scoreRule,
+            'tps_7' => $scoreRule, 'tps_8' => $scoreRule, 'tps_9' => $scoreRule,
             'tps_10' => $scoreRule, 'tps_11' => $scoreRule, 'tps_12' => $scoreRule,
             // Tyre (3)
             'tyre_1' => $scoreRule, 'tyre_2' => $scoreRule, 'tyre_3' => $scoreRule,
-            'tindakan_perbaikan'            => ['nullable', 'array'],
+            'tindakan_perbaikan' => ['nullable', 'array'],
             'tindakan_perbaikan.*.tindakan' => ['nullable', 'string', 'max:500'],
-            'tindakan_perbaikan.*.pic'       => ['nullable', 'string', 'max:255'],
-            'tindakan_perbaikan.*.due_date'  => ['nullable', 'string', 'max:50'],
-            'tindakan_perbaikan.*.remark'    => ['nullable', 'string', 'max:500'],
-            'foto'   => ['nullable', 'array'],
+            'tindakan_perbaikan.*.pic' => ['nullable', 'string', 'max:255'],
+            'tindakan_perbaikan.*.due_date' => ['nullable', 'string', 'max:50'],
+            'tindakan_perbaikan.*.remark' => ['nullable', 'string', 'max:500'],
+            'foto' => ['nullable', 'array'],
             'foto.*' => ['nullable', 'image', 'max:5120'],
-            'ttd_inspektor' => ['nullable', 'string'],
+            'ttd_inspektor' => ['nullable', new Signature],
         ]);
 
         $actor = $request->user()->load('sites:id,value');
@@ -130,26 +131,26 @@ class InspeksiWorkshopController extends Controller
         abort_unless($eligibleAssignees === count(array_unique($assigneeIds)), 403);
 
         $scores = collect(InspeksiWorkshop::$scoreKeys)
-            ->map(fn($k) => $validated[$k] ?? null)->filter(fn($v) => $v !== null);
+            ->map(fn ($k) => $validated[$k] ?? null)->filter(fn ($v) => $v !== null);
 
-        $totalPoin  = $scores->sum();
-        $maxPoin    = count(InspeksiWorkshop::$scoreKeys) * 4;
+        $totalPoin = $scores->sum();
+        $maxPoin = count(InspeksiWorkshop::$scoreKeys) * 4;
         $persentase = $scores->count() > 0 ? round(($totalPoin / $maxPoin) * 100, 1) : 0;
-        $riskLevel  = match (true) {
+        $riskLevel = match (true) {
             $persentase >= 85 => 'L',
             $persentase >= 70 => 'M',
             $persentase >= 50 => 'H',
-            default           => 'VH',
+            default => 'VH',
         };
 
         $pesertaIds = $validated['peserta_ids'] ?? [];
         unset($validated['peserta_ids'], $validated['foto']);
 
         $record = InspeksiWorkshop::create(array_merge($validated, [
-            'user_id'    => $request->user()->id,
+            'user_id' => $request->user()->id,
             'total_poin' => $totalPoin, 'max_poin' => $maxPoin,
             'persentase' => $persentase, 'risk_level' => $riskLevel,
-            'status'     => $validated['re_inspektor_id'] ? 'menunggu_re_inspeksi' : 'selesai',
+            'status' => $validated['re_inspektor_id'] ? 'menunggu_re_inspeksi' : 'selesai',
         ]));
 
         if ($request->hasFile('foto')) {
@@ -192,7 +193,7 @@ class InspeksiWorkshopController extends Controller
 
         return Inertia::render('sap/inspeksi-workshop/show', [
             'record' => $inspeksiWorkshop,
-            'is_ri'  => $user->id === $inspeksiWorkshop->re_inspektor_id,
+            'is_ri' => $user->id === $inspeksiWorkshop->re_inspektor_id,
         ]);
     }
 
@@ -201,6 +202,7 @@ class InspeksiWorkshopController extends Controller
         abort_unless($request->user()->id === $inspeksiWorkshop->re_inspektor_id, 403);
         if ($inspeksiWorkshop->status !== 'menunggu_re_inspeksi') {
             Inertia::flash('toast', ['type' => 'info', 'message' => 'Form ini sudah diproses.']);
+
             return redirect()->route('sap.inspeksi-workshop.show', $inspeksiWorkshop);
         }
 
@@ -214,12 +216,12 @@ class InspeksiWorkshopController extends Controller
         abort_unless($request->user()->id === $inspeksiWorkshop->re_inspektor_id, 403);
         abort_if($inspeksiWorkshop->status !== 'menunggu_re_inspeksi', 403, 'Form ini sudah diproses.');
 
-        $validated = $request->validate(['ttd_re_inspektor' => ['required', 'string']]);
+        $validated = $request->validate(['ttd_re_inspektor' => ['required', new Signature]]);
 
         $inspeksiWorkshop->update([
             'ttd_re_inspektor' => $validated['ttd_re_inspektor'],
-            'status'           => 'selesai',
-            're_inspeksi_at'   => now(),
+            'status' => 'selesai',
+            're_inspeksi_at' => now(),
         ]);
 
         $request->user()->unreadNotifications()

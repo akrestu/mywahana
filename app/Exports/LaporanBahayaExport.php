@@ -2,16 +2,17 @@
 
 namespace App\Exports;
 
+use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
-class LaporanBahayaExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
+class LaporanBahayaExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
     private int $no = 0;
 
-    public function __construct(private readonly \Illuminate\Database\Eloquent\Builder $query) {}
+    public function __construct(private readonly Builder $query) {}
 
     public function query()
     {
@@ -33,12 +34,13 @@ class LaporanBahayaExport implements FromQuery, WithHeadings, WithMapping, Shoul
     {
         $this->no++;
         $status = match ($row->status_tindakan) {
-            'pending'  => 'Pending',
+            'pending' => 'Pending',
             'continue' => 'Continue',
             'progress' => 'Progress',
-            'close'    => 'Close',
-            default    => $row->status_tindakan ?? '',
+            'close' => 'Close',
+            default => $row->status_tindakan ?? '',
         };
+
         return [
             $this->no,
             $row->user->name ?? '',

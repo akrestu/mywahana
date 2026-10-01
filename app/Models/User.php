@@ -4,9 +4,10 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Concerns\HasTeams;
+use Carbon\Carbon;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -25,6 +26,7 @@ class User extends Authenticatable implements PasskeyUser
     protected $hidden = [
         'password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token',
     ];
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasPushSubscriptions, HasTeams, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
@@ -122,7 +124,7 @@ class User extends Authenticatable implements PasskeyUser
             ->distinct()
             ->orderByDesc('tgl')
             ->pluck('tgl')
-            ->map(fn ($d) => \Carbon\Carbon::parse($d)->startOfDay());
+            ->map(fn ($d) => Carbon::parse($d)->startOfDay());
 
         if ($dates->isEmpty()) {
             return 0;

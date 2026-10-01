@@ -13,6 +13,7 @@ import {
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
 import { RiskBadge } from '@/components/risk-badge';
+import { SiteCombobox } from '@/components/site-combobox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -30,7 +31,6 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import { SiteCombobox } from '@/components/site-combobox';
 import {
     Sheet,
     SheetContent,
@@ -291,7 +291,7 @@ galleryRef.current.value = '';
     };
 
     // ── Step bar ──
-    const StepBar = () => (
+    const renderStepBar = () => (
         <div className="flex items-center gap-0">
             {STEPS.map((s, i) => (
                 <Fragment key={s.label}>
@@ -339,7 +339,7 @@ galleryRef.current.value = '';
     );
 
     // ── Nav buttons ──
-    const NavButtons = ({ canNext }: { canNext: boolean }) => (
+    const renderNavButtons = ({ canNext }: { canNext: boolean }) => (
         <div
             className={cn(
                 'flex gap-3 pt-4',
@@ -398,7 +398,7 @@ galleryRef.current.value = '';
                     </p>
                 </div>
 
-                <StepBar />
+                {renderStepBar()}
                 <Separator />
 
                 {/* ══════════════════════════════════════
@@ -910,7 +910,7 @@ galleryRef.current.value = '';
                             )}
                         </div>
 
-                        <NavButtons canNext={step1Valid} />
+                        {renderNavButtons({ canNext: step1Valid })}
                     </div>
                 )}
 
@@ -1195,7 +1195,7 @@ galleryRef.current.value = '';
                                 );
                             })()}
 
-                        <NavButtons canNext={step2Valid} />
+                        {renderNavButtons({ canNext: step2Valid })}
                     </div>
                 )}
 
@@ -1509,7 +1509,7 @@ galleryRef.current.value = '';
                             )}
                         </div>
 
-                        <NavButtons canNext={step3Valid} />
+                        {renderNavButtons({ canNext: step3Valid })}
                     </div>
                 )}
 

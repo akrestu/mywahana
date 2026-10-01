@@ -33,7 +33,7 @@ class SendBugarSelamatReminder extends Command
                 ->whereDate('created_at', $today)
                 ->delete();
 
-            $user->notify(new BugarSelamatReminder());
+            $user->notify(new BugarSelamatReminder);
         }
 
         $this->info("Reminder dikirim ke {$users->count()} user.");

@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 class ExpireAssessments extends Command
 {
     protected $signature = 'assessments:expire';
+
     protected $description = 'Auto-complete assessment sessions that have exceeded the time limit';
 
     public function handle(): int

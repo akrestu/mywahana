@@ -6,6 +6,7 @@ use App\Models\KomunikasiJsa;
 use App\Models\Site;
 use App\Models\User;
 use App\Notifications\KomunikasiJsaKonfirmasi;
+use App\Rules\Signature;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -39,9 +40,9 @@ class KomunikasiJsaController extends Controller
             ->paginate(15, pageName: 'tl_confirmed_page');
 
         return Inertia::render('sap/komunikasi-jsa/index', [
-            'myRecords'        => $myRecords,
+            'myRecords' => $myRecords,
             'pendingKonfirmasi' => $pendingKonfirmasi,
-            'confirmedAsTL'    => $confirmedAsTL,
+            'confirmedAsTL' => $confirmedAsTL,
         ]);
     }
 
@@ -64,32 +65,32 @@ class KomunikasiJsaController extends Controller
             ]);
 
         return Inertia::render('sap/komunikasi-jsa/create', [
-            'user'       => $user->only('name', 'nik', 'jabatan', 'site'),
+            'user' => $user->only('name', 'nik', 'jabatan', 'site'),
             'staffUsers' => $staffUsers,
-            'sites'      => Site::whereIn('value', $siteValues)->orderBy('label')->get(['value', 'label', 'locations']),
+            'sites' => Site::whereIn('value', $siteValues)->orderBy('label')->get(['value', 'label', 'locations']),
         ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'site'                    => ['required', 'string', Rule::exists('sites', 'value')],
-            'team_leader_id'          => ['nullable', 'exists:users,id'],
-            'tanggal'                 => ['required', 'date'],
-            'lokasi'                  => ['required', 'string', 'max:255'],
-            'shift'                   => ['required', 'in:siang,malam'],
-            'durasi'                  => ['required', 'integer', 'min:1', 'max:65535'],
-            'kegiatan'                => ['required', 'string'],
-            'judul_dokumen'           => ['required', 'string', 'max:255'],
-            'catatan'                 => ['nullable', 'string'],
-            'peserta'                 => ['required', 'array', 'min:1', 'max:10'],
-            'peserta.*.nama'          => ['required', 'string', 'max:255'],
-            'peserta.*.jabatan'       => ['nullable', 'string', 'max:255'],
-            'peserta.*.nik'           => ['nullable', 'string', 'max:50'],
-            'peserta.*.tanda_tangan'  => ['required', 'string'],
-            'supervisor_signature'    => ['nullable', 'string'],
-            'foto_kelompok'           => ['required', 'image', 'max:5120'],
-            'foto_dokumen'            => ['required', 'image', 'max:5120'],
+            'site' => ['required', 'string', Rule::exists('sites', 'value')],
+            'team_leader_id' => ['nullable', 'exists:users,id'],
+            'tanggal' => ['required', 'date', 'before_or_equal:today'],
+            'lokasi' => ['required', 'string', 'max:255'],
+            'shift' => ['required', 'in:siang,malam'],
+            'durasi' => ['required', 'integer', 'min:1', 'max:65535'],
+            'kegiatan' => ['required', 'string'],
+            'judul_dokumen' => ['required', 'string', 'max:255'],
+            'catatan' => ['nullable', 'string'],
+            'peserta' => ['required', 'array', 'min:1', 'max:10'],
+            'peserta.*.nama' => ['required', 'string', 'max:255'],
+            'peserta.*.jabatan' => ['nullable', 'string', 'max:255'],
+            'peserta.*.nik' => ['nullable', 'string', 'max:50'],
+            'peserta.*.tanda_tangan' => ['required', new Signature],
+            'supervisor_signature' => ['nullable', new Signature],
+            'foto_kelompok' => ['required', 'image', 'max:5120'],
+            'foto_dokumen' => ['required', 'image', 'max:5120'],
         ]);
 
         $user = $request->user()->load('sites:id,value');
@@ -109,24 +110,24 @@ class KomunikasiJsaController extends Controller
         $status = $needsKonfirmasi ? 'menunggu_konfirmasi' : 'selesai';
 
         $fotoKelompok = $request->file('foto_kelompok')->store('komunikasi-jsa', 'public');
-        $fotoDokumen  = $request->file('foto_dokumen')->store('komunikasi-jsa', 'public');
+        $fotoDokumen = $request->file('foto_dokumen')->store('komunikasi-jsa', 'public');
 
         $form = KomunikasiJsa::create([
-            'user_id'              => $user->id,
-            'site'                 => $validated['site'],
-            'team_leader_id'       => $teamLeaderId,
-            'tanggal'              => $validated['tanggal'],
-            'lokasi'               => $validated['lokasi'],
-            'shift'                => $validated['shift'],
-            'durasi'               => $validated['durasi'],
-            'kegiatan'             => $validated['kegiatan'],
-            'judul_dokumen'        => $validated['judul_dokumen'],
-            'catatan'              => $validated['catatan'] ?? null,
-            'peserta'              => $validated['peserta'],
+            'user_id' => $user->id,
+            'site' => $validated['site'],
+            'team_leader_id' => $teamLeaderId,
+            'tanggal' => $validated['tanggal'],
+            'lokasi' => $validated['lokasi'],
+            'shift' => $validated['shift'],
+            'durasi' => $validated['durasi'],
+            'kegiatan' => $validated['kegiatan'],
+            'judul_dokumen' => $validated['judul_dokumen'],
+            'catatan' => $validated['catatan'] ?? null,
+            'peserta' => $validated['peserta'],
             'supervisor_signature' => $validated['supervisor_signature'] ?? null,
-            'status'               => $status,
-            'foto_kelompok'        => $fotoKelompok,
-            'foto_dokumen'         => $fotoDokumen,
+            'status' => $status,
+            'foto_kelompok' => $fotoKelompok,
+            'foto_dokumen' => $fotoDokumen,
         ]);
 
         if ($needsKonfirmasi) {
@@ -152,7 +153,7 @@ class KomunikasiJsaController extends Controller
         $komunikasiJsa->load('user:id,name,nik,jabatan,site', 'teamLeader:id,name,nik,jabatan,site');
 
         return Inertia::render('sap/komunikasi-jsa/show', [
-            'record'       => $komunikasiJsa,
+            'record' => $komunikasiJsa,
             'isTeamLeader' => $request->user()->id === $komunikasiJsa->team_leader_id,
         ]);
     }
@@ -162,6 +163,7 @@ class KomunikasiJsaController extends Controller
         abort_unless($request->user()->id === $komunikasiJsa->team_leader_id, 403);
         if ($komunikasiJsa->status !== 'menunggu_konfirmasi') {
             Inertia::flash('toast', ['type' => 'info', 'message' => 'Form ini sudah diproses.']);
+
             return redirect()->route('sap.komunikasi-jsa.show', $komunikasiJsa);
         }
 
@@ -178,12 +180,12 @@ class KomunikasiJsaController extends Controller
         abort_if($komunikasiJsa->status !== 'menunggu_konfirmasi', 403, 'Form ini sudah diproses.');
 
         $validated = $request->validate([
-            'tl_signature' => ['required', 'string'],
+            'tl_signature' => ['required', new Signature],
         ]);
 
         $komunikasiJsa->update([
-            'tl_signature'       => $validated['tl_signature'],
-            'status'             => 'dikonfirmasi',
+            'tl_signature' => $validated['tl_signature'],
+            'status' => 'dikonfirmasi',
             'tl_dikonfirmasi_at' => now(),
         ]);
 

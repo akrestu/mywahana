@@ -17,7 +17,7 @@ class BugarSelamatReminder extends Notification
     {
         return [
             'message' => 'Anda belum mengisi form Bugar Selamat hari ini. Silakan isi sebelum mulai bekerja.',
-            'url'     => '/bugar-selamat/create',
+            'url' => '/bugar-selamat/create',
         ];
     }
 
