@@ -21,7 +21,7 @@ class BugarSelamatExport implements FromQuery, WithHeadings, WithMapping, Should
     public function headings(): array
     {
         return [
-            'No', 'Nama', 'NIK', 'Jabatan', 'Departemen', 'Site', 'Tanggal', 'Shift', 'Hari Ke',
+            'No', 'Nama', 'NIK', 'Jabatan', 'Departemen', 'Site', 'Tanggal', 'Waktu Submit', 'Shift', 'Hari Ke',
             'Jam Tidur', 'Kondisi Sakit', 'Minum Obat', 'Masalah Pribadi',
             'Pengaruh Alkohol', 'Siap Bekerja', 'Status Kelayakan', 'Catatan',
         ];
@@ -38,6 +38,7 @@ class BugarSelamatExport implements FromQuery, WithHeadings, WithMapping, Should
             $row->user->departemen ?? '',
             $row->user->site ? ucfirst($row->user->site) : '',
             $row->tanggal?->format('d/m/Y') ?? '',
+            $row->created_at?->format('d/m/Y H:i') ?? '',
             $row->shift,
             $row->hari_ke,
             $row->jam_tidur,

@@ -22,7 +22,7 @@ class ObservasiKeselamatanExport implements FromQuery, WithHeadings, WithMapping
     {
         return [
             'No', 'Observer', 'NIK Observer', 'Jabatan Observer', 'Departemen Observer', 'Site Observer',
-            'Penanggung Jawab', 'Tanggal', 'Lokasi Kerja', 'Jenis Pekerjaan',
+            'Penanggung Jawab', 'Tanggal', 'Waktu Submit', 'Lokasi Kerja', 'Jenis Pekerjaan',
             'Status Konfirmasi', 'Tgl Dikonfirmasi', 'Status Temuan',
         ];
     }
@@ -40,6 +40,7 @@ class ObservasiKeselamatanExport implements FromQuery, WithHeadings, WithMapping
             $row->user->site ? ucfirst($row->user->site) : '',
             $row->penanggungJawab->name ?? '',
             $row->tanggal?->format('d/m/Y') ?? '',
+            $row->created_at?->format('d/m/Y H:i') ?? '',
             $row->lokasi_kerja,
             $row->jenis_pekerjaan,
             $row->status === 'dikonfirmasi' ? 'Dikonfirmasi' : 'Menunggu Konfirmasi',

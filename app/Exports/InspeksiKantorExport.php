@@ -22,7 +22,7 @@ class InspeksiKantorExport implements FromQuery, WithHeadings, WithMapping, Shou
     {
         return [
             'No', 'Inspektor', 'NIK', 'Jabatan Inspektor', 'Departemen Inspektor', 'Site',
-            'Re-Inspektor', 'Tanggal', 'Project Site', 'Departemen',
+            'Re-Inspektor', 'Tanggal', 'Waktu Submit', 'Project Site', 'Departemen',
             'Persentase', 'Risk Level', 'Status', 'Peserta Inspeksi', 'Tindakan Perbaikan',
         ];
     }
@@ -52,6 +52,7 @@ class InspeksiKantorExport implements FromQuery, WithHeadings, WithMapping, Shou
             $row->user->site ? ucfirst($row->user->site) : '',
             $row->reInspektor->name ?? '',
             $row->tanggal?->format('d/m/Y') ?? '',
+            $row->created_at?->format('d/m/Y H:i') ?? '',
             $row->project_site,
             $row->departemen,
             $row->persentase !== null ? $row->persentase . '%' : '',

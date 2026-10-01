@@ -252,7 +252,7 @@ class AdminController extends Controller
         }
 
         // ── Riwayat/Daftar view: paginated list (existing behaviour) ─────────
-        $query = BugarSelamat::with('user')->latest('tanggal');
+        $query = BugarSelamat::with('user')->latest('created_at');
 
         if ($site) {
             $query->whereHas('user', fn ($q) => $q->assignedToSite($site));
@@ -265,7 +265,7 @@ class AdminController extends Controller
             });
         }
 
-        $this->applyDateFilter($query, $request);
+        $this->applyDateFilter($query, $request, 'created_at');
 
         $summaryQuery = clone $query;
         $summaryData = $summaryQuery->selectRaw('status_kelayakan, count(*) as total')
@@ -296,7 +296,7 @@ class AdminController extends Controller
 
     public function laporanBahaya(Request $request)
     {
-        $query = LaporanBahaya::with(['user', 'pic'])->latest('tanggal');
+        $query = LaporanBahaya::with(['user', 'pic'])->latest('created_at');
         $adminSite = $request->user()->site;
         $site = $this->adminSite($request);
 
@@ -311,7 +311,7 @@ class AdminController extends Controller
             });
         }
 
-        $this->applyDateFilter($query, $request);
+        $this->applyDateFilter($query, $request, 'created_at');
 
         // Summary dihitung sebelum filter risiko/status agar tetap menyeluruh
         $summaryQuery = clone $query;
@@ -376,7 +376,7 @@ class AdminController extends Controller
 
     public function observasiKeselamatan(Request $request)
     {
-        $query = ObservasiKeselamatan::with(['user', 'penanggungJawab'])->latest('tanggal');
+        $query = ObservasiKeselamatan::with(['user', 'penanggungJawab'])->latest('created_at');
         $adminSite = $request->user()->site;
         $site = $this->adminSite($request);
 
@@ -395,7 +395,7 @@ class AdminController extends Controller
             $query->where('status', $request->status);
         }
 
-        $this->applyDateFilter($query, $request);
+        $this->applyDateFilter($query, $request, 'created_at');
 
         $summary = [
             'total' => ObservasiKeselamatan::count(),
@@ -425,7 +425,7 @@ class AdminController extends Controller
 
     public function inspeksiKantor(Request $request)
     {
-        $query = InspeksiKantor::with(['user', 'reInspektor'])->latest('tanggal');
+        $query = InspeksiKantor::with(['user', 'reInspektor'])->latest('created_at');
         $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
@@ -452,7 +452,7 @@ class AdminController extends Controller
 
     public function inspeksiTambang(Request $request)
     {
-        $query = InspeksiTambang::with(['user', 'reInspektor'])->latest('tanggal');
+        $query = InspeksiTambang::with(['user', 'reInspektor'])->latest('created_at');
         $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
@@ -479,7 +479,7 @@ class AdminController extends Controller
 
     public function inspeksiWorkshop(Request $request)
     {
-        $query = InspeksiWorkshop::with(['user', 'reInspektor'])->latest('tanggal');
+        $query = InspeksiWorkshop::with(['user', 'reInspektor'])->latest('created_at');
         $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
@@ -506,7 +506,7 @@ class AdminController extends Controller
 
     public function inspeksiMess(Request $request)
     {
-        $query = InspeksiMess::with(['user', 'reInspektor'])->latest('tanggal');
+        $query = InspeksiMess::with(['user', 'reInspektor'])->latest('created_at');
         $adminSite = $request->user()->site;
         $this->applyInspeksiFilters($query, $request);
 
@@ -534,7 +534,6 @@ class AdminController extends Controller
     public function komunikasiJsa(Request $request)
     {
         $query = KomunikasiJsa::with(['user:id,name,nik,jabatan,site', 'teamLeader:id,name,jabatan'])
-            ->latest('tanggal')
             ->latest('created_at');
         $adminSite = $request->user()->site;
         $site = $this->adminSite($request);
@@ -551,7 +550,7 @@ class AdminController extends Controller
             $query->where('shift', $request->shift);
         }
 
-        $this->applyDateFilter($query, $request);
+        $this->applyDateFilter($query, $request, 'created_at');
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
@@ -901,7 +900,7 @@ class AdminController extends Controller
         set_time_limit(300);
 
         $query = KomunikasiJsa::with(['user:id,name,nik,jabatan,departemen,site', 'teamLeader:id,name,jabatan'])
-            ->latest('tanggal');
+            ->oldest('created_at');
 
         if ($site = $this->adminSite($request)) {
             $query->where('site', $site);
@@ -912,7 +911,7 @@ class AdminController extends Controller
         if ($request->filled('shift')) {
             $query->where('shift', $request->shift);
         }
-        $this->applyDateFilter($query, $request);
+        $this->applyDateFilter($query, $request, 'created_at');
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('judul_dokumen', 'like', "%{$request->search}%")
@@ -925,7 +924,7 @@ class AdminController extends Controller
         $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
 
-        $headers = ['No', 'Tanggal', 'Nama', 'NIK', 'Jabatan', 'Departemen', 'Site', 'Lokasi', 'Shift', 'Durasi (mnt)', 'Kegiatan', 'Judul JSA/SOP/IK', 'Jml Peserta', 'Peserta', 'Team Leader', 'Status', 'Catatan'];
+        $headers = ['No', 'Tanggal', 'Waktu Submit', 'Nama', 'NIK', 'Jabatan', 'Departemen', 'Site', 'Lokasi', 'Shift', 'Durasi (mnt)', 'Kegiatan', 'Judul JSA/SOP/IK', 'Jml Peserta', 'Peserta', 'Team Leader', 'Status', 'Catatan'];
         $sheet->fromArray([$headers], null, 'A1');
 
         $rowIndex = 2;
@@ -935,6 +934,7 @@ class AdminController extends Controller
             $sheet->fromArray([[
                 $no,
                 $r->tanggal?->format('d/m/Y') ?? '',
+                $r->created_at?->format('d/m/Y H:i') ?? '',
                 $r->user?->name ?? '-',
                 $r->user?->nik ?? '-',
                 $r->user?->jabatan ?? '-',
@@ -954,7 +954,7 @@ class AdminController extends Controller
             $rowIndex++;
         }
 
-        foreach (range('A', 'Q') as $col) {
+        foreach (range('A', 'R') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -993,7 +993,7 @@ class AdminController extends Controller
         ini_set('memory_limit', '512M');
         set_time_limit(300);
 
-        $query = InspeksiKantor::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
+        $query = InspeksiKantor::with(['user', 'reInspektor', 'peserta'])->oldest('created_at');
         $this->applyInspeksiFilters($query, $request);
 
         return Excel::download(new InspeksiKantorExport($query), 'inspeksi-kantor-'.now()->format('Ymd').'.xlsx');
@@ -1004,7 +1004,7 @@ class AdminController extends Controller
         ini_set('memory_limit', '512M');
         set_time_limit(300);
 
-        $query = InspeksiTambang::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
+        $query = InspeksiTambang::with(['user', 'reInspektor', 'peserta'])->oldest('created_at');
         $this->applyInspeksiFilters($query, $request);
 
         return Excel::download(new InspeksiTambangExport($query), 'inspeksi-tambang-'.now()->format('Ymd').'.xlsx');
@@ -1015,7 +1015,7 @@ class AdminController extends Controller
         ini_set('memory_limit', '512M');
         set_time_limit(300);
 
-        $query = InspeksiWorkshop::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
+        $query = InspeksiWorkshop::with(['user', 'reInspektor', 'peserta'])->oldest('created_at');
         $this->applyInspeksiFilters($query, $request);
 
         return Excel::download(new InspeksiWorkshopExport($query), 'inspeksi-workshop-'.now()->format('Ymd').'.xlsx');
@@ -1026,7 +1026,7 @@ class AdminController extends Controller
         ini_set('memory_limit', '512M');
         set_time_limit(300);
 
-        $query = InspeksiMess::with(['user', 'reInspektor', 'peserta'])->latest('tanggal');
+        $query = InspeksiMess::with(['user', 'reInspektor', 'peserta'])->oldest('created_at');
         $this->applyInspeksiFilters($query, $request);
 
         return Excel::download(new InspeksiMessExport($query), 'inspeksi-mess-'.now()->format('Ymd').'.xlsx');
@@ -1084,7 +1084,7 @@ class AdminController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-        $this->applyDateFilter($query, $request);
+        $this->applyDateFilter($query, $request, 'created_at');
     }
 
     private function inspeksiSummary(string $model): array
@@ -1102,7 +1102,7 @@ class AdminController extends Controller
         ini_set('memory_limit', '512M');
         set_time_limit(300);
 
-        $query = ObservasiKeselamatan::with(['user', 'penanggungJawab'])->latest('tanggal');
+        $query = ObservasiKeselamatan::with(['user', 'penanggungJawab'])->oldest('created_at');
 
         if ($site = $this->adminSite($request)) {
             $query->whereHas('user', fn ($q) => $q->where('site', $site));
@@ -1119,7 +1119,7 @@ class AdminController extends Controller
             $query->where('status', $request->status);
         }
 
-        $this->applyDateFilter($query, $request);
+        $this->applyDateFilter($query, $request, 'created_at');
 
         return Excel::download(
             new ObservasiKeselamatanExport($query),
@@ -1240,7 +1240,7 @@ class AdminController extends Controller
         ini_set('memory_limit', '512M');
         set_time_limit(300);
 
-        $query = BugarSelamat::with('user')->orderBy('tanggal')->orderBy('created_at');
+        $query = BugarSelamat::with('user')->oldest('created_at');
 
         if ($site = $this->adminSite($request)) {
             $query->whereHas('user', fn ($q) => $q->assignedToSite($site));
@@ -1254,7 +1254,7 @@ class AdminController extends Controller
                     ->orWhere('nik', 'like', "%{$request->search}%");
             });
         }
-        $this->applyDateFilter($query, $request);
+        $this->applyDateFilter($query, $request, 'created_at');
 
         $filename = 'bugar-selamat-'.now()->format('Y-m-d').'.xlsx';
 
@@ -1266,7 +1266,7 @@ class AdminController extends Controller
         ini_set('memory_limit', '512M');
         set_time_limit(300);
 
-        $query = LaporanBahaya::with(['user', 'pic'])->orderBy('created_at');
+        $query = LaporanBahaya::with(['user', 'pic'])->oldest('created_at');
 
         if ($site = $this->adminSite($request)) {
             $query->where('site', $site);
@@ -1283,7 +1283,7 @@ class AdminController extends Controller
                     ->orWhere('nik', 'like', "%{$request->search}%");
             });
         }
-        $this->applyDateFilter($query, $request);
+        $this->applyDateFilter($query, $request, 'created_at');
 
         $filename = 'laporan-bahaya-'.now()->format('Y-m-d').'.xlsx';
 
