@@ -44,7 +44,7 @@ type Filters = {
 };
 
 type SiteOption = { value: string; label: string };
-type Props = { users: PaginatedUsers; filters: Filters; sites: SiteOption[] };
+type Props = { users: PaginatedUsers; filters: Filters; sites: SiteOption[]; admin_site: string | null };
 
 function levelBadge(level: string | null) {
     if (level === 'srstaff') {
@@ -62,7 +62,7 @@ function getInitials(name: string): string {
     return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 }
 
-export default function AdminUsers({ users, filters, sites }: Props) {
+export default function AdminUsers({ users, filters, sites, admin_site }: Props) {
     const siteLabel = (value: string | null) =>
         sites.find((s) => s.value === value)?.label ?? '—';
 
@@ -155,9 +155,11 @@ params.set('participation_level', filters.participation_level);
                                 <Download size={14} /> Export
                             </Button>
                         </a>
-                        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setImportOpen(true)}>
-                            <Upload size={14} /> Import
-                        </Button>
+                        {!admin_site && (
+                            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setImportOpen(true)}>
+                                <Upload size={14} /> Import
+                            </Button>
+                        )}
                         <Link href="/admin/users/create">
                             <Button size="sm" className="gap-1.5">
                                 <Plus size={14} /> Tambah Pengguna

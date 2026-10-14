@@ -181,7 +181,7 @@ test('expired assessment submissions are auto-completed without accepting late a
 });
 
 test('deleting the first passing session moves induction attendance to another passing session', function () {
-    $admin = User::factory()->create(['is_admin' => true]);
+    $admin = User::factory()->create(['is_admin' => true, 'site' => null]);
     $employee = User::factory()->create(['is_admin' => false]);
     $first = AssessmentSession::create([
         'user_id' => $employee->id, 'departemen' => 'Production', 'tags' => 'S', 'status' => 'completed',

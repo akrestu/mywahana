@@ -12,9 +12,6 @@ use App\Exports\InspeksiTambangExport;
 use App\Exports\InspeksiWorkshopExport;
 use App\Exports\LaporanBahayaExport;
 use App\Exports\ObservasiKeselamatanExport;
-use App\Exports\UsersExport;
-use App\Exports\UsersImportTemplate;
-use App\Imports\UsersImport;
 use App\Models\AssessmentSession;
 use App\Models\AssessmentSessionQuestion;
 use App\Models\BugarSelamat;
@@ -37,9 +34,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -1144,19 +1139,6 @@ class AdminController extends Controller
         return back();
     }
 
-    public function updateUserLevel(Request $request, User $user)
-    {
-        $request->validate([
-            'participation_level' => ['required', 'in:nonstaff,staff,srstaff'],
-        ]);
-
-        $user->update(['participation_level' => $request->participation_level]);
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Level partisipasi karyawan berhasil diperbarui.']);
-
-        return back();
-    }
-
     public function exportBugarSelamat(Request $request)
     {
         // Dataset ini bisa mencapai ribuan baris; naikkan batas memori/waktu
@@ -1213,209 +1195,6 @@ class AdminController extends Controller
         $filename = 'laporan-bahaya-'.now()->format('Y-m-d').'.xlsx';
 
         return Excel::download(new LaporanBahayaExport($query), $filename);
-    }
-
-    public function users(Request $request)
-    {
-        $query = User::query()->latest();
-        $adminSite = $request->user()->site;
-        $site = $this->adminSite($request);
-
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                    ->orWhere('nik', 'like', "%{$request->search}%");
-            });
-        }
-        if ($site) {
-            $query->assignedToSite($site);
-        }
-        if ($request->filled('is_admin')) {
-            $query->where('is_admin', $request->is_admin === '1');
-        }
-        if ($request->filled('participation_level')) {
-            $query->where('participation_level', $request->participation_level);
-        }
-
-        return Inertia::render('admin/users', [
-            'users' => $query->paginate(20)->withQueryString(),
-            'filters' => $request->only('search', 'site', 'is_admin', 'participation_level'),
-            'sites' => $adminSite
-                ? Site::where('value', $adminSite)->get(['value', 'label'])
-                : Site::orderBy('label')->get(['value', 'label']),
-            'admin_site' => $adminSite,
-        ]);
-    }
-
-    public function createUser()
-    {
-        return Inertia::render('admin/user-form', [
-            'mode' => 'create',
-            'sites' => Site::orderBy('label')->get(['value', 'label']),
-        ]);
-    }
-
-    public function storeUser(Request $request)
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'nik' => ['required', 'string', 'max:50', 'unique:users,nik'],
-            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'jabatan' => ['nullable', 'string', 'max:255'],
-            'departemen' => ['nullable', 'in:Production,Maintenance,Supply Chain,Engineering,HSE,HRGA,Management'],
-            'site' => ['nullable', 'string', Rule::exists('sites', 'value')],
-            'site_ids' => ['nullable', 'array'],
-            'site_ids.*' => ['string', Rule::exists('sites', 'value')],
-            'is_admin' => ['boolean'],
-            'participation_level' => ['required', 'in:nonstaff,staff,srstaff'],
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'nik' => $request->nik,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'jabatan' => $request->jabatan,
-            'departemen' => $request->departemen,
-            'site' => $request->site,
-            'is_admin' => $request->boolean('is_admin'),
-            'participation_level' => $request->participation_level,
-        ]);
-
-        $this->syncUserSites($user, $request->input('site_ids', []));
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Pengguna berhasil ditambahkan.']);
-
-        return redirect()->route('admin.users');
-    }
-
-    public function editUser(User $user)
-    {
-        return Inertia::render('admin/user-form', [
-            'mode' => 'edit',
-            'user' => [
-                ...$user->only('id', 'name', 'nik', 'email', 'jabatan', 'departemen', 'site', 'is_admin', 'participation_level'),
-                'site_ids' => $user->sites()->pluck('sites.value')->all(),
-            ],
-            'sites' => Site::orderBy('label')->get(['value', 'label']),
-        ]);
-    }
-
-    public function updateUser(Request $request, User $user)
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'nik' => ['required', 'string', 'max:50', 'unique:users,nik,'.$user->id],
-            'email' => ['nullable', 'email', 'max:255', 'unique:users,email,'.$user->id],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-            'jabatan' => ['nullable', 'string', 'max:255'],
-            'departemen' => ['nullable', 'in:Production,Maintenance,Supply Chain,Engineering,HSE,HRGA,Management'],
-            'site' => ['nullable', 'string', Rule::exists('sites', 'value')],
-            'site_ids' => ['nullable', 'array'],
-            'site_ids.*' => ['string', Rule::exists('sites', 'value')],
-            'is_admin' => ['boolean'],
-            'participation_level' => ['required', 'in:nonstaff,staff,srstaff'],
-        ]);
-
-        $data = [
-            'name' => $request->name,
-            'nik' => $request->nik,
-            'email' => $request->email,
-            'jabatan' => $request->jabatan,
-            'departemen' => $request->departemen,
-            'site' => $request->site,
-            'is_admin' => $request->boolean('is_admin'),
-            'participation_level' => $request->participation_level,
-        ];
-
-        if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
-        }
-
-        $user->update($data);
-        $this->syncUserSites($user, $request->input('site_ids', []));
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Data pengguna berhasil diperbarui.']);
-
-        return redirect()->route('admin.users');
-    }
-
-    public function destroyUser(User $user)
-    {
-        abort_if($user->id === auth()->id(), 403, 'Tidak dapat menghapus akun sendiri.');
-
-        $user->delete();
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Pengguna berhasil dihapus.']);
-
-        return back();
-    }
-
-    private function syncUserSites(User $user, array $siteIds): void
-    {
-        $validatedSiteIds = Site::whereIn('value', $siteIds)->pluck('id')->all();
-
-        if ($user->site) {
-            $primarySiteId = Site::where('value', $user->site)->value('id');
-            if ($primarySiteId) {
-                $validatedSiteIds[] = $primarySiteId;
-            }
-        }
-
-        $user->sites()->sync(array_unique($validatedSiteIds));
-    }
-
-    public function exportUsers(Request $request)
-    {
-        ini_set('memory_limit', '512M');
-        set_time_limit(300);
-
-        $query = User::query()->latest();
-
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                    ->orWhere('nik', 'like', "%{$request->search}%");
-            });
-        }
-        if ($site = $this->adminSite($request)) {
-            $query->assignedToSite($site);
-        }
-        if ($request->filled('is_admin')) {
-            $query->where('is_admin', $request->is_admin === '1');
-        }
-        if ($request->filled('participation_level')) {
-            $query->where('participation_level', $request->participation_level);
-        }
-
-        $filename = 'users-'.now()->format('Y-m-d').'.xlsx';
-
-        return Excel::download(new UsersExport($query), $filename);
-    }
-
-    public function importTemplate()
-    {
-        return Excel::download(new UsersImportTemplate, 'template-import-users.xlsx');
-    }
-
-    public function importUsers(Request $request)
-    {
-        $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:2048'],
-        ]);
-
-        $import = new UsersImport;
-        Excel::import($import, $request->file('file'));
-
-        $msg = "Import selesai. {$import->imported} pengguna diproses";
-        if ($import->skipped > 0) {
-            $msg .= ", {$import->skipped} dilewati (tidak ada perubahan)";
-        }
-        $msg .= '.';
-        Inertia::flash('toast', ['type' => 'success', 'message' => $msg]);
-
-        return back();
     }
 
     public function deleteRangeBugarSelamat(Request $request)
@@ -1500,9 +1279,9 @@ class AdminController extends Controller
 
     public function deleteRangeAssessment(Request $request)
     {
-        return $this->deleteRange($request, function ($from, $to) {
-            [$deleted, $userIds] = DB::transaction(function () use ($from, $to) {
-                $ids = AssessmentSession::whereBetween('completed_at', [$from, $to])->pluck('id');
+        return $this->deleteRange($request, function ($from, $to) use ($request) {
+            [$deleted, $userIds] = DB::transaction(function () use ($from, $to, $request) {
+                $ids = $this->scopeSessionsToAdminSite($request, AssessmentSession::whereBetween('completed_at', [$from, $to]))->pluck('id');
                 $userIds = AssessmentSession::whereIn('id', $ids)->pluck('user_id')->unique();
                 AssessmentSessionQuestion::whereIn('assessment_session_id', $ids)->delete();
                 InductionAttendance::where('type', 'safety')->whereIn('assessment_session_id', $ids)->delete();
@@ -1517,9 +1296,9 @@ class AdminController extends Controller
 
     public function deleteRangeHrAssessment(Request $request)
     {
-        return $this->deleteRange($request, function ($from, $to) {
-            [$deleted, $userIds] = DB::transaction(function () use ($from, $to) {
-                $ids = HrAssessmentSession::whereBetween('completed_at', [$from, $to])->pluck('id');
+        return $this->deleteRange($request, function ($from, $to) use ($request) {
+            [$deleted, $userIds] = DB::transaction(function () use ($from, $to, $request) {
+                $ids = $this->scopeSessionsToAdminSite($request, HrAssessmentSession::whereBetween('completed_at', [$from, $to]))->pluck('id');
                 $userIds = HrAssessmentSession::whereIn('id', $ids)->pluck('user_id')->unique();
                 HrAssessmentSessionQuestion::whereIn('hr_assessment_session_id', $ids)->delete();
                 InductionAttendance::where('type', 'hr')->whereIn('assessment_session_id', $ids)->delete();
@@ -1535,6 +1314,19 @@ class AdminController extends Controller
     /**
      * Admin yang terikat site hanya boleh mengelola data site-nya sendiri.
      */
+
+    /**
+     * Batasi query sesi assessment ke user di site admin (jika admin terikat site).
+     */
+    private function scopeSessionsToAdminSite(Request $request, Builder $query): Builder
+    {
+        if ($adminSite = $request->user()->site) {
+            $query->whereHas('user', fn ($q) => $q->assignedToSite($adminSite));
+        }
+
+        return $query;
+    }
+
     private function ensureSameSite(Request $request, Model $record): void
     {
         $adminSite = $request->user()->site;
@@ -1660,8 +1452,9 @@ class AdminController extends Controller
         return back();
     }
 
-    public function destroyAssessmentSession(AssessmentSession $session)
+    public function destroyAssessmentSession(Request $request, AssessmentSession $session)
     {
+        abort_unless($this->scopeSessionsToAdminSite($request, AssessmentSession::whereKey($session->id))->exists(), 403);
         $userId = $session->user_id;
         \DB::transaction(function () use ($session) {
             AssessmentSessionQuestion::where('assessment_session_id', $session->id)->delete();
@@ -1674,8 +1467,9 @@ class AdminController extends Controller
         return back();
     }
 
-    public function destroyHrAssessmentSession(HrAssessmentSession $session)
+    public function destroyHrAssessmentSession(Request $request, HrAssessmentSession $session)
     {
+        abort_unless($this->scopeSessionsToAdminSite($request, HrAssessmentSession::whereKey($session->id))->exists(), 403);
         $userId = $session->user_id;
         \DB::transaction(function () use ($session) {
             HrAssessmentSessionQuestion::where('hr_assessment_session_id', $session->id)->delete();
@@ -1691,6 +1485,7 @@ class AdminController extends Controller
     public function batchDestroyAssessmentSession(Request $request)
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        $ids = $this->scopeSessionsToAdminSite($request, AssessmentSession::whereIn('id', $ids))->pluck('id')->all();
         $userIds = AssessmentSession::whereIn('id', $ids)->pluck('user_id')->unique();
         \DB::transaction(function () use ($ids) {
             AssessmentSessionQuestion::whereIn('assessment_session_id', $ids)->delete();
@@ -1706,6 +1501,7 @@ class AdminController extends Controller
     public function batchDestroyHrAssessmentSession(Request $request)
     {
         $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer']])['ids'];
+        $ids = $this->scopeSessionsToAdminSite($request, HrAssessmentSession::whereIn('id', $ids))->pluck('id')->all();
         $userIds = HrAssessmentSession::whereIn('id', $ids)->pluck('user_id')->unique();
         \DB::transaction(function () use ($ids) {
             HrAssessmentSessionQuestion::whereIn('hr_assessment_session_id', $ids)->delete();

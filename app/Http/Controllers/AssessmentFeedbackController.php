@@ -6,6 +6,7 @@ use App\Exports\AssessmentFeedbackExport;
 use App\Models\AssessmentFeedback;
 use App\Models\AssessmentSession;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -61,17 +62,23 @@ class AssessmentFeedbackController extends Controller
         $trainerScores = array_map('intval', array_values($data['trainer_scores']));
         $effectivenessScores = array_map('intval', array_values($data['effectiveness_scores']));
 
-        AssessmentFeedback::create([
-            'assessment_session_id' => $session->id,
-            'user_id' => $session->user_id,
-            'trainer_user_id' => $data['trainer_user_id'],
-            'trainer_name' => $trainers[$data['trainer_user_id']]->name,
-            'trainer_scores' => $trainerScores,
-            'effectiveness_scores' => $effectivenessScores,
-            'trainer_avg' => round(array_sum($trainerScores) / $trainerCount, 2),
-            'effectiveness_avg' => round(array_sum($effectivenessScores) / $effectivenessCount, 2),
-            'komentar' => $data['komentar'] ?? null,
-        ]);
+        // Klik ganda bisa lolos pengecekan exists() di atas; tabrakan di unique
+        // index cukup diarahkan ke hasil, bukan halaman error 500.
+        try {
+            AssessmentFeedback::create([
+                'assessment_session_id' => $session->id,
+                'user_id' => $session->user_id,
+                'trainer_user_id' => $data['trainer_user_id'],
+                'trainer_name' => $trainers[$data['trainer_user_id']]->name,
+                'trainer_scores' => $trainerScores,
+                'effectiveness_scores' => $effectivenessScores,
+                'trainer_avg' => round(array_sum($trainerScores) / $trainerCount, 2),
+                'effectiveness_avg' => round(array_sum($effectivenessScores) / $effectivenessCount, 2),
+                'komentar' => $data['komentar'] ?? null,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            return redirect()->route('assessment.result', $session);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Terima kasih atas penilaian Anda!']);
 

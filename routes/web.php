@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AssessmentFeedbackController;
@@ -224,16 +225,16 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/targets/{level}', [AdminController::class, 'updateTarget'])->name('targets.update');
 
         // User management
-        Route::get('/users/export', [AdminController::class, 'exportUsers'])->name('users.export');
-        Route::get('/users/import-template', [AdminController::class, 'importTemplate'])->name('users.import-template');
-        Route::post('/users/import', [AdminController::class, 'importUsers'])->name('users.import');
-        Route::get('/users/create', [AdminController::class, 'createUser'])->name('users.create');
-        Route::post('/users', [AdminController::class, 'storeUser'])->name('users.store');
-        Route::get('/users/{user}/edit', [AdminController::class, 'editUser'])->name('users.edit');
-        Route::put('/users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
-        Route::delete('/users/{user}', [AdminController::class, 'destroyUser'])->name('users.destroy');
-        Route::get('/users', [AdminController::class, 'users'])->name('users');
-        Route::patch('/users/{user}/level', [AdminController::class, 'updateUserLevel'])->name('users.update-level');
+        Route::get('/users/export', [AdminUserController::class, 'exportUsers'])->name('users.export');
+        Route::get('/users/import-template', [AdminUserController::class, 'importTemplate'])->name('users.import-template');
+        Route::post('/users/import', [AdminUserController::class, 'importUsers'])->name('users.import');
+        Route::get('/users/create', [AdminUserController::class, 'createUser'])->name('users.create');
+        Route::post('/users', [AdminUserController::class, 'storeUser'])->name('users.store');
+        Route::get('/users/{user}/edit', [AdminUserController::class, 'editUser'])->name('users.edit');
+        Route::put('/users/{user}', [AdminUserController::class, 'updateUser'])->name('users.update');
+        Route::delete('/users/{user}', [AdminUserController::class, 'destroyUser'])->name('users.destroy');
+        Route::get('/users', [AdminUserController::class, 'users'])->name('users');
+        Route::patch('/users/{user}/level', [AdminUserController::class, 'updateUserLevel'])->name('users.update-level');
 
         // Sites management
         Route::get('/sites', [SiteController::class, 'index'])->name('sites.index');

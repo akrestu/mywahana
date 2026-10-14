@@ -8,13 +8,12 @@ use App\Models\AssessmentSessionQuestion;
 use App\Models\InductionAttendance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class AssessmentController extends Controller
 {
-    private const PASSING_PERCENTAGE = 80;
-
     private const STAFF_QUESTION_COUNT = 30;
 
     private const NS_QUESTION_COUNT = 25;
@@ -49,6 +48,12 @@ class AssessmentController extends Controller
     {
         $user = Auth::user();
 
+        // Kunci per user agar klik ganda tidak membuat dua sesi sekaligus.
+        return Cache::lock("assessment-start:{$user->id}", 10)->block(5, fn () => $this->startSession($user));
+    }
+
+    private function startSession($user)
+    {
         abort_unless((bool) $user->departemen, 403, 'Departemen belum diisi.');
 
         $todayInProgress = AssessmentSession::where('user_id', $user->id)
@@ -192,47 +197,7 @@ class AssessmentController extends Controller
             'answers.*' => ['nullable', 'integer', 'min:1', 'max:4'],
         ])['answers'];
 
-        DB::transaction(function () use ($session, $answers) {
-            $score = 0;
-
-            foreach ($session->sessionQuestions as $sq) {
-                $jawabanUser = $answers[$sq->id] ?? null;
-                $isCorrect = $jawabanUser !== null
-                    && (int) $jawabanUser === $sq->correctAnswer();
-
-                $sq->update([
-                    'jawaban_user' => $jawabanUser,
-                    'is_correct' => $isCorrect,
-                ]);
-
-                if ($isCorrect) {
-                    $score++;
-                }
-            }
-
-            $percentage = $session->total_questions > 0
-                ? round(($score / $session->total_questions) * 100, 2)
-                : 0;
-
-            $session->update([
-                'status' => 'completed',
-                'score' => $score,
-                'percentage' => $percentage,
-                'passed' => $percentage >= self::PASSING_PERCENTAGE,
-                'completed_at' => now(),
-            ]);
-
-            if ($percentage >= self::PASSING_PERCENTAGE) {
-                InductionAttendance::firstOrCreate(
-                    ['user_id' => $session->user_id, 'type' => 'safety'],
-                    [
-                        'assessment_session_id' => $session->id,
-                        'assessment_session_type' => 'safety',
-                        'attended_at' => now(),
-                    ]
-                );
-            }
-        });
+        $session->grade($answers);
 
         return redirect()->route('assessment.result', $session);
     }

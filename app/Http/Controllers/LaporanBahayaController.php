@@ -13,7 +13,6 @@ use App\Services\BadgeService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -106,13 +105,7 @@ class LaporanBahayaController extends Controller
 
         $fotoPath = null;
         if ($request->hasFile('foto')) {
-            $userId = $request->user()->id;
-            $filename = Str::uuid().'.jpg';
-            $relativePath = "laporan-bahaya/{$userId}/{$filename}";
-
-            Storage::disk('public')->put($relativePath, file_get_contents($request->file('foto')->getRealPath()));
-
-            $fotoPath = $relativePath;
+            $fotoPath = $request->file('foto')->store("laporan-bahaya/{$request->user()->id}", 'public');
         }
 
         $record = $reporter->laporanBahayas()->create([
@@ -182,10 +175,9 @@ class LaporanBahayaController extends Controller
         $paths = [];
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
-                $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
-                $dir = "laporan-bahaya/reviews/{$laporanBahaya->id}";
-                $path = Storage::disk('public')->putFileAs($dir, $file, $filename);
-                $paths[] = $path;
+                // Ekstensi diambil dari isi file (bukan nama dari klien) agar file
+                // seperti "x.php" berisi JPEG tidak tersimpan sebagai skrip.
+                $paths[] = $file->store("laporan-bahaya/reviews/{$laporanBahaya->id}", 'public');
             }
         }
 
@@ -212,7 +204,9 @@ class LaporanBahayaController extends Controller
     public function exportPdf(Request $request, LaporanBahaya $laporanBahaya)
     {
         abort_unless(
-            $request->user()->is_admin || $request->user()->id === $laporanBahaya->user_id,
+            $request->user()->is_admin
+                || $request->user()->id === $laporanBahaya->user_id
+                || $request->user()->id === $laporanBahaya->pic_user_id,
             403
         );
 
