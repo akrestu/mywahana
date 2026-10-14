@@ -1,1 +1,0 @@
-import{a as e,o as t}from"./createLucideIcon-b9TIzHHY.js";import{t as n}from"./InspeksiMonitor-DULLeY9i.js";var r=t(),i=e();function a(e){let t=(0,r.c)(2),a;return t[0]===e?a=t[1]:(a=(0,i.jsx)(n,{...e,slug:`kantor`,label:`Kantor`,heading:`Inspeksi Area Kantor`}),t[0]=e,t[1]=a),a}export{a as default};
