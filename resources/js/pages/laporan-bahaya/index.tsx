@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { AlertTriangle, CalendarDays, ChevronRight, MapPin, Plus, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { RiskBadge } from '@/components/risk-badge';
@@ -145,7 +145,9 @@ function RecordList({ records, showReporter = false, emptyMessage, emptyDesc }: 
 }
 
 export default function LaporanBahayaIndex({ myRecords, picRecords, pendingPicCount }: Props) {
-    const [tab, setTab] = useState<'my' | 'pic'>('my');
+    // ?tab=pic dari reminder dashboard langsung membuka laporan yang ditugaskan.
+    const { url } = usePage();
+    const [tab, setTab] = useState<'my' | 'pic'>(() => (new URLSearchParams(url.split('?')[1] ?? '').get('tab') === 'pic' ? 'pic' : 'my'));
 
     return (
         <>

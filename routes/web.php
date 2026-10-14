@@ -9,6 +9,7 @@ use App\Http\Controllers\BugarSelamatController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HrAssessmentController;
 use App\Http\Controllers\HrAssessmentQuestionController;
+use App\Http\Controllers\InspeksiController;
 use App\Http\Controllers\InspeksiKantorController;
 use App\Http\Controllers\InspeksiMessController;
 use App\Http\Controllers\InspeksiTambangController;
@@ -50,6 +51,9 @@ Route::middleware(['auth'])->group(function () {
             ->name('observasi-keselamatan.konfirmasi.store');
         Route::post('observasi-keselamatan/{observasiKeselamatan}/tolak', [ObservasiKeselamatanController::class, 'tolakKonfirmasi'])
             ->name('observasi-keselamatan.tolak');
+
+        // Daftar gabungan semua jenis inspeksi
+        Route::get('inspeksi', [InspeksiController::class, 'index'])->name('inspeksi.index');
 
         // Inspeksi Kantor
         Route::resource('inspeksi-kantor', InspeksiKantorController::class)

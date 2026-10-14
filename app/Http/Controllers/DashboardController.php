@@ -17,6 +17,7 @@ use App\Models\UserBadge;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -42,17 +43,10 @@ class DashboardController extends Controller
 
         $stats = [
             'bugar_selamat' => [
-                'total' => (clone $bugarQuery)->count(),
                 'bulan_ini' => (clone $bugarQuery)->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
-                'layak' => (clone $bugarQuery)->where('status_kelayakan', 'layak')->count(),
-                'catatan' => (clone $bugarQuery)->where('status_kelayakan', 'catatan')->count(),
-                'dilarang' => (clone $bugarQuery)->where('status_kelayakan', 'dilarang')->count(),
             ],
             'laporan_bahaya' => [
-                'total' => (clone $laporanQuery)->count(),
                 'bulan_ini' => (clone $laporanQuery)->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
-                'pending' => (clone $laporanQuery)->where('status_tindakan', 'pending')->count(),
-                'selesai' => (clone $laporanQuery)->where('status_tindakan', 'close')->count(),
             ],
         ];
 
@@ -91,13 +85,17 @@ class DashboardController extends Controller
                 ->get(['id', 'tanggal', 'lokasi', 'judul_dokumen', 'status'])
             : collect();
 
-        $trend = $this->buildUserMonthlyTrend($user->id, $now);
-
         // Streak
         $streak = $user->currentStreak();
 
-        // Leaderboard site user
-        $leaderboard = $this->buildLeaderboard($now);
+        // Leaderboard hanya untuk site user; di-cache karena sama untuk semua user di site itu.
+        $leaderboard = $user->site
+            ? [$user->site => Cache::remember(
+                "dashboard:leaderboard:{$user->site}:{$now->format('Y-m')}",
+                now()->addMinutes(5),
+                fn () => $this->buildSiteLeaderboard($user->site, $now),
+            )]
+            : [];
 
         // Target partisipasi
         $target = $this->buildUserTarget($user, $now);
@@ -148,12 +146,15 @@ class DashboardController extends Controller
                 ->count()
             : 0;
 
+        // Per jenis agar dashboard bisa menautkan ke halaman inspeksi yang tepat.
         $myPendingInspeksi = $isStaff
-            ? InspeksiKantor::where('user_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count()
-              + InspeksiTambang::where('user_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count()
-              + InspeksiWorkshop::where('user_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count()
-              + InspeksiMess::where('user_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count()
-            : 0;
+            ? [
+                'kantor' => InspeksiKantor::where('user_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count(),
+                'tambang' => InspeksiTambang::where('user_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count(),
+                'workshop' => InspeksiWorkshop::where('user_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count(),
+                'mess' => InspeksiMess::where('user_id', $user->id)->where('status', 'menunggu_re_inspeksi')->count(),
+            ]
+            : null;
 
         // Badge terbaru (yang diraih dalam 7 hari terakhir)
         $new_badges = $user->badges()
@@ -174,7 +175,6 @@ class DashboardController extends Controller
             'recent_observasi' => $recent_observasi,
             'recent_inspeksi' => $recent_inspeksi,
             'recent_jsa' => $recent_jsa,
-            'trend' => $trend,
             'streak' => $streak,
             'leaderboard' => $leaderboard,
             'target' => $target,
@@ -571,9 +571,8 @@ class DashboardController extends Controller
         return ['weeks' => $weeks, 'employees' => $employees];
     }
 
-    private function buildLeaderboard(Carbon $now): array
+    private function buildSiteLeaderboard(string $site, Carbon $now): array
     {
-        $sites = Site::pluck('value')->all();
         $result = [];
         $m = $now->month;
         $y = $now->year;
@@ -585,60 +584,59 @@ class DashboardController extends Controller
             'avatar' => $u->avatar ? asset('storage/'.$u->avatar) : null,
         ];
 
-        foreach ($sites as $site) {
-            $base = fn () => User::where('is_admin', false)->where('site', $site);
+        $base = fn () => User::where('is_admin', false)->where('site', $site);
 
-            // 1. Bugar Selamat — jumlah submission bulan ini
-            $result[$site]['bugar_selamat'] = $base()
-                ->withCount(['bugarSelamats as skor' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y)])
-                ->get(['id', 'name', 'jabatan', 'avatar'])
-                ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) $u->skor]))
-                ->filter(fn ($u) => $u['skor'] > 0)
-                ->sortByDesc('skor')->values()->take(5);
+        // 1. Bugar Selamat — jumlah submission bulan ini
+        $result['bugar_selamat'] = $base()
+            ->withCount(['bugarSelamats as skor' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y)])
+            ->get(['id', 'name', 'jabatan', 'avatar'])
+            ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) $u->skor]))
+            ->filter(fn ($u) => $u['skor'] > 0)
+            ->sortByDesc('skor')->values()->take(5);
 
-            // 2. Laporan Bahaya — total poin risiko (AA=4, A=3, B=2, C=1)
-            $lbRows = LaporanBahaya::where(fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y))
-                ->selectRaw('user_id, SUM(CASE tingkat_risiko WHEN \'AA\' THEN 4 WHEN \'A\' THEN 3 WHEN \'B\' THEN 2 ELSE 1 END) as skor')
-                ->groupBy('user_id')
-                ->pluck('skor', 'user_id');
+        // 2. Laporan Bahaya — total poin risiko (AA=4, A=3, B=2, C=1)
+        $lbRows = LaporanBahaya::where(fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y))
+            ->whereIn('user_id', $base()->select('id'))
+            ->selectRaw('user_id, SUM(CASE tingkat_risiko WHEN \'AA\' THEN 4 WHEN \'A\' THEN 3 WHEN \'B\' THEN 2 ELSE 1 END) as skor')
+            ->groupBy('user_id')
+            ->pluck('skor', 'user_id');
 
-            $result[$site]['laporan_bahaya'] = $base()
-                ->get(['id', 'name', 'jabatan', 'avatar'])
-                ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) ($lbRows[$u->id] ?? 0)]))
-                ->filter(fn ($u) => $u['skor'] > 0)
-                ->sortByDesc('skor')->values()->take(5);
+        $result['laporan_bahaya'] = $base()
+            ->get(['id', 'name', 'jabatan', 'avatar'])
+            ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) ($lbRows[$u->id] ?? 0)]))
+            ->filter(fn ($u) => $u['skor'] > 0)
+            ->sortByDesc('skor')->values()->take(5);
 
-            // 3. Observasi Keselamatan — jumlah
-            $result[$site]['observasi_keselamatan'] = $base()
-                ->withCount(['observasiKeselamatans as skor' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y)])
-                ->get(['id', 'name', 'jabatan', 'avatar'])
-                ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) $u->skor]))
-                ->filter(fn ($u) => $u['skor'] > 0)
-                ->sortByDesc('skor')->values()->take(5);
+        // 3. Observasi Keselamatan — jumlah
+        $result['observasi_keselamatan'] = $base()
+            ->withCount(['observasiKeselamatans as skor' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y)])
+            ->get(['id', 'name', 'jabatan', 'avatar'])
+            ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) $u->skor]))
+            ->filter(fn ($u) => $u['skor'] > 0)
+            ->sortByDesc('skor')->values()->take(5);
 
-            // 4. Komunikasi JSA — jumlah
-            $result[$site]['komunikasi_jsa'] = $base()
-                ->withCount(['komunikasiJsas as skor' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y)])
-                ->get(['id', 'name', 'jabatan', 'avatar'])
-                ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) $u->skor]))
-                ->filter(fn ($u) => $u['skor'] > 0)
-                ->sortByDesc('skor')->values()->take(5);
+        // 4. Komunikasi JSA — jumlah
+        $result['komunikasi_jsa'] = $base()
+            ->withCount(['komunikasiJsas as skor' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y)])
+            ->get(['id', 'name', 'jabatan', 'avatar'])
+            ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) $u->skor]))
+            ->filter(fn ($u) => $u['skor'] > 0)
+            ->sortByDesc('skor')->values()->take(5);
 
-            // 5. Inspeksi — gabungan 4 tabel
-            $result[$site]['inspeksi'] = $base()
-                ->withCount([
-                    'inspeksiTambangs as it_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
-                    'inspeksiKantors as ik_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
-                    'inspeksiMesses as im_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
-                    'inspeksiWorkshops as iw_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
-                ])
-                ->get(['id', 'name', 'jabatan', 'avatar'])
-                ->map(fn ($u) => array_merge($mapUser($u), [
-                    'skor' => (int) $u->it_count + (int) $u->ik_count + (int) $u->im_count + (int) $u->iw_count,
-                ]))
-                ->filter(fn ($u) => $u['skor'] > 0)
-                ->sortByDesc('skor')->values()->take(5);
-        }
+        // 5. Inspeksi — gabungan 4 tabel
+        $result['inspeksi'] = $base()
+            ->withCount([
+                'inspeksiTambangs as it_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
+                'inspeksiKantors as ik_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
+                'inspeksiMesses as im_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
+                'inspeksiWorkshops as iw_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
+            ])
+            ->get(['id', 'name', 'jabatan', 'avatar'])
+            ->map(fn ($u) => array_merge($mapUser($u), [
+                'skor' => (int) $u->it_count + (int) $u->ik_count + (int) $u->im_count + (int) $u->iw_count,
+            ]))
+            ->filter(fn ($u) => $u['skor'] > 0)
+            ->sortByDesc('skor')->values()->take(5);
 
         return $result;
     }
@@ -783,38 +781,6 @@ class DashboardController extends Controller
             'observasi' => $observasi,
             'jsa' => $jsa,
         ];
-    }
-
-    private function buildUserMonthlyTrend(int $userId, Carbon $now): array
-    {
-        $months = collect(range(5, 0))->map(fn ($i) => $now->copy()->subMonths($i));
-
-        $bugarData = BugarSelamat::where('user_id', $userId)
-            ->where('tanggal', '>=', $now->copy()->subMonths(5)->startOfMonth())
-            ->selectRaw($this->monthSelect('tanggal').', status_kelayakan, COUNT(*) as total')
-            ->groupBy('month', 'status_kelayakan')
-            ->get();
-
-        $laporanData = LaporanBahaya::where('user_id', $userId)
-            ->where('tanggal', '>=', $now->copy()->subMonths(5)->startOfMonth())
-            ->selectRaw($this->monthSelect('tanggal').', COUNT(*) as total')
-            ->groupBy('month')
-            ->get()
-            ->keyBy('month');
-
-        return $months->map(function (Carbon $month) use ($bugarData, $laporanData) {
-            $key = $month->format('Y-m');
-            $label = $month->locale('id')->isoFormat('MMM YY');
-            $bugar = $bugarData->where('month', $key);
-
-            return [
-                'label' => $label,
-                'layak' => $bugar->where('status_kelayakan', 'layak')->sum('total'),
-                'catatan' => $bugar->where('status_kelayakan', 'catatan')->sum('total'),
-                'dilarang' => $bugar->where('status_kelayakan', 'dilarang')->sum('total'),
-                'laporan' => (int) ($laporanData[$key]->total ?? 0),
-            ];
-        })->values()->toArray();
     }
 
     private function buildAdminMonthlyTrend(Carbon $now): array

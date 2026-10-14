@@ -114,7 +114,6 @@ type Props = {
     recent_observasi?: RecentObservasi[];
     recent_inspeksi?: RecentInspeksi[];
     recent_jsa?: RecentJsa[];
-    trend: unknown[];
     streak?: number;
     leaderboard?: Record<string, SiteLeaderboard>;
     target?: TargetInfo;
@@ -124,7 +123,7 @@ type Props = {
     pending_jsa_tl?: number;
     my_pending_observasi?: number;
     my_pending_jsa?: number;
-    my_pending_inspeksi?: number;
+    my_pending_inspeksi?: { kantor: number; tambang: number; workshop: number; mess: number } | null;
     pending_as_pic?: number;
     my_open_with_pic?: number;
 };
@@ -295,6 +294,21 @@ const jenisTindakanLabels: Record<RecentLaporanBahaya['status_tindakan'], string
     pending: 'Pending', continue: 'Continue', progress: 'Progress', close: 'Selesai',
 };
 
+const INSPEKSI_JENIS = [
+    { key: 'kantor', label: 'Kantor' },
+    { key: 'tambang', label: 'Tambang' },
+    { key: 'workshop', label: 'Workshop' },
+    { key: 'mess', label: 'Mess' },
+] as const;
+
+const RIWAYAT_SEMUA = {
+    bugar: { href: '/bugar-selamat', label: 'Bugar Selamat' },
+    laporan: { href: '/laporan-bahaya', label: 'Laporan Bahaya' },
+    observasi: { href: '/sap/observasi-keselamatan', label: 'Observasi' },
+    inspeksi: { href: '/sap/inspeksi', label: 'Inspeksi' },
+    jsa: { href: '/sap/komunikasi-jsa', label: 'JSA' },
+} as const;
+
 export default function Dashboard({
     stats = defaultStats,
     recent_bugar_selamat = [],
@@ -311,7 +325,7 @@ export default function Dashboard({
     pending_jsa_tl = 0,
     my_pending_observasi = 0,
     my_pending_jsa = 0,
-    my_pending_inspeksi = 0,
+    my_pending_inspeksi = null,
     pending_as_pic = 0,
     my_open_with_pic = 0,
 }: Props) {
@@ -491,27 +505,6 @@ export default function Dashboard({
                     </Link>
                 )}
 
-                {/* ④ BADGE BARU (kondisional) */}
-                {visibleBadges.length > 0 && (
-                    <div className="relative rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-3 dark:border-yellow-700 dark:bg-yellow-950">
-                        <button
-                            onClick={dismissBadges}
-                            className="absolute right-2 top-2 rounded-md p-1 text-yellow-600 hover:bg-yellow-200 dark:text-yellow-400 dark:hover:bg-yellow-800 transition-colors"
-                            aria-label="Tutup notifikasi badge"
-                        >
-                            <X size={14} />
-                        </button>
-                        <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-200 mb-2 pr-6">🎉 Selamat! Pencapaian baru diraih:</p>
-                        <div className="flex flex-wrap gap-2">
-                            {visibleBadges.map((b) => (
-                                <span key={b.key} className="flex items-center gap-1 rounded-full bg-yellow-200 dark:bg-yellow-800 px-3 py-1 text-xs font-semibold text-yellow-900 dark:text-yellow-100">
-                                    {b.icon} {b.nama}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {/* ④b PERLU TINDAKAN — semua reminder terpusat di sini */}
                 {(() => {
                     const actionItems = ([
@@ -524,14 +517,22 @@ export default function Dashboard({
                               ]
                             : []),
                         { label: 'Konfirmasi Form OK', href: '/sap/observasi-keselamatan', count: pending_form_ok, icon: <Eye className="h-4 w-4" />, tone: 'purple' },
-                        { label: 'Tanda tangan JSA (sebagai TL)', href: '/komunikasi-jsa?filter=pending', count: pending_jsa_tl, icon: <BookOpen className="h-4 w-4" />, tone: 'indigo' },
-                        { label: 'Laporan bahaya — Anda PIC-nya', href: '/laporan-bahaya?filter=pic', count: pending_as_pic, icon: <BriefcaseBusiness className="h-4 w-4" />, tone: 'orange' },
+                        { label: 'Tanda tangan JSA (sebagai TL)', href: '/sap/komunikasi-jsa', count: pending_jsa_tl, icon: <BookOpen className="h-4 w-4" />, tone: 'indigo' },
+                        { label: 'Laporan bahaya — Anda PIC-nya', href: '/laporan-bahaya?tab=pic', count: pending_as_pic, icon: <BriefcaseBusiness className="h-4 w-4" />, tone: 'orange' },
                     ] satisfies ReminderItem[]).filter(item => item.count > 0);
 
                     const waitingItems = ([
-                        { label: 'Form OK Anda — menunggu approval', href: '/observasi-keselamatan?filter=pending', count: my_pending_observasi, icon: <Eye className="h-4 w-4" />, tone: 'amber' },
-                        { label: 'Inspeksi Anda — menunggu approval', href: '/inspeksi?filter=pending', count: my_pending_inspeksi, icon: <ClipboardCheck className="h-4 w-4" />, tone: 'amber' },
-                        { label: 'JSA Anda — menunggu approval', href: '/komunikasi-jsa?filter=pending', count: my_pending_jsa, icon: <BookOpen className="h-4 w-4" />, tone: 'amber' },
+                        { label: 'Form OK Anda — menunggu approval', href: '/sap/observasi-keselamatan', count: my_pending_observasi, icon: <Eye className="h-4 w-4" />, tone: 'amber' },
+                        ...(my_pending_inspeksi
+                            ? INSPEKSI_JENIS.map(({ key, label }) => ({
+                                  label: `Inspeksi ${label} Anda — menunggu approval`,
+                                  href: `/sap/inspeksi-${key}`,
+                                  count: my_pending_inspeksi[key],
+                                  icon: <ClipboardCheck className="h-4 w-4" />,
+                                  tone: 'amber' as const,
+                              }))
+                            : []),
+                        { label: 'JSA Anda — menunggu approval', href: '/sap/komunikasi-jsa', count: my_pending_jsa, icon: <BookOpen className="h-4 w-4" />, tone: 'amber' },
                         { label: 'Laporan Anda — PIC belum closing', href: '/laporan-bahaya', count: my_open_with_pic, icon: <Clock className="h-4 w-4" />, tone: 'red' },
                     ] satisfies ReminderItem[]).filter(item => item.count > 0);
 
@@ -578,17 +579,44 @@ export default function Dashboard({
                     );
                 })()}
 
+                {/* ④ BADGE BARU (kondisional) */}
+                {visibleBadges.length > 0 && (
+                    <div className="relative rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-3 dark:border-yellow-700 dark:bg-yellow-950">
+                        <button
+                            onClick={dismissBadges}
+                            className="absolute right-2 top-2 rounded-md p-1 text-yellow-600 hover:bg-yellow-200 dark:text-yellow-400 dark:hover:bg-yellow-800 transition-colors"
+                            aria-label="Tutup notifikasi badge"
+                        >
+                            <X size={14} />
+                        </button>
+                        <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-200 mb-2 pr-6">🎉 Selamat! Pencapaian baru diraih:</p>
+                        <div className="flex flex-wrap gap-2">
+                            {visibleBadges.map((b) => (
+                                <span key={b.key} className="flex items-center gap-1 rounded-full bg-yellow-200 dark:bg-yellow-800 px-3 py-1 text-xs font-semibold text-yellow-900 dark:text-yellow-100">
+                                    {b.icon} {b.nama}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* ⑤ TOMBOL AKSI UTAMA */}
                 <div className="flex flex-col gap-2">
                     <div className="grid grid-cols-2 gap-3">
                         <Link href="/bugar-selamat/create" className="block">
-                            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-green-300 bg-green-50 px-3 py-4 text-center active:scale-95 transition-transform dark:border-green-700 dark:bg-green-950">
+                            <div className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 px-3 py-4 text-center active:scale-95 transition-transform ${
+                                sudahIsiBugarHariIni
+                                    ? 'border-border bg-muted/40'
+                                    : 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950'
+                            }`}>
                                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-200 dark:bg-green-800">
                                     <ClipboardCheck className="h-6 w-6 text-green-700 dark:text-green-300" />
                                 </div>
                                 <div>
                                     <p className="text-sm font-bold text-green-900 dark:text-green-100">Bugar Selamat</p>
-                                    <p className="text-[11px] text-green-600 dark:text-green-400">Checklist layak kerja</p>
+                                    <p className="text-[11px] text-green-600 dark:text-green-400">
+                                        {sudahIsiBugarHariIni ? 'Sudah diisi hari ini ✓' : 'Checklist layak kerja'}
+                                    </p>
                                 </div>
                             </div>
                         </Link>
@@ -839,18 +867,6 @@ export default function Dashboard({
                                 </button>
                             </>
                         )}
-                        <div className="flex-1 shrink-0" />
-                        <Link href={
-                            riwayatTab === 'bugar' ? '/bugar-selamat' :
-                            riwayatTab === 'laporan' ? '/laporan-bahaya' :
-                            riwayatTab === 'observasi' ? '/observasi-keselamatan' :
-                            riwayatTab === 'inspeksi' ? '/inspeksi' :
-                            '/komunikasi-jsa'
-                        }>
-                            <Button variant="ghost" size="sm" className="h-7 gap-0.5 text-xs px-2 shrink-0">
-                                Semua <ChevronRight size={12} />
-                            </Button>
-                        </Link>
                     </div>
                     <CardContent className="pt-0">
                         {riwayatTab === 'bugar' && (
@@ -904,7 +920,7 @@ export default function Dashboard({
                             recent_observasi.length > 0 ? (
                                 <div className="space-y-1">
                                     {recent_observasi.slice(0, 3).map((r) => (
-                                        <Link key={r.id} href={`/observasi-keselamatan/${r.id}`}>
+                                        <Link key={r.id} href={`/sap/observasi-keselamatan/${r.id}`}>
                                             <div className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-accent transition-colors">
                                                 <div className="min-w-0 flex-1">
                                                     <p className="text-sm font-medium">{fmtDate(r.tanggal)}</p>
@@ -919,14 +935,15 @@ export default function Dashboard({
                                     ))}
                                 </div>
                             ) : (
-                                <EmptyState message="Belum ada observasi." href="/observasi-keselamatan/create" label="Buat Sekarang" />
+                                <EmptyState message="Belum ada observasi." href="/sap/observasi-keselamatan/create" label="Buat Sekarang" />
                             )
                         )}
                         {riwayatTab === 'inspeksi' && (
                             recent_inspeksi.length > 0 ? (
                                 <div className="space-y-1">
                                     {recent_inspeksi.slice(0, 3).map((r) => (
-                                        <div key={`${r.jenis}-${r.id}`} className="flex items-center justify-between rounded-xl px-3 py-2 bg-muted/30">
+                                        <Link key={`${r.jenis}-${r.id}`} href={`/sap/inspeksi-${r.jenis.toLowerCase()}/${r.id}`}>
+                                        <div className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-accent transition-colors">
                                             <div>
                                                 <p className="text-sm font-medium">{fmtDate(r.tanggal)}</p>
                                                 <p className="text-xs text-muted-foreground">Inspeksi {r.jenis}</p>
@@ -936,19 +953,21 @@ export default function Dashboard({
                                                     <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold uppercase">{r.risk_level}</span>
                                                 )}
                                                 <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize">{r.status.replace(/_/g, ' ')}</span>
+                                                <ChevronRight size={12} className="text-muted-foreground" />
                                             </div>
                                         </div>
+                                        </Link>
                                     ))}
                                 </div>
                             ) : (
-                                <EmptyState message="Belum ada inspeksi." href="/inspeksi" label="Lihat Inspeksi" />
+                                <EmptyState message="Belum ada inspeksi." href="/sap/inspeksi" label="Buat Inspeksi" />
                             )
                         )}
                         {riwayatTab === 'jsa' && (
                             recent_jsa.length > 0 ? (
                                 <div className="space-y-1">
                                     {recent_jsa.slice(0, 3).map((r) => (
-                                        <Link key={r.id} href={`/komunikasi-jsa/${r.id}`}>
+                                        <Link key={r.id} href={`/sap/komunikasi-jsa/${r.id}`}>
                                             <div className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-accent transition-colors">
                                                 <div className="min-w-0 flex-1">
                                                     <p className="text-sm font-medium">{fmtDate(r.tanggal)}</p>
@@ -963,9 +982,16 @@ export default function Dashboard({
                                     ))}
                                 </div>
                             ) : (
-                                <EmptyState message="Belum ada JSA." href="/komunikasi-jsa/create" label="Buat Sekarang" />
+                                <EmptyState message="Belum ada JSA." href="/sap/komunikasi-jsa/create" label="Buat Sekarang" />
                             )
                         )}
+                        {/* Di bawah daftar dan menyebut jenisnya, agar jelas mengikuti tab yang aktif. */}
+                        <Link
+                            href={RIWAYAT_SEMUA[riwayatTab].href}
+                            className="mt-2 flex items-center justify-center gap-1 rounded-xl py-2.5 text-xs font-semibold text-primary hover:bg-accent"
+                        >
+                            Lihat semua {RIWAYAT_SEMUA[riwayatTab].label} <ChevronRight size={14} />
+                        </Link>
                     </CardContent>
                 </Card>
 
