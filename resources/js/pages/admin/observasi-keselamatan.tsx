@@ -254,16 +254,16 @@ return;
                                             record.status === 'dikonfirmasi' ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-yellow-500',
                                         )}>
                                             <p className="truncate max-w-[160px] font-medium">{record.user.name}</p>
-                                            {record.user.site && <p className="text-[10px] text-muted-foreground">{record.user.site}</p>}
+                                            {record.user.site && <p className="text-[11px] text-muted-foreground">{record.user.site}</p>}
                                         </td>
                                         <td className="px-2 py-2 text-muted-foreground">
                                             <p className="truncate max-w-[160px]">{record.lokasi_kerja}</p>
-                                            <p className="text-[10px]">{record.jenis_pekerjaan}</p>
+                                            <p className="text-[11px]">{record.jenis_pekerjaan}</p>
                                         </td>
                                         <td className="px-2 py-2 text-muted-foreground">{record.penanggung_jawab?.name ?? '—'}</td>
                                         <td className="px-2 py-2 text-center">
                                             <Badge variant="outline" className={cn(
-                                                'gap-1 text-[10px]',
+                                                'gap-1 text-[11px]',
                                                 record.status === 'dikonfirmasi' ? 'border-green-400 text-green-700' : 'border-yellow-400 text-yellow-700',
                                             )}>
                                                 {record.status === 'dikonfirmasi'

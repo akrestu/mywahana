@@ -300,11 +300,11 @@ return;
                                         )}
                                         <td className={cn('px-3 py-2', statusRowBorder(record.status))}>
                                             <p className="truncate max-w-[160px] font-medium">{record.user.name}</p>
-                                            {record.user.site && <p className="text-[10px] text-muted-foreground">{record.user.site}</p>}
+                                            {record.user.site && <p className="text-[11px] text-muted-foreground">{record.user.site}</p>}
                                         </td>
                                         <td className="px-2 py-2 text-muted-foreground">
                                             <p className="truncate max-w-[140px]">{record.project_site}</p>
-                                            <p className="text-[10px]">{record.departemen}</p>
+                                            <p className="text-[11px]">{record.departemen}</p>
                                         </td>
                                         <td className="px-2 py-2 text-muted-foreground">{record.re_inspektor?.name ?? '—'}</td>
                                         <td className="px-2 py-2 text-center"><StatusBadge status={record.status} /></td>

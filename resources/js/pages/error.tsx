@@ -1,8 +1,8 @@
-import { Head, router } from '@inertiajs/react';
-import { RefreshCw } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Home, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type Props = { status: number };
+type Props = { status: number; message?: string | null };
 
 const ERROR_CFG: Record<
     number,
@@ -23,6 +23,11 @@ const ERROR_CFG: Record<
         title: 'Sesi Kedaluwarsa',
         desc: 'Halaman ini sudah terlalu lama dibuka. Muat ulang untuk melanjutkan.',
         canRetry: true,
+    },
+    422: {
+        emoji: '📝',
+        title: 'Permintaan Tidak Dapat Diproses',
+        desc: 'Data yang dibutuhkan belum lengkap. Hubungi admin jika masalah berlanjut.',
     },
     429: {
         emoji: '🐢',
@@ -51,7 +56,7 @@ const FALLBACK = {
     canRetry: true,
 };
 
-export default function ErrorPage({ status }: Props) {
+export default function ErrorPage({ status, message }: Props) {
     const cfg = ERROR_CFG[status] ?? FALLBACK;
 
     return (
@@ -73,20 +78,29 @@ export default function ErrorPage({ status }: Props) {
                     <div className="space-y-2">
                         <h1 className="text-xl font-bold">{cfg.title}</h1>
                         <p className="text-sm leading-relaxed text-muted-foreground">
-                            {cfg.desc}
+                            {message || cfg.desc}
                         </p>
                     </div>
 
-                    {cfg.canRetry && (
-                        <div className="flex w-full flex-col gap-2.5 pt-2">
+                    <div className="flex w-full flex-col gap-2.5 pt-2">
+                        {cfg.canRetry && (
                             <Button
                                 onClick={() => router.reload()}
                                 className="h-12 w-full gap-2 text-base font-bold"
                             >
                                 <RefreshCw size={17} /> Muat Ulang
                             </Button>
-                        </div>
-                    )}
+                        )}
+                        <Button
+                            asChild
+                            variant={cfg.canRetry ? 'outline' : 'default'}
+                            className="h-12 w-full gap-2 text-base font-bold"
+                        >
+                            <Link href="/home">
+                                <Home size={17} /> Kembali ke Beranda
+                            </Link>
+                        </Button>
+                    </div>
 
                     <p className="pt-4 text-xs text-muted-foreground/60">
                         Datang sehat — kerja aman — pulang selamat

@@ -423,7 +423,7 @@ setImportOpen(open);
                             { n: 3, label: 'Upload file' },
                         ].map((step, i) => (
                             <div key={step.n} className="flex flex-1 items-center gap-1.5">
-                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
                                     {step.n}
                                 </div>
                                 <span className="text-xs text-muted-foreground leading-tight">{step.label}</span>

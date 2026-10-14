@@ -184,7 +184,7 @@ export default function LaporanBahayaIndex({ myRecords, picRecords, pendingPicCo
                         >
                             {t.label}
                             {'count' in t && t.count > 0 && (
-                                <span className="flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] text-white font-bold">
+                                <span className="flex size-4 items-center justify-center rounded-full bg-destructive text-[11px] text-white font-bold">
                                     {t.count}
                                 </span>
                             )}

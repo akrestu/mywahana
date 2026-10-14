@@ -340,7 +340,7 @@ p.set('date_to', filters.date_to);
                                         <td className={`px-3 py-2 border-l-4 ${barColor(record.status)}`}>
                                             <div className="mb-1 flex flex-wrap items-center gap-1">
                                                 <StatusBadge status={record.status} />
-                                                <Badge variant="outline" className="text-[10px] capitalize">{record.shift}</Badge>
+                                                <Badge variant="outline" className="text-[11px] capitalize">{record.shift}</Badge>
                                             </div>
                                             <p className="flex items-center gap-1 truncate max-w-[180px] font-medium">
                                                 <BookOpen size={11} className="shrink-0 text-muted-foreground" />
@@ -349,7 +349,7 @@ p.set('date_to', filters.date_to);
                                         </td>
                                         <td className="px-2 py-2 text-muted-foreground">
                                             <p className="truncate max-w-[140px] font-medium text-foreground">{record.user.name}</p>
-                                            <p className="text-[10px]">
+                                            <p className="text-[11px]">
                                                 {record.user.nik ?? '—'}{record.user.site && ` · ${record.user.site}`}
                                             </p>
                                         </td>
@@ -357,7 +357,7 @@ p.set('date_to', filters.date_to);
                                             <p className="flex items-center gap-1 truncate max-w-[140px]">
                                                 <MapPin size={11} className="shrink-0" />{record.lokasi}
                                             </p>
-                                            {record.team_leader && <p className="text-[10px]">TL: {record.team_leader.name}</p>}
+                                            {record.team_leader && <p className="text-[11px]">TL: {record.team_leader.name}</p>}
                                         </td>
                                         <td className="px-2 py-2 text-center text-muted-foreground">
                                             <span className="inline-flex items-center gap-1"><Users size={11} />{record.peserta.length}</span>

@@ -175,6 +175,8 @@ class AssessmentController extends Controller
                 'tags' => $session->tags,
                 'total_questions' => $session->total_questions,
                 'started_at' => $session->started_at->toIso8601String(),
+                // Dihitung di server agar timer tidak bergantung pada jam HP peserta.
+                'remaining_seconds' => max(0, AssessmentSession::DURATION_SECONDS - (int) $session->started_at->diffInSeconds(now())),
             ],
             'questions' => $questions,
         ]);
@@ -184,7 +186,10 @@ class AssessmentController extends Controller
     {
         $user = Auth::user();
         abort_unless($session->user_id === $user->id, 403);
-        abort_unless($session->status === 'in_progress', 403);
+        // Sesi sudah dinilai (mis. auto-expire oleh scheduler): arahkan ke hasil, bukan 403.
+        if ($session->status !== 'in_progress') {
+            return redirect()->route('assessment.result', $session);
+        }
 
         if ($session->started_at->addSeconds(AssessmentSession::DURATION_SECONDS + 15)->isPast()) {
             $session->autoExpire();

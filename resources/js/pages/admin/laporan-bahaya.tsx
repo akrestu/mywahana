@@ -372,14 +372,14 @@ p.set('date_to', filters.date_to);
                                         )}
                                         <td className={cn('px-3 py-2', cardBorder[record.tingkat_risiko])}>
                                             <p className="truncate max-w-[160px] font-medium">{record.user.name}</p>
-                                            <p className="text-[10px] text-muted-foreground">
+                                            <p className="text-[11px] text-muted-foreground">
                                                 NIK: {record.user.nik ?? '—'}
                                                 {record.user.site && ` · ${record.user.site.charAt(0).toUpperCase() + record.user.site.slice(1)}`}
                                             </p>
                                         </td>
                                         <td className="px-2 py-2 text-muted-foreground">
                                             <p className="truncate max-w-[140px]">{record.lokasi}</p>
-                                            <p className="text-[10px]">
+                                            <p className="text-[11px]">
                                                 {new Date(record.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                             </p>
                                         </td>
@@ -409,7 +409,7 @@ p.set('date_to', filters.date_to);
                                                         value={record.status_tindakan}
                                                         onChange={(e) => handleStatusUpdate(record.id, e.target.value)}
                                                         disabled={updatingId === record.id}
-                                                        className="h-6 rounded border bg-background px-1 text-[10px] disabled:opacity-50"
+                                                        className="h-6 rounded border bg-background px-1 text-[11px] disabled:opacity-50"
                                                     >
                                                         <option value="pending">Pending</option>
                                                         <option value="continue">Continue</option>

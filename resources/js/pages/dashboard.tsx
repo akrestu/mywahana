@@ -619,7 +619,7 @@ export default function Dashboard({
                                     </div>
                                     <div>
                                         <p className="text-xs font-bold text-amber-900 dark:text-amber-100">JSA/SOP</p>
-                                        <p className="text-[10px] text-amber-600 dark:text-amber-400">Komunikasi JSA</p>
+                                        <p className="text-[11px] text-amber-600 dark:text-amber-400">Komunikasi JSA</p>
                                     </div>
                                 </div>
                             </button>
@@ -633,7 +633,7 @@ export default function Dashboard({
                                             </div>
                                             <div>
                                                 <p className="text-xs font-bold text-teal-900 dark:text-teal-100">Inspeksi ▾</p>
-                                                <p className="text-[10px] text-teal-600 dark:text-teal-400">Pilih area</p>
+                                                <p className="text-[11px] text-teal-600 dark:text-teal-400">Pilih area</p>
                                             </div>
                                         </div>
                                     </button>
@@ -665,7 +665,7 @@ export default function Dashboard({
                                     </div>
                                     <div>
                                         <p className="text-xs font-bold text-violet-900 dark:text-violet-100">Observasi</p>
-                                        <p className="text-[10px] text-violet-600 dark:text-violet-400">Keselamatan</p>
+                                        <p className="text-[11px] text-violet-600 dark:text-violet-400">Keselamatan</p>
                                     </div>
                                 </div>
                             </button>
@@ -782,7 +782,7 @@ export default function Dashboard({
                                         )}
                                         <p className="flex-1 text-sm font-medium truncate">
                                             {entry.name}
-                                            {entry.id === user.id && <span className="ml-1 text-[10px] text-primary font-semibold">(kamu)</span>}
+                                            {entry.id === user.id && <span className="ml-1 text-[11px] text-primary font-semibold">(kamu)</span>}
                                         </p>
                                         <span className="text-sm font-bold text-primary">
                                             {entry.skor}{' '}
@@ -887,7 +887,7 @@ export default function Dashboard({
                                                 </div>
                                                 <div className="ml-2 flex items-center gap-1.5 shrink-0">
                                                     <RiskBadge level={r.tingkat_risiko} />
-                                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${jenisTindakanColors[r.status_tindakan]}`}>
+                                                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${jenisTindakanColors[r.status_tindakan]}`}>
                                                         {jenisTindakanLabels[r.status_tindakan]}
                                                     </span>
                                                     <ChevronRight size={12} className="text-muted-foreground" />
@@ -911,7 +911,7 @@ export default function Dashboard({
                                                     <p className="truncate text-xs text-muted-foreground">{r.lokasi_kerja}</p>
                                                 </div>
                                                 <div className="ml-2 flex items-center gap-1.5 shrink-0">
-                                                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium capitalize">{r.status.replace('_', ' ')}</span>
+                                                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize">{r.status.replace('_', ' ')}</span>
                                                     <ChevronRight size={12} className="text-muted-foreground" />
                                                 </div>
                                             </div>
@@ -933,9 +933,9 @@ export default function Dashboard({
                                             </div>
                                             <div className="flex items-center gap-1.5 shrink-0">
                                                 {r.risk_level && (
-                                                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase">{r.risk_level}</span>
+                                                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold uppercase">{r.risk_level}</span>
                                                 )}
-                                                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium capitalize">{r.status.replace(/_/g, ' ')}</span>
+                                                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize">{r.status.replace(/_/g, ' ')}</span>
                                             </div>
                                         </div>
                                     ))}
@@ -955,7 +955,7 @@ export default function Dashboard({
                                                     <p className="truncate text-xs text-muted-foreground">{r.judul_dokumen}</p>
                                                 </div>
                                                 <div className="ml-2 flex items-center gap-1.5 shrink-0">
-                                                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium capitalize">{r.status.replace(/_/g, ' ')}</span>
+                                                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize">{r.status.replace(/_/g, ' ')}</span>
                                                     <ChevronRight size={12} className="text-muted-foreground" />
                                                 </div>
                                             </div>

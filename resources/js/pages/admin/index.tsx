@@ -210,7 +210,7 @@ function FilterBar({ filter, sites, jabatanOptions, adminSite }: {
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">
                         {activeFilters.length > 0 && (
-                            <span className="rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 leading-none">
+                            <span className="rounded-full bg-primary text-primary-foreground text-[11px] font-bold px-1.5 py-0.5 leading-none">
                                 {activeFilters.length}
                             </span>
                         )}
@@ -260,7 +260,7 @@ function FilterBar({ filter, sites, jabatanOptions, adminSite }: {
                         <div className="flex items-center justify-between">
                             <p className="text-[11px] font-medium text-muted-foreground">Site / Lokasi</p>
                             {adminSite && (
-                                <span className="text-[10px] text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
+                                <span className="text-[11px] text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
                                     otomatis dari akun Anda
                                 </span>
                             )}
@@ -345,7 +345,7 @@ function ActivityCell({ summary }: { summary: ActivitySummary }) {
     return (
         <div className="flex flex-col items-center gap-0.5 py-1">
             <div className={`flex h-5 w-5 items-center justify-center rounded-full ${circleCls}`}>{IconEl}</div>
-            <span className={`text-[9px] font-bold tabular-nums leading-none ${txtCls}`}>
+            <span className={`text-[11px] font-bold tabular-nums leading-none ${txtCls}`}>
                 {met}<span className="font-normal opacity-50">/{total}</span>
             </span>
         </div>
@@ -356,7 +356,7 @@ function ActivityCell({ summary }: { summary: ActivitySummary }) {
 
 function ScoreBadge({ pct }: { pct: number | null }) {
     if (pct === null) {
-return <span className="text-[10px] text-muted-foreground/50">—</span>;
+return <span className="text-[11px] text-muted-foreground/50">—</span>;
 }
 
     const cls = pct >= 80
@@ -502,13 +502,13 @@ return null;
                         <p className={`text-sm font-bold ${agg.avg >= 80 ? 'text-green-600' : agg.avg >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
                             {agg.avg}%
                         </p>
-                        <p className="text-[10px] text-muted-foreground">{agg.full} capai 100%</p>
+                        <p className="text-[11px] text-muted-foreground">{agg.full} capai 100%</p>
                     </div>
                 )}
             </div>
 
             {/* Legend — single compact row */}
-            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground px-0.5">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground px-0.5">
                 {[
                     { cls: 'bg-green-500', Icon: CheckCircle2,  label: 'Terpenuhi' },
                     { cls: 'bg-amber-400', Icon: TrendingUp,    label: 'Sebagian'  },
@@ -529,18 +529,18 @@ return null;
                     <thead>
                         <tr>
                             <th className="sticky left-0 top-0 z-20 bg-muted/95 backdrop-blur-sm px-2 py-1.5 text-left border-b border-r border-border min-w-[140px]">
-                                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Karyawan</span>
+                                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Karyawan</span>
                             </th>
                             {ACTIVITIES.map(act => (
                                 <th key={act.key} className="sticky top-0 z-10 bg-muted/95 backdrop-blur-sm px-1 py-1.5 text-center border-b border-border min-w-[56px]">
                                     <div className="flex flex-col items-center gap-0.5">
                                         <span className="text-xs leading-none">{act.icon}</span>
-                                        <span className="text-[9px] font-medium text-muted-foreground leading-tight">{act.label}</span>
+                                        <span className="text-[11px] font-medium text-muted-foreground leading-tight">{act.label}</span>
                                     </div>
                                 </th>
                             ))}
                             <th className="sticky top-0 z-10 bg-muted/95 backdrop-blur-sm px-1.5 py-1.5 text-center border-b border-l border-border min-w-[44px]">
-                                <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wide">Skor</span>
+                                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Skor</span>
                             </th>
                         </tr>
                     </thead>
@@ -561,7 +561,7 @@ return null;
                                     {showDeptHeader && (
                                         <tr>
                                             <td colSpan={ACTIVITIES.length + 2} className={`${deptColor.bg} border-b border-t border-border/50 px-2 py-1`}>
-                                                <span className={`text-[10px] font-semibold ${deptColor.text}`}>
+                                                <span className={`text-[11px] font-semibold ${deptColor.text}`}>
                                                     {DEPT_ICONS[dept] ?? '🏢'} {dept}
                                                 </span>
                                             </td>
@@ -571,11 +571,11 @@ return null;
                                         <td className={`sticky left-0 z-10 ${rowBg} border-b border-r border-border/40 px-2 py-1`}>
                                             <p className="font-medium text-[11px] leading-tight truncate max-w-[130px]">{emp.name}</p>
                                             <div className="flex items-center gap-1 mt-0.5">
-                                                <span className={`inline-flex rounded-full px-1 text-[9px] font-medium leading-tight ${levelCls}`}>
+                                                <span className={`inline-flex rounded-full px-1 text-[11px] font-medium leading-tight ${levelCls}`}>
                                                     {LEVEL_LABELS[emp.level] ?? emp.level}
                                                 </span>
                                                 {emp.jabatan && (
-                                                    <span className="text-[9px] text-muted-foreground truncate max-w-[60px] leading-tight">{emp.jabatan}</span>
+                                                    <span className="text-[11px] text-muted-foreground truncate max-w-[60px] leading-tight">{emp.jabatan}</span>
                                                 )}
                                             </div>
                                         </td>
@@ -613,7 +613,7 @@ return null;
                 </div>
             )}
 
-            <p className="text-[10px] text-muted-foreground/60 text-center">
+            <p className="text-[11px] text-muted-foreground/60 text-center">
                 Geser ke kanan untuk melihat semua kolom →
             </p>
         </div>
@@ -731,9 +731,9 @@ function StatTile({ icon, label, value, sub, tone, onClick }: {
                 onClick ? 'cursor-pointer transition-colors hover:brightness-95 dark:hover:brightness-110' : ''
             }`}
         >
-            <span className="text-[10px] font-medium text-muted-foreground truncate">{icon} {label}</span>
+            <span className="text-[11px] font-medium text-muted-foreground truncate">{icon} {label}</span>
             <p className={`text-base font-bold leading-none ${tone.text}`}>{value}</p>
-            {sub && <p className="text-[9px] text-muted-foreground truncate">{sub}</p>}
+            {sub && <p className="text-[11px] text-muted-foreground truncate">{sub}</p>}
         </Comp>
     );
 }

@@ -13,6 +13,7 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -49,18 +50,27 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($status === 419) {
-                return back()->with([
-                    'message' => 'Sesi Anda kedaluwarsa. Silakan coba lagi.',
+                Inertia::flash('toast', [
+                    'type' => 'warning',
+                    'message' => 'Sesi Anda kedaluwarsa. Silakan kirim ulang.',
                 ]);
+
+                return back();
             }
 
             // 500 tetap tampil mentah di local/testing agar stack trace terlihat saat debugging
             $niceStatuses = app()->environment(['local', 'testing'])
-                ? [403, 404, 429, 503]
-                : [403, 404, 429, 500, 503];
+                ? [403, 404, 422, 429, 503]
+                : [403, 404, 422, 429, 500, 503];
 
             if (in_array($status, $niceStatuses, true)) {
-                return Inertia::render('error', ['status' => $status])
+                // Pesan dari abort() (mis. "Form ini sudah diproses.") lebih jelas dari
+                // teks umum. Hanya untuk 4xx agar detail error server tidak bocor.
+                $message = $exception instanceof HttpExceptionInterface && $status < 500
+                    ? ($exception->getMessage() ?: null)
+                    : null;
+
+                return Inertia::render('error', ['status' => $status, 'message' => $message])
                     ->toResponse($request)
                     ->setStatusCode($status);
             }

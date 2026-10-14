@@ -415,7 +415,7 @@ return;
                                             <td className="px-4 py-2.5 whitespace-nowrap">
                                                 <div className="flex flex-col gap-0.5">
                                                     <span>{q.departemen ?? '-'}</span>
-                                                    <Badge variant="outline" className="text-[10px] w-fit">{q.tags === 'S' ? 'Staff' : 'Non Staff'}</Badge>
+                                                    <Badge variant="outline" className="text-[11px] w-fit">{q.tags === 'S' ? 'Staff' : 'Non Staff'}</Badge>
                                                 </div>
                                             </td>
                                         )}

@@ -11,6 +11,7 @@ import {
     X,
 } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { CameraCapture } from '@/components/camera-capture';
 import { RiskBadge } from '@/components/risk-badge';
 import { SiteCombobox } from '@/components/site-combobox';
@@ -193,6 +194,25 @@ const STEPS = [
     { label: 'Tindakan', icon: '🔧' },
 ];
 
+// Langkah form tempat setiap field berada, untuk menampilkan error dari server.
+const FIELD_STEP: Record<string, number> = {
+    tanggal: 0,
+    site: 0,
+    waktu_pengamatan: 0,
+    kategori: 0,
+    klasifikasi_bahaya: 0,
+    lokasi: 0,
+    detail_lokasi: 0,
+    deskripsi_bahaya: 0,
+    foto: 0,
+    probabilitas: 1,
+    frekuensi: 1,
+    severity: 1,
+    tindakan_perbaikan: 2,
+    status_tindakan: 2,
+    pic_user_id: 2,
+};
+
 export default function LaporanBahayaCreate({ user, sites, pics }: Props) {
     const today = new Date().toLocaleDateString('en-CA', {
         timeZone: 'Asia/Jakarta',
@@ -287,6 +307,16 @@ galleryRef.current.value = '';
             forceFormData: true,
             onProgress: (e) => setUploadProgress(e?.percentage ?? null),
             onFinish: () => setUploadProgress(null),
+            onError: (errs) => {
+                // Error bisa berasal dari langkah sebelumnya; pindah ke langkah
+                // pertama yang bermasalah agar pesannya terlihat.
+                const step = Object.keys(errs).reduce(
+                    (min, field) => Math.min(min, FIELD_STEP[field] ?? STEPS.length - 1),
+                    STEPS.length - 1,
+                );
+                setCurrentStep(step);
+                toast.error('Laporan belum tersimpan. Periksa kembali isian yang ditandai.');
+            },
         });
     };
 

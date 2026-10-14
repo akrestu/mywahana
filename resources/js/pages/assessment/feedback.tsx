@@ -61,7 +61,7 @@ function ScaleRow({
                         )}
                     >
                         {n}
-                        <span className={cn('mt-0.5 text-[9px] font-normal leading-tight text-center px-0.5', value === n ? 'text-indigo-100' : 'text-muted-foreground')}>
+                        <span className={cn('mt-0.5 text-[11px] font-normal leading-tight text-center px-0.5', value === n ? 'text-indigo-100' : 'text-muted-foreground')}>
                             {labels[n]}
                         </span>
                     </button>

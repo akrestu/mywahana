@@ -144,7 +144,7 @@ return;
                             ) : (
                                 <>
                                     <Camera className="h-5 w-5 text-white" />
-                                    <span className="text-[10px] font-medium text-white">Ganti</span>
+                                    <span className="text-[11px] font-medium text-white">Ganti</span>
                                 </>
                             )}
                         </div>
@@ -359,7 +359,7 @@ return;
                             <div key={b.key} className="flex flex-col items-center gap-1 rounded-xl border bg-muted/30 px-3 py-3 text-center">
                                 <span className="text-2xl">{b.icon}</span>
                                 <p className="text-xs font-semibold leading-tight">{b.nama}</p>
-                                <p className="text-[10px] text-muted-foreground leading-tight">{b.desc}</p>
+                                <p className="text-[11px] text-muted-foreground leading-tight">{b.desc}</p>
                             </div>
                         ))}
                         {badges.length === 0 && (

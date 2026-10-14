@@ -81,7 +81,7 @@ function NavGroup({ group, isActive }: { group: NavGroup; isActive: (href: HrefT
                         </SidebarMenuButton>
                         {item.badge !== undefined && item.badge !== 0 && (
                             <SidebarMenuBadge
-                                className={`flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums ${
+                                className={`flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[11px] font-bold tabular-nums ${
                                     typeof item.badge === 'number' && item.badge > 0
                                         ? 'bg-red-500 text-white'
                                         : 'bg-sidebar-accent text-sidebar-foreground'

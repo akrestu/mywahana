@@ -119,7 +119,7 @@ export default function InspeksiMessIndex({ myRecords, pendingReInspeksi, selesa
                                 tab === t.key ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
                             {t.label}
                             {'count' in t && t.count > 0 && (
-                                <span className="flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] text-white font-bold">{t.count}</span>
+                                <span className="flex size-4 items-center justify-center rounded-full bg-destructive text-[11px] text-white font-bold">{t.count}</span>
                             )}
                         </button>
                     ))}

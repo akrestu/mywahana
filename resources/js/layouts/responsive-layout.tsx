@@ -46,7 +46,7 @@ const baseUserMobileNavItems = [
         icon: Home,
         activeColor: 'text-blue-600 dark:text-blue-400',
         activeBg: 'bg-blue-100 dark:bg-blue-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
     {
         href: '/bugar-selamat',
@@ -54,7 +54,7 @@ const baseUserMobileNavItems = [
         icon: ClipboardList,
         activeColor: 'text-green-600 dark:text-green-400',
         activeBg: 'bg-green-100 dark:bg-green-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
     {
         href: '/laporan-bahaya',
@@ -62,7 +62,7 @@ const baseUserMobileNavItems = [
         icon: AlertTriangle,
         activeColor: 'text-red-500 dark:text-red-400',
         activeBg: 'bg-red-100 dark:bg-red-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
     {
         href: '/settings/profile',
@@ -70,7 +70,7 @@ const baseUserMobileNavItems = [
         icon: User,
         activeColor: 'text-purple-600 dark:text-purple-400',
         activeBg: 'bg-purple-100 dark:bg-purple-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
 ];
 
@@ -82,7 +82,7 @@ const sapMobileNavItems = [
         icon: AlertTriangle,
         activeColor: 'text-red-500 dark:text-red-400',
         activeBg: 'bg-red-100 dark:bg-red-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
     {
         href: '/sap/observasi-keselamatan',
@@ -91,7 +91,7 @@ const sapMobileNavItems = [
         icon: ClipboardCheck,
         activeColor: 'text-teal-600 dark:text-teal-400',
         activeBg: 'bg-teal-100 dark:bg-teal-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
     {
         href: '/sap/inspeksi-kantor',
@@ -100,7 +100,7 @@ const sapMobileNavItems = [
         icon: Building2,
         activeColor: 'text-teal-600 dark:text-teal-400',
         activeBg: 'bg-teal-100 dark:bg-teal-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
     {
         href: '/sap/inspeksi-tambang',
@@ -109,7 +109,7 @@ const sapMobileNavItems = [
         icon: Mountain,
         activeColor: 'text-teal-600 dark:text-teal-400',
         activeBg: 'bg-teal-100 dark:bg-teal-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
     {
         href: '/sap/inspeksi-workshop',
@@ -118,7 +118,7 @@ const sapMobileNavItems = [
         icon: Wrench,
         activeColor: 'text-teal-600 dark:text-teal-400',
         activeBg: 'bg-teal-100 dark:bg-teal-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
     {
         href: '/sap/inspeksi-mess',
@@ -127,7 +127,7 @@ const sapMobileNavItems = [
         icon: BedDouble,
         activeColor: 'text-teal-600 dark:text-teal-400',
         activeBg: 'bg-teal-100 dark:bg-teal-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
     {
         href: '/sap/komunikasi-jsa',
@@ -136,7 +136,7 @@ const sapMobileNavItems = [
         icon: BookOpen,
         activeColor: 'text-indigo-600 dark:text-indigo-400',
         activeBg: 'bg-indigo-100 dark:bg-indigo-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
 ];
 
@@ -165,7 +165,7 @@ const adminMobileNavItems = [
         icon: ShieldCheck,
         activeColor: 'text-blue-600 dark:text-blue-400',
         activeBg: 'bg-blue-100 dark:bg-blue-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
     {
         href: '/admin/bugar-selamat',
@@ -173,7 +173,7 @@ const adminMobileNavItems = [
         icon: HeartPulse,
         activeColor: 'text-green-600 dark:text-green-400',
         activeBg: 'bg-green-100 dark:bg-green-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
     {
         href: '/admin/laporan-bahaya',
@@ -181,7 +181,7 @@ const adminMobileNavItems = [
         icon: AlertTriangle,
         activeColor: 'text-red-500 dark:text-red-400',
         activeBg: 'bg-red-100 dark:bg-red-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
     {
         href: '/admin/users',
@@ -189,20 +189,21 @@ const adminMobileNavItems = [
         icon: Users,
         activeColor: 'text-purple-600 dark:text-purple-400',
         activeBg: 'bg-purple-100 dark:bg-purple-950',
-        inactiveColor: 'text-slate-400 dark:text-slate-500',
+        inactiveColor: 'text-slate-500 dark:text-slate-400',
     },
 ];
 
 function MobileHeader({ title, showBack, backHref, isAdmin }: { title?: string; showBack?: boolean; backHref?: string; isAdmin?: boolean }) {
     return (
-        <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:hidden">
+        <header className="sticky top-0 z-10 border-b bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:hidden">
             <div className="mx-auto flex h-14 max-w-lg items-center gap-3 px-4">
                 {showBack && backHref ? (
                     <Link
                         href={backHref}
-                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        aria-label="Kembali"
+                        className="-ml-2 flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                     >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M15 18l-6-6 6-6" />
                         </svg>
                     </Link>
@@ -263,7 +264,7 @@ return url === href;
                 }`}>
                     <Icon size={22} strokeWidth={active ? 2.5 : 1.75} />
                 </div>
-                <span className={`text-[10px] font-semibold leading-none transition-colors ${
+                <span className={`text-[11px] font-semibold leading-none transition-colors ${
                     active ? item.activeColor : item.inactiveColor
                 }`}>
                     {item.label}
@@ -273,7 +274,7 @@ return url === href;
     };
 
     return (
-        <nav className={`fixed bottom-0 left-0 right-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden transition-transform duration-300 ${navVisible ? 'translate-y-0' : 'translate-y-full'}`}>
+        <nav className={`fixed bottom-0 left-0 right-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden transition-transform duration-300 pb-[env(safe-area-inset-bottom)] ${navVisible ? 'translate-y-0' : 'translate-y-full'}`}>
             <div className="flex h-[72px] items-center justify-around px-1">
                 {isAdmin ? (
                     <>
@@ -289,12 +290,12 @@ return url === href;
                             <div className={`flex items-center justify-center rounded-2xl px-3 py-1.5 transition-all ${
                                 isSapActive
                                     ? 'bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400'
-                                    : 'text-slate-400 dark:text-slate-500'
+                                    : 'text-slate-500 dark:text-slate-400'
                             }`}>
                                 <ClipboardCheck size={22} strokeWidth={isSapActive ? 2.5 : 1.75} />
                             </div>
-                            <span className={`text-[10px] font-semibold leading-none transition-colors ${
-                                isSapActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500'
+                            <span className={`text-[11px] font-semibold leading-none transition-colors ${
+                                isSapActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'
                             }`}>SAP</span>
                         </button>
                         {items.slice(3).map((item) => (
@@ -315,12 +316,12 @@ return url === href;
                             <div className={`flex items-center justify-center rounded-2xl px-3 py-1.5 transition-all ${
                                 isSapActive
                                     ? 'bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400'
-                                    : 'text-slate-400 dark:text-slate-500'
+                                    : 'text-slate-500 dark:text-slate-400'
                             }`}>
                                 <ClipboardCheck size={22} strokeWidth={isSapActive ? 2.5 : 1.75} />
                             </div>
-                            <span className={`text-[10px] font-semibold leading-none transition-colors ${
-                                isSapActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500'
+                            <span className={`text-[11px] font-semibold leading-none transition-colors ${
+                                isSapActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'
                             }`}>SAP</span>
                         </button>
                         <button
@@ -331,12 +332,12 @@ return url === href;
                             <div className={`flex items-center justify-center rounded-2xl px-3 py-1.5 transition-all ${
                                 isAssessmentActive
                                     ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
-                                    : 'text-slate-400 dark:text-slate-500'
+                                    : 'text-slate-500 dark:text-slate-400'
                             }`}>
                                 <GraduationCap size={22} strokeWidth={isAssessmentActive ? 2.5 : 1.75} />
                             </div>
-                            <span className={`text-[10px] font-semibold leading-none transition-colors ${
-                                isAssessmentActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'
+                            <span className={`text-[11px] font-semibold leading-none transition-colors ${
+                                isAssessmentActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'
                             }`}>Assessment</span>
                         </button>
                         {/* Profil — last item (skip Laporan at index 2, ada di SAP drawer) */}
@@ -358,12 +359,12 @@ return url === href;
                             <div className={`flex items-center justify-center rounded-2xl px-3 py-1.5 transition-all ${
                                 isAssessmentActive
                                     ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
-                                    : 'text-slate-400 dark:text-slate-500'
+                                    : 'text-slate-500 dark:text-slate-400'
                             }`}>
                                 <GraduationCap size={22} strokeWidth={isAssessmentActive ? 2.5 : 1.75} />
                             </div>
-                            <span className={`text-[10px] font-semibold leading-none transition-colors ${
-                                isAssessmentActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'
+                            <span className={`text-[11px] font-semibold leading-none transition-colors ${
+                                isAssessmentActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'
                             }`}>Assessment</span>
                         </button>
                         {/* Profil */}
@@ -566,7 +567,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 />
 
                 {/* Page content */}
-                <main className="flex-1 px-4 py-4 pb-24 lg:p-6 lg:pb-6">
+                <main className="flex-1 px-4 py-4 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:p-6 lg:pb-6">
                     {/* Mobile: constrain to phone-width; Desktop: full width */}
                     <div className="mx-auto w-full max-w-lg lg:max-w-none">
                         {children}

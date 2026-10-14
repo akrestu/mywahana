@@ -240,16 +240,16 @@ function HarianView({ tanggal, users, entries, summary, filters, sites }: Extrac
                                     <tr key={user.id} className={`${idx % 2 === 0 ? 'bg-background' : 'bg-muted/10'} ${!entry ? 'opacity-60' : ''}`}>
                                         <td className={`px-3 py-2 ${statusRowBorder(entry?.status)}`}>
                                             <p className="truncate max-w-[160px] font-medium">{user.name}</p>
-                                            <p className="text-[10px] text-muted-foreground">NIK: {user.nik ?? '—'}</p>
+                                            <p className="text-[11px] text-muted-foreground">NIK: {user.nik ?? '—'}</p>
                                         </td>
                                         <td className="px-2 py-2 text-muted-foreground">{siteName(user.site)}</td>
                                         <td className="px-2 py-2 text-center">
                                             {entry
                                                 ? <KelayakanBadge status={entry.status} />
-                                                : <span className="text-[10px] italic text-muted-foreground">Belum mengisi</span>}
+                                                : <span className="text-[11px] italic text-muted-foreground">Belum mengisi</span>}
                                         </td>
                                         <td className="px-2 py-2 text-center">
-                                            {entry ? <Badge variant="outline" className="text-[10px]">Shift {entry.shift}</Badge> : '—'}
+                                            {entry ? <Badge variant="outline" className="text-[11px]">Shift {entry.shift}</Badge> : '—'}
                                         </td>
                                         <td className="px-2 py-2 text-center">
                                             {entry
@@ -386,7 +386,7 @@ function KalenderView({ tanggal, users, dates, entries, summary, filters, sites 
                                 <tr key={user.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
                                     <td className="sticky left-0 z-10 border-r px-3 py-2 backdrop-blur-sm font-medium" style={{ background: idx % 2 === 0 ? 'hsl(var(--background))' : 'hsl(var(--muted) / 0.2)' }}>
                                         <p className="truncate max-w-[130px]" title={user.name}>{user.name}</p>
-                                        <p className="text-muted-foreground text-[10px]">{siteName(user.site)}</p>
+                                        <p className="text-muted-foreground text-[11px]">{siteName(user.site)}</p>
                                     </td>
                                     {displayDates.map((date) => {
                                         const entry = entries[`${user.id}_${date}`];
@@ -678,7 +678,7 @@ p.set('date_to', filters.date_to);
                                         )}
                                         <td className={`px-3 py-2 ${statusRowBorder(record.status_kelayakan)}`}>
                                             <p className="truncate max-w-[160px] font-medium">{record.user.name}</p>
-                                            <p className="text-[10px] text-muted-foreground">NIK: {record.user.nik ?? '—'}</p>
+                                            <p className="text-[11px] text-muted-foreground">NIK: {record.user.nik ?? '—'}</p>
                                         </td>
                                         <td className="px-2 py-2 text-muted-foreground">{siteName(record.user.site ?? null)}</td>
                                         <td className="px-2 py-2 text-muted-foreground">{formatTanggalShort(record.tanggal)}</td>
