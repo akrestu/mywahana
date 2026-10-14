@@ -17,26 +17,30 @@ test('authenticated users can visit the dashboard', function () {
     $response->assertOk();
 });
 
-test('dashboard user hanya memuat papan peringkat site-nya', function () {
-    App\Models\Site::create(['value' => 'BAU', 'label' => 'BAU']);
-    App\Models\Site::create(['value' => 'MAS', 'label' => 'MAS']);
+test('dashboard user tidak lagi memuat papan peringkat dan statistik lama', function () {
     $user = User::factory()->create(['site' => 'BAU', 'participation_level' => 'staff']);
 
     $this->actingAs($user)
         ->get(route('app.home'))
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
             ->component('dashboard')
-            ->has('leaderboard', 1)
-            ->has('leaderboard.BAU')
+            ->missing('leaderboard')
+            ->missing('stats')
             ->missing('trend')
             ->has('my_pending_inspeksi', 4)
             ->where('my_pending_inspeksi.kantor', 0));
 });
 
-test('dashboard user tanpa site tidak memuat papan peringkat', function () {
-    $user = User::factory()->create(['site' => null]);
+test('target bugar menyertakan tanggal yang terisi untuk kalender', function () {
+    $user = User::factory()->create(['participation_level' => 'nonstaff']);
+    App\Models\BugarSelamat::create([
+        'user_id' => $user->id, 'tanggal' => today()->toDateString(), 'shift' => 'Pagi', 'hari_ke' => 1,
+        'jam_tidur' => '>6', 'status_kelayakan' => 'layak',
+    ]);
 
     $this->actingAs($user)
         ->get(route('app.home'))
-        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->where('leaderboard', []));
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->where('target.bugar.tanggal_terisi', [today()->toDateString()])
+            ->where('target.bugar.hari_terpenuhi', 1));
 });

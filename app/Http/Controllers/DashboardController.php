@@ -17,7 +17,6 @@ use App\Models\UserBadge;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -40,15 +39,6 @@ class DashboardController extends Controller
         $laporanQuery = LaporanBahaya::where('user_id', $user->id);
 
         $now = Carbon::now();
-
-        $stats = [
-            'bugar_selamat' => [
-                'bulan_ini' => (clone $bugarQuery)->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
-            ],
-            'laporan_bahaya' => [
-                'bulan_ini' => (clone $laporanQuery)->whereMonth('tanggal', $now->month)->whereYear('tanggal', $now->year)->count(),
-            ],
-        ];
 
         $recent_bugar_selamat = (clone $bugarQuery)
             ->latest('tanggal')
@@ -87,15 +77,6 @@ class DashboardController extends Controller
 
         // Streak
         $streak = $user->currentStreak();
-
-        // Leaderboard hanya untuk site user; di-cache karena sama untuk semua user di site itu.
-        $leaderboard = $user->site
-            ? [$user->site => Cache::remember(
-                "dashboard:leaderboard:{$user->site}:{$now->format('Y-m')}",
-                now()->addMinutes(5),
-                fn () => $this->buildSiteLeaderboard($user->site, $now),
-            )]
-            : [];
 
         // Target partisipasi
         $target = $this->buildUserTarget($user, $now);
@@ -169,14 +150,12 @@ class DashboardController extends Controller
             ]);
 
         return Inertia::render('dashboard', [
-            'stats' => $stats,
             'recent_bugar_selamat' => $recent_bugar_selamat,
             'recent_laporan_bahaya' => $recent_laporan_bahaya,
             'recent_observasi' => $recent_observasi,
             'recent_inspeksi' => $recent_inspeksi,
             'recent_jsa' => $recent_jsa,
             'streak' => $streak,
-            'leaderboard' => $leaderboard,
             'target' => $target,
             'new_badges' => $new_badges,
             'pending_re_inspeksi' => $pendingReInspeksi,
@@ -571,76 +550,6 @@ class DashboardController extends Controller
         return ['weeks' => $weeks, 'employees' => $employees];
     }
 
-    private function buildSiteLeaderboard(string $site, Carbon $now): array
-    {
-        $result = [];
-        $m = $now->month;
-        $y = $now->year;
-
-        $mapUser = fn ($u) => [
-            'id' => $u->id,
-            'name' => $u->name,
-            'jabatan' => $u->jabatan,
-            'avatar' => $u->avatar ? asset('storage/'.$u->avatar) : null,
-        ];
-
-        $base = fn () => User::where('is_admin', false)->where('site', $site);
-
-        // 1. Bugar Selamat — jumlah submission bulan ini
-        $result['bugar_selamat'] = $base()
-            ->withCount(['bugarSelamats as skor' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y)])
-            ->get(['id', 'name', 'jabatan', 'avatar'])
-            ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) $u->skor]))
-            ->filter(fn ($u) => $u['skor'] > 0)
-            ->sortByDesc('skor')->values()->take(5);
-
-        // 2. Laporan Bahaya — total poin risiko (AA=4, A=3, B=2, C=1)
-        $lbRows = LaporanBahaya::where(fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y))
-            ->whereIn('user_id', $base()->select('id'))
-            ->selectRaw('user_id, SUM(CASE tingkat_risiko WHEN \'AA\' THEN 4 WHEN \'A\' THEN 3 WHEN \'B\' THEN 2 ELSE 1 END) as skor')
-            ->groupBy('user_id')
-            ->pluck('skor', 'user_id');
-
-        $result['laporan_bahaya'] = $base()
-            ->get(['id', 'name', 'jabatan', 'avatar'])
-            ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) ($lbRows[$u->id] ?? 0)]))
-            ->filter(fn ($u) => $u['skor'] > 0)
-            ->sortByDesc('skor')->values()->take(5);
-
-        // 3. Observasi Keselamatan — jumlah
-        $result['observasi_keselamatan'] = $base()
-            ->withCount(['observasiKeselamatans as skor' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y)])
-            ->get(['id', 'name', 'jabatan', 'avatar'])
-            ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) $u->skor]))
-            ->filter(fn ($u) => $u['skor'] > 0)
-            ->sortByDesc('skor')->values()->take(5);
-
-        // 4. Komunikasi JSA — jumlah
-        $result['komunikasi_jsa'] = $base()
-            ->withCount(['komunikasiJsas as skor' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y)])
-            ->get(['id', 'name', 'jabatan', 'avatar'])
-            ->map(fn ($u) => array_merge($mapUser($u), ['skor' => (int) $u->skor]))
-            ->filter(fn ($u) => $u['skor'] > 0)
-            ->sortByDesc('skor')->values()->take(5);
-
-        // 5. Inspeksi — gabungan 4 tabel
-        $result['inspeksi'] = $base()
-            ->withCount([
-                'inspeksiTambangs as it_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
-                'inspeksiKantors as ik_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
-                'inspeksiMesses as im_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
-                'inspeksiWorkshops as iw_count' => fn ($q) => $q->whereMonth('tanggal', $m)->whereYear('tanggal', $y),
-            ])
-            ->get(['id', 'name', 'jabatan', 'avatar'])
-            ->map(fn ($u) => array_merge($mapUser($u), [
-                'skor' => (int) $u->it_count + (int) $u->ik_count + (int) $u->im_count + (int) $u->iw_count,
-            ]))
-            ->filter(fn ($u) => $u['skor'] > 0)
-            ->sortByDesc('skor')->values()->take(5);
-
-        return $result;
-    }
-
     private function buildUserTarget(User $user, Carbon $now): array
     {
         $target = ParticipationTarget::forLevel($user->participation_level ?? 'nonstaff');
@@ -651,13 +560,15 @@ class DashboardController extends Controller
         $bugarPerHari = $target->bugar_per_hari;
 
         // Ambil tanggal-tanggal unik bugar selamat bulan ini
-        $tanggalBugar = BugarSelamat::where('user_id', $user->id)
+        $tanggalTerisi = BugarSelamat::where('user_id', $user->id)
             ->whereMonth('tanggal', $now->month)
             ->whereYear('tanggal', $now->year)
             ->pluck('tanggal')
-            ->map(fn ($t) => (string) $t)
+            ->map(fn ($t) => Carbon::parse($t)->toDateString())
             ->unique()
-            ->count();
+            ->sort()
+            ->values();
+        $tanggalBugar = $tanggalTerisi->count();
 
         $hariBugarTerpenuhi = $bugarPerHari > 0 ? min($tanggalBugar, $hariSudahLewat) : 0;
         $bugarPersen = $hariSudahLewat > 0 ? round($hariBugarTerpenuhi / $hariSudahLewat * 100) : 0;
@@ -775,6 +686,8 @@ class DashboardController extends Controller
                 'hari_berlalu' => $hariSudahLewat,
                 'hari_terpenuhi' => $hariBugarTerpenuhi,
                 'persen' => $bugarPersen,
+                // Untuk kalender harian di kartu target.
+                'tanggal_terisi' => $tanggalTerisi->all(),
             ],
             'laporan' => $laporan,
             'inspeksi' => $inspeksi,

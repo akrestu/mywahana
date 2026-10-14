@@ -1,152 +1,40 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import {
-    AlertTriangle,
-    BookOpen,
-    BriefcaseBusiness,
-    ChevronRight,
-    ClipboardCheck,
-    Clock,
-    Eye,
-    Flame,
-    HardHat,
-    MapPin,
-    Plus,
-    ShieldCheck,
-    X,
-} from 'lucide-react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { AlertTriangle, BookOpen, BriefcaseBusiness, Check, ChevronDown, ChevronRight, ClipboardCheck, Eye, MapPin } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { RiskBadge } from '@/components/risk-badge';
+import type { ReactNode } from 'react';
+import { toast } from 'sonner';
+import { InspeksiMenu } from '@/components/dashboard/inspeksi-menu';
+import { RecentActivity } from '@/components/dashboard/recent-activity';
+import type { RecentBugar, RecentInspeksi, RecentJsa, RecentLaporan, RecentObservasi } from '@/components/dashboard/recent-activity';
+import { TargetCard } from '@/components/dashboard/target-card';
+import type { TargetInfo } from '@/components/dashboard/target-card';
 import { KelayakanBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 import type { Auth } from '@/types';
 
-type RecentBugarSelamat = {
-    id: number;
-    tanggal: string;
-    shift: string;
-    status_kelayakan: 'layak' | 'catatan' | 'dilarang';
-};
-
-type RecentLaporanBahaya = {
-    id: number;
-    tanggal: string;
-    lokasi: string;
-    tingkat_risiko: 'AA' | 'A' | 'B' | 'C';
-    status_tindakan: 'pending' | 'continue' | 'progress' | 'close';
-};
-
-type RecentObservasi = {
-    id: number;
-    tanggal: string;
-    jenis_pekerjaan: string;
-    lokasi_kerja: string;
-    status: string;
-};
-
-type RecentInspeksi = {
-    id: number;
-    tanggal: string;
-    status: string;
-    risk_level: string | null;
-    jenis: 'Kantor' | 'Tambang' | 'Workshop' | 'Mess';
-};
-
-type RecentJsa = {
-    id: number;
-    tanggal: string;
-    lokasi: string;
-    judul_dokumen: string;
-    status: string;
-};
-
-type Stats = {
-    bugar_selamat: { total: number; bulan_ini: number; layak: number; catatan: number; dilarang: number };
-    laporan_bahaya: { total: number; bulan_ini: number; pending: number; selesai: number };
-};
-
-type LeaderboardEntry = {
-    id: number;
-    name: string;
-    jabatan: string | null;
-    avatar: string | null;
-    skor: number;
-};
-
-type SiteLeaderboard = {
-    bugar_selamat: LeaderboardEntry[];
-    laporan_bahaya: LeaderboardEntry[];
-    observasi_keselamatan: LeaderboardEntry[];
-    komunikasi_jsa: LeaderboardEntry[];
-    inspeksi: LeaderboardEntry[];
-};
-
-type WeekInfo = { start: string; end: string; count: number; terpenuhi: boolean };
-type MetricWeekly = {
-    target_per_minggu: number;
-    weeks: WeekInfo[];
-    minggu_berlalu: number;
-    minggu_terpenuhi: number;
-    persen: number;
-};
-type TargetInfo = {
-    level: string;
-    bugar: { target_per_hari: number; hari_berlalu: number; hari_terpenuhi: number; persen: number };
-    laporan: MetricWeekly;
-    inspeksi: MetricWeekly | null;
-    observasi: MetricWeekly | null;
-    jsa: MetricWeekly | null;
-};
-
 type NewBadge = { key: string; nama: string; icon: string; earned_at: string };
+type PerJenis = { kantor: number; tambang: number; workshop: number; mess: number };
 
 type Props = {
     auth: Auth;
-    stats: Stats;
-    recent_bugar_selamat: RecentBugarSelamat[];
-    recent_laporan_bahaya: RecentLaporanBahaya[];
+    recent_bugar_selamat: RecentBugar[];
+    recent_laporan_bahaya: RecentLaporan[];
     recent_observasi?: RecentObservasi[];
     recent_inspeksi?: RecentInspeksi[];
     recent_jsa?: RecentJsa[];
     streak?: number;
-    leaderboard?: Record<string, SiteLeaderboard>;
     target?: TargetInfo;
     new_badges?: NewBadge[];
-    pending_re_inspeksi?: { kantor: number; tambang: number; workshop: number; mess: number };
+    pending_re_inspeksi?: PerJenis;
     pending_form_ok?: number;
     pending_jsa_tl?: number;
     my_pending_observasi?: number;
     my_pending_jsa?: number;
-    my_pending_inspeksi?: { kantor: number; tambang: number; workshop: number; mess: number } | null;
+    my_pending_inspeksi?: PerJenis | null;
     pending_as_pic?: number;
     my_open_with_pic?: number;
 };
-
-const defaultStats: Stats = {
-    bugar_selamat: { total: 0, bulan_ini: 0, layak: 0, catatan: 0, dilarang: 0 },
-    laporan_bahaya: { total: 0, bulan_ini: 0, pending: 0, selesai: 0 },
-};
-
-const motivasiList = [
-    'Datang sehat — kerja aman — pulang selamat.',
-    'Keselamatan bukan pilihan, tapi tanggung jawab kita bersama.',
-    'Satu detik kewaspadaan mencegah satu seumur hidup penyesalan.',
-    'Tidak ada pekerjaan yang begitu penting hingga tidak ada waktu untuk melakukannya dengan aman.',
-    'Keselamatan dimulai dari diri sendiri. Jadilah contoh untuk rekan kerja.',
-    'Laporkan bahaya sebelum bahaya melapor ke rumah sakit.',
-    'Zero accident bukan kebetulan — itu hasil dari kedisiplinan setiap hari.',
-    'Alat pelindung diri bukan hambatan, tapi perisai hidupmu.',
-    'Hari ini selamat, besok lebih berhati-hati.',
-    'K3 bukan biaya — K3 adalah investasi terbaik.',
-    'Ingat keluarga di rumah. Mereka menunggu kamu pulang dengan selamat.',
-    'Bahaya yang dilaporkan adalah bahaya yang bisa dicegah.',
-];
 
 const GREETINGS_BY_TIME: Record<'pagi' | 'siang' | 'sore' | 'malam', string[]> = {
     pagi: [
@@ -259,41 +147,6 @@ function isToday(dateStr: string): boolean {
     return new Date(dateStr).toDateString() === new Date().toDateString();
 }
 
-function fmtDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-}
-
-const kelayakanAlertColors = {
-    layak: {
-        wrapper: 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950',
-        icon: 'text-green-600',
-        title: 'text-green-800 dark:text-green-200',
-        sub: 'text-green-600 dark:text-green-400',
-    },
-    catatan: {
-        wrapper: 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950',
-        icon: 'text-amber-500',
-        title: 'text-amber-800 dark:text-amber-200',
-        sub: 'text-amber-600 dark:text-amber-400',
-    },
-    dilarang: {
-        wrapper: 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950',
-        icon: 'text-red-600',
-        title: 'text-red-800 dark:text-red-200',
-        sub: 'text-red-600 dark:text-red-400',
-    },
-};
-
-const jenisTindakanColors: Record<RecentLaporanBahaya['status_tindakan'], string> = {
-    pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-    continue: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-    progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    close: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-};
-const jenisTindakanLabels: Record<RecentLaporanBahaya['status_tindakan'], string> = {
-    pending: 'Pending', continue: 'Continue', progress: 'Progress', close: 'Selesai',
-};
-
 const INSPEKSI_JENIS = [
     { key: 'kantor', label: 'Kantor' },
     { key: 'tambang', label: 'Tambang' },
@@ -301,22 +154,16 @@ const INSPEKSI_JENIS = [
     { key: 'mess', label: 'Mess' },
 ] as const;
 
-const RIWAYAT_SEMUA = {
-    bugar: { href: '/bugar-selamat', label: 'Bugar Selamat' },
-    laporan: { href: '/laporan-bahaya', label: 'Laporan Bahaya' },
-    observasi: { href: '/sap/observasi-keselamatan', label: 'Observasi' },
-    inspeksi: { href: '/sap/inspeksi', label: 'Inspeksi' },
-    jsa: { href: '/sap/komunikasi-jsa', label: 'JSA' },
-} as const;
+type TaskItem = { label: string; href: string; count: number };
+
+const actionButtonCls = 'flex min-h-12 items-center gap-2.5 rounded-lg border bg-card px-3.5 text-sm font-medium transition-colors hover:bg-muted';
 
 export default function Dashboard({
-    stats = defaultStats,
     recent_bugar_selamat = [],
     recent_laporan_bahaya = [],
     recent_observasi = [],
     recent_inspeksi = [],
     recent_jsa = [],
-    leaderboard = {},
     target,
     new_badges = [],
     streak = 0,
@@ -334,51 +181,64 @@ export default function Dashboard({
     const tod = useTimeOfDay();
     const firstName = user.name?.split(' ')[0] ?? user.name;
     const typedGreeting = useTypingText(GREETINGS_BY_TIME[tod.period]);
-    const [riwayatTab, setRiwayatTab] = useState<'bugar' | 'laporan' | 'observasi' | 'inspeksi' | 'jsa'>('bugar');
+    const [waitingOpen, setWaitingOpen] = useState(false);
 
-    const sudahIsiBugarHariIni = recent_bugar_selamat.length > 0 && isToday(recent_bugar_selamat[0].tanggal);
+    const bugarHariIni = recent_bugar_selamat.length > 0 && isToday(recent_bugar_selamat[0].tanggal) ? recent_bugar_selamat[0] : null;
     const isSAPUser = user.participation_level === 'staff' || user.participation_level === 'srstaff';
 
-    const [dismissedKeys, setDismissedKeys] = useState<string[]>(() => {
+    // Pencapaian baru cukup diumumkan sekali lewat toast, bukan kartu yang menetap.
+    const badgeKeys = new_badges.map((b) => b.key).join(',');
+    useEffect(() => {
+        let dismissed: string[] = [];
+
         try {
-            return JSON.parse(localStorage.getItem('dismissed_badges') ?? '[]') as string[];
+            dismissed = JSON.parse(localStorage.getItem('dismissed_badges') ?? '[]') as string[];
         } catch {
-            return [];
+            // Penyimpanan diblokir: tetap tampilkan toast.
         }
-    });
-    const visibleBadges = new_badges.filter((b) => !dismissedKeys.includes(b.key));
-    const dismissBadges = () => {
-        const updated = [...new Set([...dismissedKeys, ...visibleBadges.map((b) => b.key)])];
-        localStorage.setItem('dismissed_badges', JSON.stringify(updated));
-        setDismissedKeys(updated);
-    };
 
-    const [motivasi] = useState(() => motivasiList[Math.floor(Math.random() * motivasiList.length)]);
+        const fresh = new_badges.filter((b) => !dismissed.includes(b.key));
 
-    const userSite = user.site ?? '';
-    const leaderSites = Object.keys(leaderboard);
-    const activeSiteLeader: SiteLeaderboard | undefined = leaderboard[userSite] ?? leaderboard[leaderSites[0]];
-    const leaderSiteLabel = leaderboard[userSite] ? userSite : leaderSites[0];
+        if (fresh.length === 0) {
+            return;
+        }
 
-    const LEADER_TABS = [
-        { key: 'bugar_selamat' as const,         label: 'Bugar Selamat',  unit: 'kali' },
-        { key: 'laporan_bahaya' as const,         label: 'Lap. Bahaya',   unit: 'poin' },
-        { key: 'observasi_keselamatan' as const,  label: 'Observasi',     unit: 'lap.' },
-        { key: 'komunikasi_jsa' as const,         label: 'JSA',           unit: 'lap.' },
-        { key: 'inspeksi' as const,               label: 'Inspeksi',      unit: 'lap.' },
-    ] as const;
-    const [leaderTab, setLeaderTab] = useState<keyof SiteLeaderboard>('bugar_selamat');
-    const activeLeaderEntries = activeSiteLeader?.[leaderTab] ?? [];
-    const hasAnyLeader = activeSiteLeader && LEADER_TABS.some(t => (activeSiteLeader[t.key]?.length ?? 0) > 0);
+        toast.success(`Pencapaian baru: ${fresh.map((b) => `${b.icon} ${b.nama}`).join(', ')}`);
 
-    const MEDALS = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+        try {
+            localStorage.setItem('dismissed_badges', JSON.stringify([...dismissed, ...fresh.map((b) => b.key)]));
+        } catch {
+            // Abaikan.
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [badgeKeys]);
+
+    const actionItems: TaskItem[] = [
+        ...(pending_re_inspeksi
+            ? INSPEKSI_JENIS.map(({ key, label }) => ({ label: `Approval Inspeksi ${label}`, href: `/sap/inspeksi-${key}`, count: pending_re_inspeksi[key] }))
+            : []),
+        { label: 'Konfirmasi Form Observasi', href: '/sap/observasi-keselamatan', count: pending_form_ok },
+        { label: 'Tanda tangan JSA sebagai TL', href: '/sap/komunikasi-jsa', count: pending_jsa_tl },
+        { label: 'Laporan Bahaya — Anda PIC', href: '/laporan-bahaya?tab=pic', count: pending_as_pic },
+    ].filter((item) => item.count > 0);
+
+    const waitingItems: TaskItem[] = [
+        { label: 'Observasi Anda — menunggu approval', href: '/sap/observasi-keselamatan', count: my_pending_observasi },
+        ...(my_pending_inspeksi
+            ? INSPEKSI_JENIS.map(({ key, label }) => ({ label: `Inspeksi ${label} Anda — menunggu approval`, href: `/sap/inspeksi-${key}`, count: my_pending_inspeksi[key] }))
+            : []),
+        { label: 'JSA Anda — menunggu approval', href: '/sap/komunikasi-jsa', count: my_pending_jsa },
+        { label: 'Laporan Anda — PIC belum closing', href: '/laporan-bahaya', count: my_open_with_pic },
+    ].filter((item) => item.count > 0);
+
+    const totalAction = actionItems.reduce((sum, item) => sum + item.count, 0);
+    const totalWaiting = waitingItems.reduce((sum, item) => sum + item.count, 0);
 
     return (
         <>
             <Head title="Dashboard" />
 
-            <div className="space-y-3 pb-8">
-
+            <div className="space-y-5 pb-8">
                 {/* ① HERO — compact, tidak diubah */}
                 <div className="relative overflow-hidden rounded-2xl border" style={{ background: tod.gradientStyle }}>
                     <div className={`pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full blur-3xl ${tod.shimmer} animate-pulse`} />
@@ -450,562 +310,98 @@ export default function Dashboard({
                     </div>
                 </div>
 
-                {/* ② STREAK + STATS STRIP */}
-                <div className="flex gap-2">
-                    {streak > 0 && (
-                        <div className="flex flex-1 items-center gap-1.5 rounded-xl border bg-orange-50 px-3 py-2 dark:bg-orange-950">
-                            <Flame className="h-4 w-4 shrink-0 text-orange-500" />
+                {bugarHariIni ? (
+                    <BugarDone status={bugarHariIni.status_kelayakan} shift={bugarHariIni.shift} />
+                ) : (
+                    <section aria-labelledby="bugar-title" className="space-y-3.5 rounded-xl border border-amber-400 bg-card p-4 shadow-xs dark:border-amber-700">
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle aria-hidden className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
                             <div>
-                                <p className="text-[11px] text-muted-foreground">Streak</p>
-                                <p className="text-sm font-bold text-orange-700 dark:text-orange-300">{streak} hari</p>
+                                <h2 id="bugar-title" className="text-base font-semibold">
+                                    Bugar Selamat belum diisi
+                                </h2>
+                                <p className="text-sm text-muted-foreground">Wajib sebelum mulai kerja.</p>
                             </div>
                         </div>
-                    )}
-                    <div className="flex flex-1 items-center gap-1.5 rounded-xl border bg-green-50 px-3 py-2 dark:bg-green-950">
-                        <ClipboardCheck className="h-4 w-4 shrink-0 text-green-600" />
-                        <div>
-                            <p className="text-[11px] text-muted-foreground">Bugar</p>
-                            <p className="text-sm font-bold text-green-700 dark:text-green-300">{stats.bugar_selamat.bulan_ini}×</p>
-                        </div>
-                    </div>
-                    <div className="flex flex-1 items-center gap-1.5 rounded-xl border bg-red-50 px-3 py-2 dark:bg-red-950">
-                        <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
-                        <div>
-                            <p className="text-[11px] text-muted-foreground">Laporan</p>
-                            <p className="text-sm font-bold text-red-700 dark:text-red-300">{stats.laporan_bahaya.bulan_ini}×</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ③ STATUS HARI INI */}
-                {sudahIsiBugarHariIni ? (() => {
-                    const kelayakan = recent_bugar_selamat[0].status_kelayakan;
-                    const colors = kelayakanAlertColors[kelayakan];
-
-                    return (
-                        <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${colors.wrapper}`}>
-                            <ShieldCheck className={`h-7 w-7 shrink-0 ${colors.icon}`} />
-                            <div>
-                                <p className={`font-semibold ${colors.title}`}>✅ Bugar Selamat sudah diisi</p>
-                                <p className={`text-xs mt-0.5 ${colors.sub}`}>
-                                    Status hari ini: <KelayakanBadge status={kelayakan} />
-                                </p>
-                            </div>
-                        </div>
-                    );
-                })() : (
-                    <Link href="/bugar-selamat/create" className="block">
-                        <div className="flex items-center gap-3 rounded-xl border-2 border-amber-400 bg-amber-50 px-4 py-3 active:scale-[0.99] transition-transform dark:border-amber-700 dark:bg-amber-950">
-                            <AlertTriangle className="h-7 w-7 shrink-0 text-amber-500" />
-                            <div className="flex-1">
-                                <p className="font-semibold text-amber-800 dark:text-amber-200">⚠️ Belum isi Bugar Selamat hari ini</p>
-                                <p className="text-xs text-amber-600 dark:text-amber-400">Ketuk di sini untuk mengisi sekarang →</p>
-                            </div>
-                        </div>
-                    </Link>
+                        <Button asChild className="h-11 w-full">
+                            <Link href="/bugar-selamat/create">Isi sekarang</Link>
+                        </Button>
+                    </section>
                 )}
 
-                {/* ④b PERLU TINDAKAN — semua reminder terpusat di sini */}
-                {(() => {
-                    const actionItems = ([
-                        ...(pending_re_inspeksi
-                            ? [
-                                  { label: 'Approval Inspeksi Kantor', href: '/sap/inspeksi-kantor', count: pending_re_inspeksi.kantor, icon: <ClipboardCheck className="h-4 w-4" />, tone: 'blue' as const },
-                                  { label: 'Approval Inspeksi Tambang', href: '/sap/inspeksi-tambang', count: pending_re_inspeksi.tambang, icon: <ClipboardCheck className="h-4 w-4" />, tone: 'blue' as const },
-                                  { label: 'Approval Inspeksi Workshop', href: '/sap/inspeksi-workshop', count: pending_re_inspeksi.workshop, icon: <ClipboardCheck className="h-4 w-4" />, tone: 'blue' as const },
-                                  { label: 'Approval Inspeksi Mess', href: '/sap/inspeksi-mess', count: pending_re_inspeksi.mess, icon: <ClipboardCheck className="h-4 w-4" />, tone: 'blue' as const },
-                              ]
-                            : []),
-                        { label: 'Konfirmasi Form OK', href: '/sap/observasi-keselamatan', count: pending_form_ok, icon: <Eye className="h-4 w-4" />, tone: 'purple' },
-                        { label: 'Tanda tangan JSA (sebagai TL)', href: '/sap/komunikasi-jsa', count: pending_jsa_tl, icon: <BookOpen className="h-4 w-4" />, tone: 'indigo' },
-                        { label: 'Laporan bahaya — Anda PIC-nya', href: '/laporan-bahaya?tab=pic', count: pending_as_pic, icon: <BriefcaseBusiness className="h-4 w-4" />, tone: 'orange' },
-                    ] satisfies ReminderItem[]).filter(item => item.count > 0);
-
-                    const waitingItems = ([
-                        { label: 'Form OK Anda — menunggu approval', href: '/sap/observasi-keselamatan', count: my_pending_observasi, icon: <Eye className="h-4 w-4" />, tone: 'amber' },
-                        ...(my_pending_inspeksi
-                            ? INSPEKSI_JENIS.map(({ key, label }) => ({
-                                  label: `Inspeksi ${label} Anda — menunggu approval`,
-                                  href: `/sap/inspeksi-${key}`,
-                                  count: my_pending_inspeksi[key],
-                                  icon: <ClipboardCheck className="h-4 w-4" />,
-                                  tone: 'amber' as const,
-                              }))
-                            : []),
-                        { label: 'JSA Anda — menunggu approval', href: '/sap/komunikasi-jsa', count: my_pending_jsa, icon: <BookOpen className="h-4 w-4" />, tone: 'amber' },
-                        { label: 'Laporan Anda — PIC belum closing', href: '/laporan-bahaya', count: my_open_with_pic, icon: <Clock className="h-4 w-4" />, tone: 'red' },
-                    ] satisfies ReminderItem[]).filter(item => item.count > 0);
-
-                    if (actionItems.length === 0 && waitingItems.length === 0) {
-                        return null;
-                    }
-
-                    const totalAction = actionItems.reduce((sum, item) => sum + item.count, 0);
-
-                    return (
-                        <Card className="gap-0 overflow-hidden py-0">
-                            <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
-                                <p className="text-sm font-bold">🔔 Reminder</p>
-                                {totalAction > 0 && (
-                                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[11px] font-bold text-white">
-                                        {totalAction}
-                                    </span>
-                                )}
-                            </div>
-                            {actionItems.length > 0 && (
-                                <div className="px-2 pb-2">
-                                    <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                        Perlu tindakan Anda
-                                    </p>
-                                    {actionItems.map(item => (
-                                        <ReminderRow key={item.label} item={item} />
-                                    ))}
-                                </div>
-                            )}
-                            {actionItems.length > 0 && waitingItems.length > 0 && (
-                                <div className="mx-4 border-t" />
-                            )}
-                            {waitingItems.length > 0 && (
-                                <div className={`px-2 pb-2 ${actionItems.length > 0 ? 'pt-2' : ''}`}>
-                                    <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                        Menunggu pihak lain
-                                    </p>
-                                    {waitingItems.map(item => (
-                                        <ReminderRow key={item.label} item={item} />
-                                    ))}
-                                </div>
-                            )}
-                        </Card>
-                    );
-                })()}
-
-                {/* ④ BADGE BARU (kondisional) */}
-                {visibleBadges.length > 0 && (
-                    <div className="relative rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-3 dark:border-yellow-700 dark:bg-yellow-950">
-                        <button
-                            onClick={dismissBadges}
-                            className="absolute right-2 top-2 rounded-md p-1 text-yellow-600 hover:bg-yellow-200 dark:text-yellow-400 dark:hover:bg-yellow-800 transition-colors"
-                            aria-label="Tutup notifikasi badge"
-                        >
-                            <X size={14} />
-                        </button>
-                        <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-200 mb-2 pr-6">🎉 Selamat! Pencapaian baru diraih:</p>
-                        <div className="flex flex-wrap gap-2">
-                            {visibleBadges.map((b) => (
-                                <span key={b.key} className="flex items-center gap-1 rounded-full bg-yellow-200 dark:bg-yellow-800 px-3 py-1 text-xs font-semibold text-yellow-900 dark:text-yellow-100">
-                                    {b.icon} {b.nama}
+                {(actionItems.length > 0 || waitingItems.length > 0) && (
+                    <section aria-labelledby="tugas-title" className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <h2 id="tugas-title" className="text-[15px] font-semibold">
+                                Perlu tindakan
+                            </h2>
+                            {totalAction > 0 && (
+                                <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-destructive px-1.5 text-xs font-semibold text-white tabular-nums">
+                                    {totalAction}
                                 </span>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* ⑤ TOMBOL AKSI UTAMA */}
-                <div className="flex flex-col gap-2">
-                    <div className="grid grid-cols-2 gap-3">
-                        <Link href="/bugar-selamat/create" className="block">
-                            <div className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 px-3 py-4 text-center active:scale-95 transition-transform ${
-                                sudahIsiBugarHariIni
-                                    ? 'border-border bg-muted/40'
-                                    : 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950'
-                            }`}>
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-200 dark:bg-green-800">
-                                    <ClipboardCheck className="h-6 w-6 text-green-700 dark:text-green-300" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-green-900 dark:text-green-100">Bugar Selamat</p>
-                                    <p className="text-[11px] text-green-600 dark:text-green-400">
-                                        {sudahIsiBugarHariIni ? 'Sudah diisi hari ini ✓' : 'Checklist layak kerja'}
-                                    </p>
-                                </div>
-                            </div>
-                        </Link>
-                        <Link href="/laporan-bahaya/create" className="block">
-                            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-red-300 bg-red-50 px-3 py-4 text-center active:scale-95 transition-transform dark:border-red-700 dark:bg-red-950">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-200 dark:bg-red-800">
-                                    <AlertTriangle className="h-6 w-6 text-red-700 dark:text-red-300" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-red-900 dark:text-red-100">Laporan Bahaya</p>
-                                    <p className="text-[11px] text-red-600 dark:text-red-400">Laporkan kondisi bahaya</p>
-                                </div>
-                            </div>
-                        </Link>
-                    </div>
-
-                    {/* SAP shortcuts — staff & srstaff saja */}
-                    {isSAPUser && (
-                        <div className="grid grid-cols-3 gap-2">
-                            <button
-                                type="button"
-                                onClick={() => router.visit('/sap/komunikasi-jsa/create')}
-                                className="block w-full"
-                            >
-                                <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-amber-300 bg-amber-50 px-2 py-4 text-center active:scale-95 transition-transform dark:border-amber-700 dark:bg-amber-950">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-200 dark:bg-amber-800">
-                                        <BookOpen className="h-5 w-5 text-amber-700 dark:text-amber-300" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-amber-900 dark:text-amber-100">JSA/SOP</p>
-                                        <p className="text-[11px] text-amber-600 dark:text-amber-400">Komunikasi JSA</p>
-                                    </div>
-                                </div>
-                            </button>
-
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button type="button" className="w-full">
-                                        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-teal-300 bg-teal-50 px-2 py-4 text-center active:scale-95 transition-transform dark:border-teal-700 dark:bg-teal-950">
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-200 dark:bg-teal-800">
-                                                <HardHat className="h-5 w-5 text-teal-700 dark:text-teal-300" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs font-bold text-teal-900 dark:text-teal-100">Inspeksi ▾</p>
-                                                <p className="text-[11px] text-teal-600 dark:text-teal-400">Pilih area</p>
-                                            </div>
-                                        </div>
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-52">
-                                    <DropdownMenuItem onClick={() => router.visit('/sap/inspeksi-kantor/create')}>
-                                        🏢 Inspeksi Kantor
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => router.visit('/sap/inspeksi-tambang/create')}>
-                                        ⛏️ Inspeksi Tambang
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => router.visit('/sap/inspeksi-workshop/create')}>
-                                        🔧 Inspeksi Workshop
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => router.visit('/sap/inspeksi-mess/create')}>
-                                        🏠 Inspeksi Mess
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            <button
-                                type="button"
-                                onClick={() => router.visit('/sap/observasi-keselamatan/create')}
-                                className="block w-full"
-                            >
-                                <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-violet-300 bg-violet-50 px-2 py-4 text-center active:scale-95 transition-transform dark:border-violet-700 dark:bg-violet-950">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-200 dark:bg-violet-800">
-                                        <Eye className="h-5 w-5 text-violet-700 dark:text-violet-300" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-violet-900 dark:text-violet-100">Observasi</p>
-                                        <p className="text-[11px] text-violet-600 dark:text-violet-400">Keselamatan</p>
-                                    </div>
-                                </div>
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {/* ⑥ TARGET PARTISIPASI */}
-                {target ? (
-                    <Card>
-                        <div className="flex items-center justify-between px-4 pt-3 pb-1">
-                            <p className="text-sm font-bold">📊 Target Bulan Ini</p>
-                            <span className="text-[11px] text-muted-foreground">✅ tercapai · ⚠️ lumayan · ❗ kurang</span>
-                        </div>
-                        <CardContent className="px-4 pt-0 pb-3">
-                            <TargetMetricRow
-                                label="Bugar Selamat"
-                                icon={<ClipboardCheck className="h-4 w-4" />}
-                                iconColor="text-green-600 dark:text-green-400"
-                                persen={target.bugar.persen}
-                                hariTerpenuhi={target.bugar.hari_terpenuhi}
-                                hariBerlalu={target.bugar.hari_berlalu}
-                                accentColor="bg-green-500"
-                                barColor="bg-green-500 dark:bg-green-400"
-                                trackColor="bg-green-100 dark:bg-green-900"
-                                textColor="text-green-700 dark:text-green-300"
-                            />
-                            <WeeklyMetricRow
-                                label="Laporan Bahaya"
-                                icon={<AlertTriangle className="h-4 w-4" />}
-                                iconColor="text-red-500 dark:text-red-400"
-                                metric={target.laporan}
-                                accentColor="bg-red-500"
-                                activeColor="bg-red-500 dark:bg-red-400"
-                                inactiveColor="bg-red-100 dark:bg-red-900"
-                                textColor="text-red-700 dark:text-red-300"
-                            />
-                            {target.inspeksi && (
-                                <WeeklyMetricRow
-                                    label="Inspeksi"
-                                    icon={<HardHat className="h-4 w-4" />}
-                                    iconColor="text-blue-600 dark:text-blue-400"
-                                    metric={target.inspeksi}
-                                    accentColor="bg-blue-500"
-                                    activeColor="bg-blue-500 dark:bg-blue-400"
-                                    inactiveColor="bg-blue-100 dark:bg-blue-900"
-                                    textColor="text-blue-700 dark:text-blue-300"
-                                />
                             )}
-                            {target.observasi && (
-                                <WeeklyMetricRow
-                                    label="Observasi"
-                                    icon={<Eye className="h-4 w-4" />}
-                                    iconColor="text-violet-600 dark:text-violet-400"
-                                    metric={target.observasi}
-                                    accentColor="bg-violet-500"
-                                    activeColor="bg-violet-500 dark:bg-violet-400"
-                                    inactiveColor="bg-violet-100 dark:bg-violet-900"
-                                    textColor="text-violet-700 dark:text-violet-300"
-                                />
-                            )}
-                            {target.jsa && (
-                                <WeeklyMetricRow
-                                    label="JSA"
-                                    icon={<BookOpen className="h-4 w-4" />}
-                                    iconColor="text-amber-600 dark:text-amber-400"
-                                    metric={target.jsa}
-                                    accentColor="bg-amber-500"
-                                    activeColor="bg-amber-500 dark:bg-amber-400"
-                                    inactiveColor="bg-amber-100 dark:bg-amber-900"
-                                    textColor="text-amber-700 dark:text-amber-300"
-                                    periodLabel="P"
-                                />
-                            )}
-                        </CardContent>
-                    </Card>
-                ) : null}
-
-                {/* ⑧ LEADERBOARD */}
-                {hasAnyLeader && (
-                    <Card>
-                        <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                            <p className="text-sm font-bold">🏆 Papan Peringkat</p>
-                            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize">{leaderSiteLabel}</span>
                         </div>
-                        {/* Tab navigasi kategori */}
-                        <div className="flex gap-1 overflow-x-auto px-4 pb-2 scrollbar-none">
-                            {LEADER_TABS.map(tab => (
-                                <button
-                                    key={tab.key}
-                                    onClick={() => setLeaderTab(tab.key)}
-                                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${leaderTab === tab.key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
-                        <CardContent className="pt-0 space-y-1.5">
-                            {activeLeaderEntries.length === 0 ? (
-                                <p className="text-center text-xs text-muted-foreground py-3">Belum ada data bulan ini</p>
-                            ) : (
-                                activeLeaderEntries.map((entry, idx) => (
-                                    <div
-                                        key={entry.id}
-                                        className={`flex items-center gap-3 rounded-xl px-3 py-2 ${entry.id === user.id ? 'bg-primary/10 ring-1 ring-primary/20' : 'bg-muted/40'}`}
-                                    >
-                                        <span className="text-lg leading-none w-7 shrink-0 text-center">{MEDALS[idx]}</span>
-                                        {entry.avatar ? (
-                                            <img src={entry.avatar} alt={entry.name} className="h-8 w-8 shrink-0 rounded-full object-cover" />
-                                        ) : (
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                                                {entry.name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
-                                            </div>
-                                        )}
-                                        <p className="flex-1 text-sm font-medium truncate">
-                                            {entry.name}
-                                            {entry.id === user.id && <span className="ml-1 text-[11px] text-primary font-semibold">(kamu)</span>}
-                                        </p>
-                                        <span className="text-sm font-bold text-primary">
-                                            {entry.skor}{' '}
-                                            <span className="text-[11px] font-normal text-muted-foreground">
-                                                {LEADER_TABS.find(t => t.key === leaderTab)?.unit}
-                                            </span>
-                                        </span>
-                                    </div>
-                                ))
-                            )}
-                            {leaderTab === 'laporan_bahaya' && (
-                                <p className="text-[11px] text-muted-foreground pt-1 text-center">
-                                    AA=4 · A=3 · B=2 · C=1 poin
+                        <div className="divide-y overflow-hidden rounded-xl border bg-card">
+                            {actionItems.length === 0 && (
+                                <p className="flex min-h-12 items-center gap-3 px-3.5 text-sm text-muted-foreground">
+                                    <span aria-hidden className="size-1.5 rounded-full bg-green-500" />
+                                    Tidak ada yang menunggu Anda.
                                 </p>
                             )}
-                        </CardContent>
-                    </Card>
+                            {actionItems.map((item) => (
+                                <Link key={item.label} href={item.href} className="flex min-h-[50px] items-center gap-3 px-3.5 transition-colors hover:bg-muted">
+                                    <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-destructive" />
+                                    <span className="flex-1 text-sm">{item.label}</span>
+                                    <span className="text-sm font-semibold tabular-nums">{item.count}</span>
+                                    <ChevronRight aria-hidden className="size-4 text-muted-foreground/60" />
+                                </Link>
+                            ))}
+                            {waitingItems.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setWaitingOpen((open) => !open)}
+                                    aria-expanded={waitingOpen}
+                                    className="flex min-h-[46px] w-full items-center gap-3 px-3.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted"
+                                >
+                                    <span aria-hidden className="size-1.5 shrink-0 rounded-full border-[1.5px] border-amber-500" />
+                                    <span className="flex-1">Menunggu pihak lain ({totalWaiting})</span>
+                                    <ChevronDown aria-hidden className={cn('size-4 text-muted-foreground/60 transition-transform', waitingOpen && 'rotate-180')} />
+                                </button>
+                            )}
+                            {waitingOpen &&
+                                waitingItems.map((item) => (
+                                    <Link key={item.label} href={item.href} className="flex min-h-11 items-center gap-3 pr-3.5 pl-8 text-sm text-foreground/80 transition-colors hover:bg-muted">
+                                        <span className="flex-1">{item.label}</span>
+                                        <span className="font-semibold tabular-nums">{item.count}</span>
+                                    </Link>
+                                ))}
+                        </div>
+                    </section>
                 )}
 
-                {/* ⑨ RIWAYAT */}
-                <Card>
-                    <div className="flex items-center gap-1 overflow-x-auto px-4 pt-4 pb-2 scrollbar-none">
-                        <button
-                            onClick={() => setRiwayatTab('bugar')}
-                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${riwayatTab === 'bugar' ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground'}`}
-                        >
-                            Bugar Selamat
-                        </button>
-                        <button
-                            onClick={() => setRiwayatTab('laporan')}
-                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${riwayatTab === 'laporan' ? 'bg-red-600 text-white' : 'bg-muted text-muted-foreground'}`}
-                        >
-                            Lap. Bahaya
-                        </button>
-                        {isSAPUser && (
-                            <>
-                                <button
-                                    onClick={() => setRiwayatTab('observasi')}
-                                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${riwayatTab === 'observasi' ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground'}`}
-                                >
-                                    Observasi
+                <section aria-label="Buat laporan" className={cn('grid gap-2', isSAPUser ? 'grid-cols-2' : 'grid-cols-1')}>
+                    <ActionLink href="/laporan-bahaya/create" icon={<AlertTriangle className="size-[18px] text-red-600 dark:text-red-400" />} label="Lapor Bahaya" />
+                    {isSAPUser && (
+                        <>
+                            <InspeksiMenu>
+                                <button type="button" className={actionButtonCls}>
+                                    <ClipboardCheck aria-hidden className="size-[18px] text-teal-600 dark:text-teal-400" />
+                                    <span className="flex-1 text-left">Inspeksi</span>
+                                    <ChevronDown aria-hidden className="size-3.5 text-muted-foreground/60" />
                                 </button>
-                                <button
-                                    onClick={() => setRiwayatTab('inspeksi')}
-                                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${riwayatTab === 'inspeksi' ? 'bg-orange-600 text-white' : 'bg-muted text-muted-foreground'}`}
-                                >
-                                    Inspeksi
-                                </button>
-                                <button
-                                    onClick={() => setRiwayatTab('jsa')}
-                                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${riwayatTab === 'jsa' ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground'}`}
-                                >
-                                    JSA
-                                </button>
-                            </>
-                        )}
-                    </div>
-                    <CardContent className="pt-0">
-                        {riwayatTab === 'bugar' && (
-                            recent_bugar_selamat.length > 0 ? (
-                                <div className="space-y-1">
-                                    {recent_bugar_selamat.slice(0, 3).map((r) => (
-                                        <Link key={r.id} href={`/bugar-selamat/${r.id}`}>
-                                            <div className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-accent transition-colors">
-                                                <div>
-                                                    <p className="text-sm font-medium">{fmtDate(r.tanggal)}</p>
-                                                    <p className="text-xs text-muted-foreground">Shift {r.shift}</p>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <KelayakanBadge status={r.status_kelayakan} />
-                                                    <ChevronRight size={12} className="text-muted-foreground" />
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            ) : (
-                                <EmptyState message="Belum ada checklist." href="/bugar-selamat/create" label="Isi Sekarang" />
-                            )
-                        )}
-                        {riwayatTab === 'laporan' && (
-                            recent_laporan_bahaya.length > 0 ? (
-                                <div className="space-y-1">
-                                    {recent_laporan_bahaya.slice(0, 3).map((r) => (
-                                        <Link key={r.id} href={`/laporan-bahaya/${r.id}`}>
-                                            <div className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-accent transition-colors">
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-sm font-medium">{fmtDate(r.tanggal)}</p>
-                                                    <p className="truncate text-xs text-muted-foreground">{r.lokasi}</p>
-                                                </div>
-                                                <div className="ml-2 flex items-center gap-1.5 shrink-0">
-                                                    <RiskBadge level={r.tingkat_risiko} />
-                                                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${jenisTindakanColors[r.status_tindakan]}`}>
-                                                        {jenisTindakanLabels[r.status_tindakan]}
-                                                    </span>
-                                                    <ChevronRight size={12} className="text-muted-foreground" />
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            ) : (
-                                <EmptyState message="Belum ada laporan." href="/laporan-bahaya/create" label="Laporkan Sekarang" />
-                            )
-                        )}
-                        {riwayatTab === 'observasi' && (
-                            recent_observasi.length > 0 ? (
-                                <div className="space-y-1">
-                                    {recent_observasi.slice(0, 3).map((r) => (
-                                        <Link key={r.id} href={`/sap/observasi-keselamatan/${r.id}`}>
-                                            <div className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-accent transition-colors">
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-sm font-medium">{fmtDate(r.tanggal)}</p>
-                                                    <p className="truncate text-xs text-muted-foreground">{r.lokasi_kerja}</p>
-                                                </div>
-                                                <div className="ml-2 flex items-center gap-1.5 shrink-0">
-                                                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize">{r.status.replace('_', ' ')}</span>
-                                                    <ChevronRight size={12} className="text-muted-foreground" />
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            ) : (
-                                <EmptyState message="Belum ada observasi." href="/sap/observasi-keselamatan/create" label="Buat Sekarang" />
-                            )
-                        )}
-                        {riwayatTab === 'inspeksi' && (
-                            recent_inspeksi.length > 0 ? (
-                                <div className="space-y-1">
-                                    {recent_inspeksi.slice(0, 3).map((r) => (
-                                        <Link key={`${r.jenis}-${r.id}`} href={`/sap/inspeksi-${r.jenis.toLowerCase()}/${r.id}`}>
-                                        <div className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-accent transition-colors">
-                                            <div>
-                                                <p className="text-sm font-medium">{fmtDate(r.tanggal)}</p>
-                                                <p className="text-xs text-muted-foreground">Inspeksi {r.jenis}</p>
-                                            </div>
-                                            <div className="flex items-center gap-1.5 shrink-0">
-                                                {r.risk_level && (
-                                                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold uppercase">{r.risk_level}</span>
-                                                )}
-                                                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize">{r.status.replace(/_/g, ' ')}</span>
-                                                <ChevronRight size={12} className="text-muted-foreground" />
-                                            </div>
-                                        </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            ) : (
-                                <EmptyState message="Belum ada inspeksi." href="/sap/inspeksi" label="Buat Inspeksi" />
-                            )
-                        )}
-                        {riwayatTab === 'jsa' && (
-                            recent_jsa.length > 0 ? (
-                                <div className="space-y-1">
-                                    {recent_jsa.slice(0, 3).map((r) => (
-                                        <Link key={r.id} href={`/sap/komunikasi-jsa/${r.id}`}>
-                                            <div className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-accent transition-colors">
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-sm font-medium">{fmtDate(r.tanggal)}</p>
-                                                    <p className="truncate text-xs text-muted-foreground">{r.judul_dokumen}</p>
-                                                </div>
-                                                <div className="ml-2 flex items-center gap-1.5 shrink-0">
-                                                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize">{r.status.replace(/_/g, ' ')}</span>
-                                                    <ChevronRight size={12} className="text-muted-foreground" />
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            ) : (
-                                <EmptyState message="Belum ada JSA." href="/sap/komunikasi-jsa/create" label="Buat Sekarang" />
-                            )
-                        )}
-                        {/* Di bawah daftar dan menyebut jenisnya, agar jelas mengikuti tab yang aktif. */}
-                        <Link
-                            href={RIWAYAT_SEMUA[riwayatTab].href}
-                            className="mt-2 flex items-center justify-center gap-1 rounded-xl py-2.5 text-xs font-semibold text-primary hover:bg-accent"
-                        >
-                            Lihat semua {RIWAYAT_SEMUA[riwayatTab].label} <ChevronRight size={14} />
-                        </Link>
-                    </CardContent>
-                </Card>
+                            </InspeksiMenu>
+                            <ActionLink href="/sap/observasi-keselamatan/create" icon={<Eye className="size-[18px] text-violet-600 dark:text-violet-400" />} label="Observasi" />
+                            <ActionLink href="/sap/komunikasi-jsa/create" icon={<BookOpen className="size-[18px] text-amber-600 dark:text-amber-400" />} label="JSA" />
+                        </>
+                    )}
+                </section>
 
-                <p className="text-center text-xs text-muted-foreground pt-1 italic">
-                    💬 {motivasi}
-                </p>
+                {target && <TargetCard target={target} streak={streak} />}
 
-                <p className="text-center text-xs text-muted-foreground/60 pt-1">
-                    <a
-                        href="https://github.com/akrestu"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-muted-foreground transition-colors"
-                    >
+                <RecentActivity bugar={recent_bugar_selamat} laporan={recent_laporan_bahaya} observasi={recent_observasi} inspeksi={recent_inspeksi} jsa={recent_jsa} />
+
+                <p className="pt-1 text-center text-xs text-muted-foreground/60">
+                    <a href="https://github.com/akrestu" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-muted-foreground">
                         Create with love ❤ by ak.restu
                     </a>
                 </p>
@@ -1014,149 +410,37 @@ export default function Dashboard({
     );
 }
 
-type ReminderTone = 'blue' | 'purple' | 'indigo' | 'orange' | 'amber' | 'red';
-
-type ReminderItem = {
-    label: string;
-    href: string;
-    count: number;
-    icon: React.ReactNode;
-    tone: ReminderTone;
-};
-
-const reminderToneCls: Record<ReminderTone, { iconWrap: string; count: string }> = {
-    blue: { iconWrap: 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400', count: 'text-blue-600 dark:text-blue-400' },
-    purple: { iconWrap: 'bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400', count: 'text-purple-600 dark:text-purple-400' },
-    indigo: { iconWrap: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400', count: 'text-indigo-600 dark:text-indigo-400' },
-    orange: { iconWrap: 'bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400', count: 'text-orange-600 dark:text-orange-400' },
-    amber: { iconWrap: 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400', count: 'text-amber-600 dark:text-amber-400' },
-    red: { iconWrap: 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400', count: 'text-red-600 dark:text-red-400' },
-};
-
-function ReminderRow({ item }: { item: ReminderItem }) {
-    const tone = reminderToneCls[item.tone];
-
+function ActionLink({ href, icon, label }: { href: string; icon: ReactNode; label: string }) {
     return (
-        <Link href={item.href} className="block">
-            <div className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-accent active:bg-accent">
-                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${tone.iconWrap}`}>
-                    {item.icon}
-                </div>
-                <p className="flex-1 text-sm leading-snug">{item.label}</p>
-                <span className={`shrink-0 text-sm font-bold tabular-nums ${tone.count}`}>{item.count}</span>
-                <ChevronRight size={14} className="shrink-0 text-muted-foreground/50" />
-            </div>
+        <Link href={href} className={actionButtonCls}>
+            <span aria-hidden>{icon}</span>
+            {label}
         </Link>
     );
 }
 
-function TargetMetricRow({
-    label,
-    icon,
-    persen,
-    hariTerpenuhi,
-    hariBerlalu,
-    accentColor,
-    barColor,
-    trackColor,
-    textColor,
-    iconColor,
-}: {
-    label: string;
-    icon: React.ReactNode;
-    persen: number;
-    hariTerpenuhi: number;
-    hariBerlalu: number;
-    accentColor: string;
-    barColor: string;
-    trackColor: string;
-    textColor: string;
-    iconColor: string;
-}) {
-    const statusEmoji = persen >= 80 ? '✅' : persen >= 50 ? '⚠️' : '❗';
+function BugarDone({ status, shift }: { status: RecentBugar['status_kelayakan']; shift: string }) {
+    // Status "dilarang" adalah kondisi keselamatan: tetap menonjol, bukan baris tenang.
+    if (status === 'dilarang') {
+        return (
+            <section aria-label="Bugar Selamat hari ini" className="flex items-start gap-3 rounded-xl border border-red-300 bg-card p-4 dark:border-red-800">
+                <AlertTriangle aria-hidden className="mt-0.5 size-5 shrink-0 text-red-600 dark:text-red-400" />
+                <div className="flex-1">
+                    <p className="text-base font-semibold">Tidak layak bekerja hari ini</p>
+                    <p className="text-sm text-muted-foreground">Hasil Bugar Selamat shift {shift}. Segera lapor ke pengawas Anda.</p>
+                </div>
+                <KelayakanBadge status={status} />
+            </section>
+        );
+    }
 
     return (
-        <div className="flex items-center gap-2.5 py-2.5 border-b last:border-0">
-            <div className={`w-1 self-stretch rounded-full shrink-0 ${accentColor}`} />
-            <span className={`shrink-0 ${iconColor}`}>{icon}</span>
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold truncate">{label}</span>
-                    <span className={`text-xs font-bold ml-2 shrink-0 ${textColor}`}>{persen}% {statusEmoji}</span>
-                </div>
-                <div className={`h-2 w-full rounded-full overflow-hidden ${trackColor}`}>
-                    <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${persen}%` }} />
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{hariTerpenuhi} dari {hariBerlalu} hari</p>
-            </div>
-        </div>
-    );
-}
-
-function WeeklyMetricRow({
-    label,
-    icon,
-    metric,
-    accentColor,
-    activeColor,
-    inactiveColor,
-    textColor,
-    iconColor,
-    periodLabel = 'M',
-}: {
-    label: string;
-    icon: React.ReactNode;
-    metric: { weeks: { count: number; terpenuhi: boolean }[]; minggu_berlalu: number; minggu_terpenuhi: number; persen: number; target_per_minggu: number };
-    accentColor: string;
-    activeColor: string;
-    inactiveColor: string;
-    textColor: string;
-    iconColor: string;
-    periodLabel?: string;
-}) {
-    const isPeriod = periodLabel !== 'M';
-    const unitLabel = isPeriod ? 'periode' : 'mgg';
-    const statusEmoji = metric.persen >= 80 ? '✅' : metric.persen >= 50 ? '⚠️' : '❗';
-
-    return (
-        <div className="flex items-center gap-2.5 py-2.5 border-b last:border-0">
-            <div className={`w-1 self-stretch rounded-full shrink-0 ${accentColor}`} />
-            <span className={`shrink-0 ${iconColor}`}>{icon}</span>
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-semibold truncate">{label}</span>
-                    <span className={`text-xs font-bold ml-2 shrink-0 ${textColor}`}>{metric.persen}% {statusEmoji}</span>
-                </div>
-                <div className="flex gap-1">
-                    {metric.weeks.map((w, i) => (
-                        <div
-                            key={i}
-                            title={`${isPeriod ? 'P' : 'Mg'}${i + 1}: ${w.count}×`}
-                            className={`h-5 flex-1 rounded transition-all ${
-                                i >= metric.minggu_berlalu
-                                    ? 'bg-muted/50'
-                                    : w.terpenuhi ? activeColor : inactiveColor
-                            }`}
-                        />
-                    ))}
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {metric.minggu_terpenuhi}/{metric.minggu_berlalu} {unitLabel} · target {metric.target_per_minggu}× per {unitLabel}
-                </p>
-            </div>
-        </div>
-    );
-}
-
-function EmptyState({ message, href, label }: { message: string; href: string; label: string }) {
-    return (
-        <div className="rounded-xl border border-dashed py-5 text-center">
-            <p className="text-sm text-muted-foreground">{message}</p>
-            <Link href={href}>
-                <Button variant="outline" size="sm" className="mt-2 gap-1.5">
-                    <Plus size={13} /> {label}
-                </Button>
-            </Link>
-        </div>
+        <section aria-label="Bugar Selamat hari ini" className="flex min-h-12 items-center gap-2.5 rounded-xl border bg-card px-3.5">
+            <Check aria-hidden className="size-[18px] text-green-600 dark:text-green-400" />
+            <span className="flex-1 text-sm font-medium">
+                Bugar Selamat <span className="text-muted-foreground">· Shift {shift}</span>
+            </span>
+            <KelayakanBadge status={status} />
+        </section>
     );
 }
