@@ -1,12 +1,16 @@
 import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, GraduationCap, HeartPulse, Home, LayoutGrid, MapPin, Mountain, ShieldCheck, Target, User, UserCheck, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, GraduationCap, HeartPulse, Home, Inbox, LayoutGrid, MapPin, Mountain, Plus, Search, ShieldCheck, Target, User, UserCheck, Users, Wrench } from 'lucide-react';
 import { useState  } from 'react';
 import type {ReactNode} from 'react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
+import { BottomNav } from '@/components/bottom-nav';
+import { CommandPalette } from '@/components/command-palette';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { NotificationBell } from '@/components/notification-bell';
+import { QuickActionSheet } from '@/components/quick-action-sheet';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
@@ -22,14 +26,7 @@ import {
     SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { useAutoHideNav } from '@/hooks/use-auto-hide-nav';
-import { index as bugarSelamatIndex } from '@/routes/bugar-selamat';
-import { index as laporanBahayaIndex } from '@/routes/laporan-bahaya';
-import { index as inspeksiKantorIndex } from '@/routes/sap/inspeksi-kantor';
-import { index as inspeksiMessIndex } from '@/routes/sap/inspeksi-mess';
-import { index as inspeksiTambangIndex } from '@/routes/sap/inspeksi-tambang';
-import { index as inspeksiWorkshopIndex } from '@/routes/sap/inspeksi-workshop';
-import { index as komunikasiJsaIndex } from '@/routes/sap/komunikasi-jsa';
-import { index as okIndex } from '@/routes/sap/observasi-keselamatan';
+import { modules, programsFor } from '@/modules/registry';
 import type { Auth } from '@/types';
 
 type Props = {
@@ -195,7 +192,7 @@ const adminMobileNavItems = [
 
 function MobileHeader({ title, showBack, backHref, isAdmin }: { title?: string; showBack?: boolean; backHref?: string; isAdmin?: boolean }) {
     return (
-        <header className="sticky top-0 z-10 border-b bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:hidden">
+        <header className="sticky top-0 z-10 bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/70 lg:hidden">
             <div className="mx-auto flex h-14 max-w-lg items-center gap-3 px-4">
                 {showBack && backHref ? (
                     <Link
@@ -208,12 +205,10 @@ function MobileHeader({ title, showBack, backHref, isAdmin }: { title?: string; 
                         </svg>
                     </Link>
                 ) : (
-                    <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-md">
-                        <img src="/logo.png" alt="MyWahana" className="size-8 object-contain" />
-                    </div>
+                    <img src="/logo.png" alt="" className="size-8 object-contain" />
                 )}
                 <div className="flex-1">
-                    <h1 className="text-sm font-semibold leading-tight">{title ?? 'MyWahana'}</h1>
+                    <span className="text-[15px] font-extrabold leading-tight tracking-tight">{title ?? 'MyWahana'}</span>
                 </div>
                 {isAdmin && !showBack && (
                     <Link
@@ -457,6 +452,9 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
     const isStaff = !isAdmin && ['staff', 'srstaff'].includes(participationLevel);
 
     const userMobileNavItems = baseUserMobileNavItems;
+    const inboxCount = (usePage<{ inbox_count?: number }>().props.inbox_count ?? 0);
+    const [quickOpen, setQuickOpen] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
 
     const mainNavGroups = isAdmin
         ? [
@@ -481,36 +479,18 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 { title: 'Target Kinerja',  href: '/admin/targets',  icon: Target },
             ]},
           ]
-        : isStaff
-        ? [
-            { items: [
-                { title: 'Dashboard', href: dashboardUrl, icon: LayoutGrid },
-                { title: 'Bugar Selamat', href: bugarSelamatIndex.url(), icon: HeartPulse },
-                { title: 'Laporan Bahaya', href: laporanBahayaIndex.url(), icon: AlertTriangle },
-            ]},
-            { label: 'Assessment', items: [
-                { title: 'Safety Assessment', href: '/assessment',    icon: GraduationCap },
-                { title: 'HR Assessment',     href: '/hr-assessment', icon: UserCheck },
-            ]},
-            { label: 'SAP', items: [
-                { title: 'Observasi Keselamatan', href: okIndex.url(),             icon: ClipboardCheck },
-                { title: 'Komunikasi JSA',        href: komunikasiJsaIndex.url(),    icon: BookOpen },
-                { title: 'Inspeksi Kantor',       href: inspeksiKantorIndex.url(),   icon: Building2 },
-                { title: 'Inspeksi Tambang',      href: inspeksiTambangIndex.url(),  icon: Mountain },
-                { title: 'Inspeksi Workshop',     href: inspeksiWorkshopIndex.url(), icon: Wrench },
-                { title: 'Inspeksi Mess',         href: inspeksiMessIndex.url(),     icon: BedDouble },
-            ]},
-          ]
         : [
             { items: [
-                { title: 'Dashboard', href: dashboardUrl, icon: LayoutGrid },
-                { title: 'Bugar Selamat', href: bugarSelamatIndex.url(), icon: HeartPulse },
-                { title: 'Laporan Bahaya', href: laporanBahayaIndex.url(), icon: AlertTriangle },
+                { title: 'Beranda', href: dashboardUrl, icon: Home },
+                { title: 'Modul', href: '/modules', icon: LayoutGrid },
+                { title: 'Inbox', href: '/inbox', icon: Inbox, badge: inboxCount > 0 ? inboxCount : undefined },
             ]},
-            { label: 'Assessment', items: [
-                { title: 'Safety Assessment', href: '/assessment',    icon: GraduationCap },
-                { title: 'HR Assessment',     href: '/hr-assessment', icon: UserCheck },
-            ]},
+            ...modules
+                .filter((m) => m.status === 'active')
+                .map((m) => ({
+                    label: m.label,
+                    items: programsFor(m, participationLevel).map((p) => ({ title: p.label, href: p.href, icon: p.icon })),
+                })),
           ];
 
     return (
@@ -553,6 +533,23 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                         {title ?? 'MyWahana'}
                     </span>
                     <div className="ml-auto flex items-center gap-1">
+                        {!isAdmin && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchOpen(true)}
+                                    className="mr-1 flex h-9 w-64 items-center gap-2 rounded-full bg-muted px-3.5 text-sm text-muted-foreground transition-colors hover:bg-border/60"
+                                >
+                                    <Search className="size-4" />
+                                    <span className="flex-1 text-left">Cari…</span>
+                                    <kbd className="rounded-md bg-card px-1.5 py-0.5 text-[11px] font-semibold">Ctrl K</kbd>
+                                </button>
+                                <Button size="sm" onClick={() => setQuickOpen(true)} className="mr-1">
+                                    <Plus />
+                                    Buat
+                                </Button>
+                            </>
+                        )}
                         <AppearanceToggleButton />
                         <NotificationBell />
                     </div>
@@ -567,7 +564,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 />
 
                 {/* Page content */}
-                <main className="flex-1 px-4 py-4 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:p-6 lg:pb-6">
+                <main className="flex-1 px-4 py-4 pb-[calc(7rem+env(safe-area-inset-bottom))] lg:p-6 lg:pb-6">
                     {/* Mobile: constrain to phone-width; Desktop: full width */}
                     <div className="mx-auto w-full max-w-lg lg:max-w-none">
                         {children}
@@ -575,7 +572,15 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 </main>
 
                 {/* Mobile bottom nav */}
-                <MobileBottomNav url={url} isAdmin={isAdmin} isStaff={isStaff} navItems={userMobileNavItems} />
+                {isAdmin ? (
+                    <MobileBottomNav url={url} isAdmin={isAdmin} isStaff={isStaff} navItems={userMobileNavItems} />
+                ) : (
+                    <>
+                        <BottomNav />
+                        <QuickActionSheet open={quickOpen} onOpenChange={setQuickOpen} />
+                        <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
+                    </>
+                )}
             </SidebarInset>
         </SidebarProvider>
     );

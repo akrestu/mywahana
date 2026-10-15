@@ -9,13 +9,16 @@ use App\Http\Controllers\BugarSelamatController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HrAssessmentController;
 use App\Http\Controllers\HrAssessmentQuestionController;
+use App\Http\Controllers\InboxController;
 use App\Http\Controllers\InspeksiController;
 use App\Http\Controllers\InspeksiKantorController;
 use App\Http\Controllers\InspeksiMessController;
 use App\Http\Controllers\InspeksiTambangController;
 use App\Http\Controllers\InspeksiWorkshopController;
+use App\Http\Controllers\K3Controller;
 use App\Http\Controllers\KomunikasiJsaController;
 use App\Http\Controllers\LaporanBahayaController;
+use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ObservasiKeselamatanController;
 use App\Http\Controllers\PushSubscriptionController;
@@ -27,6 +30,9 @@ Route::redirect('/', '/login');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/home', [DashboardController::class, 'index'])->name('app.home');
+    Route::get('/modules', [ModuleController::class, 'index'])->name('modules.index');
+    Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
+    Route::get('/k3', [K3Controller::class, 'index'])->name('k3.index');
     Route::get('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');
 
     // Bugar Selamat
