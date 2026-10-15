@@ -9,6 +9,7 @@ import { CommandPalette } from '@/components/command-palette';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { NotificationBell } from '@/components/notification-bell';
+import { OfflineBanner } from '@/components/offline-banner';
 import { QuickActionSheet } from '@/components/quick-action-sheet';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -527,6 +528,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
 
             {/* ── Main content area ── */}
             <SidebarInset>
+                <OfflineBanner />
                 {/* Desktop top bar (hidden on mobile) */}
                 <header className="hidden h-16 shrink-0 items-center gap-2 border-b border-sidebar-border/50 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 lg:flex">
                     <SidebarTrigger className="-ml-1" />

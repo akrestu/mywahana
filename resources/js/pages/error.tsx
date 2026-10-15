@@ -62,16 +62,16 @@ export default function ErrorPage({ status, message }: Props) {
     return (
         <>
             <Head title={`${status} — ${cfg.title}`} />
-            <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 py-12">
+            <div className="relative isolate flex min-h-svh flex-col items-center justify-center overflow-hidden bg-background px-6 py-12">
+                <img
+                    src="/images/topo.png"
+                    alt=""
+                    aria-hidden
+                    className="pointer-events-none absolute -right-[280px] -bottom-[160px] -z-10 w-[760px] max-w-none opacity-30 dark:opacity-10 dark:invert"
+                />
                 <div className="flex w-full max-w-sm flex-col items-center gap-6 text-center">
-                    {/* Emoji + kode status */}
-                    <div className="relative">
-                        <div className="absolute inset-0 -z-10 animate-pulse rounded-full bg-primary/10 blur-2xl" />
-                        <span className="block animate-bounce text-7xl [animation-duration:2.5s]">
-                            {cfg.emoji}
-                        </span>
-                    </div>
-                    <p className="font-mono text-6xl font-black tracking-tight text-primary/20">
+                    <img src="/logo.png" alt="MyWahana" className="size-12" />
+                    <p className="text-7xl font-extrabold tracking-tight tabular">
                         {status}
                     </p>
 
@@ -86,7 +86,8 @@ export default function ErrorPage({ status, message }: Props) {
                         {cfg.canRetry && (
                             <Button
                                 onClick={() => router.reload()}
-                                className="h-12 w-full gap-2 text-base font-bold"
+                                size="lg"
+                                className="w-full"
                             >
                                 <RefreshCw size={17} /> Muat Ulang
                             </Button>
@@ -94,7 +95,8 @@ export default function ErrorPage({ status, message }: Props) {
                         <Button
                             asChild
                             variant={cfg.canRetry ? 'outline' : 'default'}
-                            className="h-12 w-full gap-2 text-base font-bold"
+                            size="lg"
+                            className="w-full"
                         >
                             <Link href="/home">
                                 <Home size={17} /> Kembali ke Beranda

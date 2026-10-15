@@ -20,7 +20,7 @@ export default function DeleteUser() {
 
     return (
         <div className="space-y-3">
-            <p className="text-sm text-red-600 dark:text-red-400">
+            <p className="text-sm text-destructive">
                 <strong>Perhatian:</strong> Menghapus akun bersifat permanen dan tidak dapat dibatalkan. Semua data Anda akan ikut terhapus.
             </p>
 

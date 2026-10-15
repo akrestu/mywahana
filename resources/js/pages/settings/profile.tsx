@@ -207,11 +207,11 @@ return;
                                     </FieldRow>
 
                                     {mustVerifyEmail && user.email_verified_at === null && (
-                                        <div className="rounded-lg bg-amber-50 px-4 py-3 text-sm dark:bg-amber-950">
-                                            <p className="font-medium text-amber-700 dark:text-amber-300">
+                                        <div className="rounded-lg bg-warning-soft px-4 py-3 text-sm">
+                                            <p className="font-medium text-warning">
                                                 Email belum diverifikasi
                                             </p>
-                                            <p className="mt-0.5 text-amber-600 dark:text-amber-400">
+                                            <p className="mt-0.5 text-warning">
                                                 <Link
                                                     href={send()}
                                                     as="button"
@@ -221,7 +221,7 @@ return;
                                                 </Link>
                                             </p>
                                             {status === 'verification-link-sent' && (
-                                                <p className="mt-1 font-medium text-green-600">
+                                                <p className="mt-1 font-medium text-success">
                                                     ✓ Email verifikasi telah dikirim
                                                 </p>
                                             )}
@@ -382,11 +382,11 @@ return;
                 </Link>
 
                 {/* Hapus Akun — hanya untuk admin */}
-                {isAdmin && <div className="rounded-lg border border-red-200 dark:border-red-900">
+                {isAdmin && <div className="rounded-lg border border-destructive/30">
                     <button
                         type="button"
                         onClick={() => setShowDelete((v) => !v)}
-                        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-red-600 dark:text-red-400"
+                        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-destructive"
                     >
                         <span>Hapus Akun</span>
                         <ChevronDown
@@ -395,7 +395,7 @@ return;
                         />
                     </button>
                     {showDelete && (
-                        <div className="border-t border-red-200 px-4 py-4 dark:border-red-900">
+                        <div className="border-t border-destructive/30 px-4 py-4">
                             <DeleteUser />
                         </div>
                     )}
