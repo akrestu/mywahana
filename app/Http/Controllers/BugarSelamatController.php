@@ -59,9 +59,8 @@ class BugarSelamatController extends Controller
 
         app(BadgeService::class)->checkAndAward($request->user());
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Checklist Bugar Selamat berhasil disimpan.']);
-
-        return redirect()->route('bugar-selamat.index');
+        // The show page renders the full-screen result once, right after submitting.
+        return redirect()->route('bugar-selamat.show', [$record, 'hasil' => 1]);
     }
 
     public function show(Request $request, BugarSelamat $bugarSelamat)
@@ -87,6 +86,7 @@ class BugarSelamatController extends Controller
         return Inertia::render('bugar-selamat/show', [
             'record' => $bugarSelamat,
             'back_url' => $backUrl,
+            'hasil' => $request->boolean('hasil') && $request->user()->id === $bugarSelamat->user_id,
         ]);
     }
 
