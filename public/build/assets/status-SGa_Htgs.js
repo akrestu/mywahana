@@ -1,0 +1,1 @@
+var e={layak:`Layak Bekerja`,catatan:`Bekerja dengan Catatan`,dilarang:`Dilarang Bekerja`},t={pending:`Menunggu`,continue:`Berlanjut`,progress:`Diproses`,close:`Selesai`};export{t as n,e as t};

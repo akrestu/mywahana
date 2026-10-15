@@ -1,1 +1,0 @@
-import{a as e,o as t}from"./createLucideIcon-CiD0N09W.js";import{t as n}from"./inspeksi-detail-BL68XZi0.js";import{t as r}from"./checklists-Cb-OEZJ6.js";var i=t(),a=e();function o(e){let t=(0,i.c)(3),{record:o,is_ri:s}=e,c;return t[0]!==s||t[1]!==o?(c=(0,a.jsx)(n,{config:r.workshop,record:o,isRi:s}),t[0]=s,t[1]=o,t[2]=c):c=t[2],c}export{o as default};
