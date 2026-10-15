@@ -253,6 +253,7 @@ class DashboardController extends Controller
                 'sudah_submit_bs' => $sudahSubmitBs,
                 'dilarang_list' => $dilarangHariIni,
             ],
+            'overview' => $this->buildOverview($bulan, $tahun, $site, $now),
             'sap_monitoring' => $this->buildSapMonitoring($bulan, $tahun, $site, $departemen, $level, $jabatan),
             'employee_recap' => $this->buildEmployeeRecap($bulan, $tahun, $site, $departemen, $level, $jabatan),
             'filter' => $filter,
@@ -554,6 +555,87 @@ class DashboardController extends Controller
         })->sortBy('name')->values()->toArray();
 
         return ['weeks' => $weeks, 'employees' => $employees];
+    }
+
+    /**
+     * Cross-module summary for the admin overview: daily Bugar compliance,
+     * hazard reports by risk level, open high-risk reports and per-site totals.
+     */
+    private function buildOverview(int $bulan, int $tahun, string $site, Carbon $now): array
+    {
+        $start = Carbon::create($tahun, $bulan, 1)->startOfDay();
+        $end = $start->copy()->endOfMonth();
+        $lastDay = $end->lt($now) ? $end->copy() : $now->copy()->startOfDay();
+        $siteFilter = $site === 'all' ? null : $site;
+
+        $employees = User::where('is_admin', false)
+            ->when($siteFilter, fn ($q) => $q->assignedToSite($siteFilter))
+            ->count();
+
+        $perDay = BugarSelamat::whereBetween('tanggal', [$start->toDateString(), $end->toDateString()])
+            ->when($siteFilter, fn ($q) => $q->atSite($siteFilter))
+            ->selectRaw('DATE(tanggal) as hari, COUNT(DISTINCT user_id) as jumlah')
+            ->groupBy('hari')
+            ->pluck('jumlah', 'hari');
+
+        $bugarDaily = [];
+        for ($d = $start->copy(); $d->lte($lastDay); $d->addDay()) {
+            $count = (int) ($perDay[$d->toDateString()] ?? 0);
+            $bugarDaily[] = [
+                'tanggal' => $d->toDateString(),
+                'persen' => $employees > 0 ? round($count / $employees * 100, 1) : 0,
+            ];
+        }
+
+        $laporanMonth = LaporanBahaya::whereBetween('tanggal', [$start->toDateString(), $end->toDateString()])
+            ->when($siteFilter, fn ($q) => $q->atSite($siteFilter));
+
+        $risk = (clone $laporanMonth)->selectRaw('tingkat_risiko, COUNT(*) as jumlah')->groupBy('tingkat_risiko')->pluck('jumlah', 'tingkat_risiko');
+
+        $attention = LaporanBahaya::whereIn('tingkat_risiko', ['AA', 'A'])
+            ->where('status_tindakan', '!=', 'close')
+            ->when($siteFilter, fn ($q) => $q->atSite($siteFilter))
+            ->latest('tanggal')
+            ->limit(5)
+            ->get(['id', 'tanggal', 'lokasi', 'site', 'tingkat_risiko', 'status_tindakan']);
+
+        $daysElapsed = max(1, $start->diffInDays($lastDay) + 1);
+        $sites = Site::when($siteFilter, fn ($q) => $q->where('value', $siteFilter))->orderBy('label')->get(['value', 'label']);
+        $inRange = fn ($q) => $q->whereBetween('tanggal', [$start->toDateString(), $end->toDateString()]);
+
+        $siteSummary = $sites->map(function (Site $s) use ($inRange, $daysElapsed) {
+            $users = User::where('is_admin', false)->assignedToSite($s->value)->count();
+            $userDays = DB::query()
+                ->fromSub(BugarSelamat::atSite($s->value)->tap($inRange)->select('user_id', 'tanggal')->distinct(), 'hari_isi')
+                ->count();
+            $byUser = fn ($q) => $q->whereHas('user', fn ($u) => $u->assignedToSite($s->value));
+
+            return [
+                'site' => $s->value,
+                'label' => $s->label,
+                'bugar' => $users > 0 ? round((int) $userDays / ($users * $daysElapsed) * 100, 1) : 0,
+                'laporan' => LaporanBahaya::atSite($s->value)->tap($inRange)->count(),
+                'inspeksi' => InspeksiKantor::tap($byUser)->tap($inRange)->count()
+                    + InspeksiTambang::tap($byUser)->tap($inRange)->count()
+                    + InspeksiWorkshop::tap($byUser)->tap($inRange)->count()
+                    + InspeksiMess::tap($byUser)->tap($inRange)->count(),
+                'observasi' => ObservasiKeselamatan::atSite($s->value)->tap($inRange)->count(),
+                'jsa' => KomunikasiJsa::atSite($s->value)->tap($inRange)->count(),
+            ];
+        })->values();
+
+        return [
+            'employees' => $employees,
+            'bugar_daily' => $bugarDaily,
+            'risk_distribution' => [
+                'C' => (int) ($risk['C'] ?? 0),
+                'B' => (int) ($risk['B'] ?? 0),
+                'A' => (int) ($risk['A'] ?? 0),
+                'AA' => (int) ($risk['AA'] ?? 0),
+            ],
+            'attention' => $attention,
+            'site_summary' => $siteSummary,
+        ];
     }
 
     private function buildAdminMonthlyTrend(Carbon $now): array

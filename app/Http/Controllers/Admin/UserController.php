@@ -50,6 +50,16 @@ class UserController extends Controller
         if ($site) {
             $query->assignedToSite($site);
         }
+        // Tab counts follow site and search, but not the level/admin tab itself.
+        $countBase = (clone $query)->reorder();
+        $levelCounts = [
+            'all' => (clone $countBase)->count(),
+            'nonstaff' => (clone $countBase)->where(fn ($q) => $q->where('participation_level', 'nonstaff')->orWhereNull('participation_level'))->count(),
+            'staff' => (clone $countBase)->where('participation_level', 'staff')->count(),
+            'srstaff' => (clone $countBase)->where('participation_level', 'srstaff')->count(),
+            'admin' => (clone $countBase)->where('is_admin', true)->count(),
+        ];
+
         if ($request->filled('is_admin')) {
             $query->where('is_admin', $request->is_admin === '1');
         }
@@ -64,6 +74,7 @@ class UserController extends Controller
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
                 : Site::orderBy('label')->get(['value', 'label']),
             'admin_site' => $adminSite,
+            'level_counts' => $levelCounts,
         ]);
     }
 

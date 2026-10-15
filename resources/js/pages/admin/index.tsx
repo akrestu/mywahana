@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Fragment } from 'react';
+import type { Overview } from '@/components/admin/admin-overview';
+import { AdminOverview } from '@/components/admin/admin-overview';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -41,6 +43,7 @@ type SapMonitoring = {
 };
 
 type Props = {
+    overview?: Overview;
     compliance:       ComplianceData;
     employee_recap:   EmployeeRecap;
     filter:           Filter;
@@ -803,6 +806,7 @@ export default function AdminIndex({
     jabatan_options = [],
     admin_site,
     sap_monitoring  = DEFAULT_SAP_MONITORING,
+    overview,
 }: Props) {
     const [dilarangExpanded, setDilarangExpanded] = useState(false);
     const compliance   = rawCompliance ?? DEFAULT_COMPLIANCE;
@@ -820,7 +824,8 @@ export default function AdminIndex({
                 {/* ① PAGE TITLE + EXPORT */}
                 <div className="flex items-start justify-between gap-2">
                     <div>
-                        <h1 className="text-[28px] font-extrabold tracking-tight">Monitoring SAP</h1>
+                        <p className="text-xs font-semibold text-muted-foreground capitalize">{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}{overview ? ` · ${overview.employees.toLocaleString('id-ID')} karyawan` : ''}</p>
+                        <h1 className="text-[28px] font-extrabold tracking-tight">Ringkasan lintas modul</h1>
                         <p className="text-xs text-muted-foreground mt-0.5">
                             {BULAN_NAMES[filter.bulan - 1]} {filter.tahun}
                             {filter.site !== 'all' && <span> · {sites.find(s => s.value === filter.site)?.label ?? filter.site}</span>}
@@ -862,6 +867,8 @@ export default function AdminIndex({
                         </div>
                     </div>
                 )}
+
+                {overview && <AdminOverview overview={overview} />}
 
                 {/* ③ COLLAPSIBLE FILTER */}
                 <FilterBar filter={filter} sites={sites} jabatanOptions={jabatan_options} adminSite={admin_site} />
