@@ -1,13 +1,16 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, FileDown, MapPin, Paperclip, PenLine, Plus } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { ArrowLeft, CheckCircle2, FileDown, MapPin, Paperclip, PenLine, Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { ResultScreen } from '@/components/patterns/result-screen';
 import { RiskBadge } from '@/components/risk-badge';
 import { TindakanBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { riskLabels } from '@/lib/risk';
 import { cn } from '@/lib/utils';
+import type { Auth } from '@/types';
 
 type Review = {
     id: number;
@@ -25,6 +28,7 @@ type LaporanRecord = {
     waktu_pengamatan?: string | null;
     kategori?: 'KTA' | 'TTA' | null;
     klasifikasi_bahaya?: string | null;
+    site?: string | null;
     lokasi: string;
     detail_lokasi?: string | null;
     deskripsi_bahaya: string;
@@ -44,6 +48,8 @@ type LaporanRecord = {
 type Props = {
     record: LaporanRecord;
     fotoUrl?: string | null;
+    fotoUrls?: string[];
+    terkirim?: boolean;
     back_url?: string;
     is_pic: boolean;
     attachment_urls: Record<number, string[]>;
@@ -165,7 +171,52 @@ return;
     );
 }
 
-export default function LaporanBahayaShow({ record, fotoUrl, back_url = '/laporan-bahaya', is_pic, attachment_urls }: Props) {
+export default function LaporanBahayaShow(props: Props) {
+    return props.terkirim ? <LaporanTerkirim record={props.record} /> : <LaporanDetail {...props} />;
+}
+
+function LaporanTerkirim({ record }: { record: LaporanRecord }) {
+    const { auth } = usePage<{ auth: Auth }>().props;
+    const firstName = auth.user.name?.split(' ')[0] ?? auth.user.name;
+    const nomor = `LB-${(record.site ?? '').toUpperCase()}-${String(record.id).padStart(4, '0')}`;
+
+    return (
+        <>
+            <Head title="Laporan terkirim" />
+            <ResultScreen
+                icon={CheckCircle2}
+                tone="accent"
+                title="Laporan terkirim"
+                description={`Terima kasih, ${firstName}. Laporan Anda membantu rekan kerja pulang dengan selamat.`}
+                actions={
+                    <>
+                        <Button asChild size="lg">
+                            <Link href="/home">Kembali ke Beranda</Link>
+                        </Button>
+                        <Button asChild size="lg" variant="outline">
+                            <Link href={`/laporan-bahaya/${record.id}`}>Lihat laporan</Link>
+                        </Button>
+                    </>
+                }
+            >
+                <dl className="overflow-hidden rounded-lg bg-card">
+                    {[
+                        { label: 'Nomor', value: nomor },
+                        { label: 'Tingkat', value: `${riskLabels[record.tingkat_risiko]} · ${record.tingkat_risiko}` },
+                        { label: 'PIC diberi tahu', value: record.pic?.name ?? '—' },
+                    ].map((row) => (
+                        <div key={row.label} className="flex justify-between gap-3 border-b border-border/60 px-4 py-3.5 text-sm last:border-0">
+                            <dt className="text-muted-foreground">{row.label}</dt>
+                            <dd className="text-right font-bold tabular">{row.value}</dd>
+                        </div>
+                    ))}
+                </dl>
+            </ResultScreen>
+        </>
+    );
+}
+
+function LaporanDetail({ record, fotoUrl, fotoUrls, back_url = '/laporan-bahaya', is_pic, attachment_urls }: Props) {
     const rc = RISK_CONFIG[record.tingkat_risiko];
 
     // Review form state
@@ -266,7 +317,15 @@ data.append('tanda_tangan', signature);
                         </div>
                         <Separator />
                         <p className="text-base leading-relaxed">{record.deskripsi_bahaya}</p>
-                        {fotoUrl && <img src={fotoUrl} alt="Foto bahaya" className="w-full rounded-2xl object-cover max-h-72" />}
+                        {(fotoUrls ?? (fotoUrl ? [fotoUrl] : [])).length > 0 && (
+                            <div className={cn('grid gap-2', (fotoUrls?.length ?? 1) > 1 ? 'grid-cols-2' : 'grid-cols-1')}>
+                                {(fotoUrls ?? [fotoUrl!]).map((src, i) => (
+                                    <a key={src} href={src} target="_blank" rel="noopener noreferrer">
+                                        <img src={src} alt={`Foto bahaya ${i + 1}`} className="max-h-72 w-full rounded-lg object-cover" />
+                                    </a>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

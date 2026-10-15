@@ -41,20 +41,16 @@ export function SiteCombobox({
                     role="combobox"
                     aria-expanded={open}
                     className={cn(
-                        'flex h-14 w-full items-center justify-between rounded-xl border-2 px-4 text-base transition-all',
-                        'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
-                        selected
-                            ? 'border-orange-400 bg-orange-50 text-orange-800 dark:bg-orange-950/30 dark:text-orange-200'
-                            : 'border-input bg-background text-muted-foreground',
+                        'flex h-11 w-full min-w-0 items-center justify-between gap-2 rounded-md border-2 border-transparent bg-input px-4 text-[15px] transition-colors',
+                        'focus-visible:border-foreground focus-visible:outline-none dark:focus-visible:border-accent',
+                        selected ? 'text-foreground' : 'text-muted-foreground',
                     )}
                 >
                     <span className="flex items-center gap-2 truncate">
                         <MapPin
                             size={16}
                             className={
-                                selected
-                                    ? 'shrink-0 text-orange-500'
-                                    : 'shrink-0 text-muted-foreground'
+                                'shrink-0 text-muted-foreground'
                             }
                         />
                         {selected?.label || placeholder}
@@ -90,7 +86,7 @@ export function SiteCombobox({
                                         className={cn(
                                             'ml-auto',
                                             value === option.value
-                                                ? 'text-orange-600 opacity-100'
+                                                ? 'opacity-100'
                                                 : 'opacity-0',
                                         )}
                                     />

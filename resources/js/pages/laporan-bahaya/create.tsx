@@ -1,47 +1,27 @@
 import { Head, useForm } from '@inertiajs/react';
-import {
-    Camera,
-    Check,
-    CheckCircle2,
-    ChevronLeft,
-    ChevronRight,
-    ChevronsUpDown,
-    Images,
-    MapPin,
-    X,
-} from 'lucide-react';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { CheckCircle2, CircleDot, Clock, Loader } from 'lucide-react';
+import type { FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { CameraCapture } from '@/components/camera-capture';
-import { RiskBadge } from '@/components/risk-badge';
+import InputError from '@/components/input-error';
+import { ComboField } from '@/components/patterns/combo-field';
+import { FormStepper } from '@/components/patterns/form-stepper';
+import { ModuleHeader } from '@/components/patterns/module-header';
+import { PhotoPicker } from '@/components/patterns/photo-picker';
+import { RiskMatrix } from '@/components/patterns/risk-matrix';
+import type { RiskAxis, RiskOption } from '@/components/patterns/risk-matrix';
 import { SiteCombobox } from '@/components/site-combobox';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from '@/components/ui/command';
 import { DatePickerInput } from '@/components/ui/date-picker-input';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
-import { Separator } from '@/components/ui/separator';
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-} from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { TimePickerInput } from '@/components/ui/time-picker-input';
 import { UploadOverlay } from '@/components/upload-overlay';
-import { compressImageWithToast } from '@/lib/compress-image';
-import { computeRisk } from '@/lib/risk';
+import { useDraft } from '@/hooks/use-draft';
+import { computeRisk, riskLabels } from '@/lib/risk';
+import { tindakanLabels } from '@/lib/status';
+import type { StatusTindakan } from '@/lib/status';
 import { cn } from '@/lib/utils';
 
 type UserInfo = {
@@ -50,19 +30,16 @@ type UserInfo = {
     jabatan?: string | null;
     site?: string | null;
 };
-
 type PicUser = {
     id: number;
     name: string;
     jabatan?: string | null;
     sites: string[];
 };
-
 type SiteOption = { value: string; label: string; locations?: string[] | null };
-
 type Props = { user: UserInfo; sites: SiteOption[]; pics: PicUser[] };
 
-const PROBABILITAS = [
+const PROBABILITAS: RiskOption[] = [
     { value: '1', label: 'Hampir tidak mungkin', sub: 'Belum pernah terjadi' },
     { value: '2', label: 'Kecil kemungkinannya', sub: 'Jarang sekali terjadi' },
     {
@@ -78,7 +55,7 @@ const PROBABILITAS = [
     },
 ];
 
-const FREKUENSI = [
+const FREKUENSI: RiskOption[] = [
     { value: '1', label: 'Setahun sekali', sub: 'Sangat jarang terpapar' },
     { value: '2', label: 'Sebulan sekali', sub: 'Sesekali terpapar' },
     { value: '3', label: 'Seminggu sekali', sub: 'Cukup sering terpapar' },
@@ -86,1278 +63,608 @@ const FREKUENSI = [
     { value: '5', label: 'Berkali-kali sehari', sub: 'Hampir selalu terpapar' },
 ];
 
-const SEVERITY = [
+const SEVERITY: RiskOption[] = [
     {
         value: '1',
-        label: 'Sangat Ringan',
+        label: 'Sangat ringan',
         sub: 'Luka kecil, bisa diobati sendiri',
-        color: 'green',
     },
-    {
-        value: '2',
-        label: 'Ringan',
-        sub: 'Perlu ke klinik / dokter',
-        color: 'lime',
-    },
-    {
-        value: '3',
-        label: 'Sedang',
-        sub: 'Tidak bisa bekerja sementara',
-        color: 'yellow',
-    },
+    { value: '2', label: 'Ringan', sub: 'Perlu ke klinik / dokter' },
+    { value: '3', label: 'Sedang', sub: 'Tidak bisa bekerja sementara' },
     {
         value: '25',
         label: 'Berat',
         sub: 'Cacat permanen / tidak bisa kerja lama',
-        color: 'orange',
     },
     {
         value: '30',
-        label: 'Sangat Berat / Meninggal',
+        label: 'Sangat berat / meninggal',
         sub: 'Mengancam jiwa atau kematian',
-        color: 'red',
     },
 ];
 
-const RISK_COLORS = {
-    AA: {
-        bg: 'bg-red-50 border-red-300 dark:bg-red-950/30',
-        text: 'text-red-700',
-        desc: 'Sangat Berbahaya — Hentikan pekerjaan segera!',
+const RISK_AXES = [
+    {
+        key: 'probabilitas' as const,
+        title: 'Probabilitas',
+        options: PROBABILITAS,
     },
-    A: {
-        bg: 'bg-orange-50 border-orange-300 dark:bg-orange-950/30',
-        text: 'text-orange-700',
-        desc: 'Berbahaya — Perlu tindakan segera',
+    {
+        key: 'frekuensi' as const,
+        title: 'Frekuensi paparan',
+        options: FREKUENSI,
     },
-    B: {
-        bg: 'bg-yellow-50 border-yellow-300 dark:bg-yellow-950/30',
-        text: 'text-yellow-700',
-        desc: 'Sedang — Perlu dipantau & ditangani',
+    {
+        key: 'severity' as const,
+        title: 'Severity (keparahan)',
+        options: SEVERITY,
     },
-    C: {
-        bg: 'bg-green-50 border-green-300 dark:bg-green-950/30',
-        text: 'text-green-700',
-        desc: 'Rendah — Aman terkendali',
-    },
-} as const;
-
-const KLASIFIKASI_TTA = [
-    'Mengoperasikan unit tanpa wewenang',
-    'Melanggar prosedur yang ditentukan',
-    'Membuat peralatan safety tidak berfungsi',
-    'Menggunakan peralatan yang rusak',
-    'Tidak memakai APD',
-    'Pemuatan Material Tidak Sesuai Prosedur',
-    'Penempatan peralatan/unit tidak sesuai prosedur',
-    'Berada pada posisi/daerah yang tidak aman',
-    'Memperbaiki unit/alat yang sedang beroperasi',
-    'Berada di bawah pengaruh obat-obatan atau alkohol',
-    'Bercanda berlebihan atau tidak serius melakukan pekerjaan secara benar',
-    'Menggunakan peralatan yang tidak sesuai',
-    'LOTO/Barikade/Safety Cone',
-    'Lain-Lain Tindakan Tidak Aman',
 ];
 
-const KLASIFIKASI_KTA = [
-    'Sarana Pelindung/Pengaman tidak memadai',
-    'APD tidak layak/rusak',
-    'Alat, peralatan dan material yang rusak',
-    'Ruang Gerak Terbatas',
-    'Bahaya kebakaran dan ledakan',
-    'Pemeliharaan yang kurang',
-    'Kondisi lingkungan yang berbahaya',
-    'Paparan kebisingan',
-    'Paparan radiasi',
-    'Paparan terhadap suhu tinggi atau rendah',
-    'Pencahayaan yang kurang',
-    'Ventilasi yang tidak memadai',
-    'Sistem Peringatan yang tidak memadai',
-    'Kondisi Ergonomi',
-    'Alat, peralatan dan material tidak sesuai',
-    'Lain-lain Kondisi Tidak Aman',
+const KLASIFIKASI = {
+    TTA: [
+        'Mengoperasikan unit tanpa wewenang',
+        'Melanggar prosedur yang ditentukan',
+        'Membuat peralatan safety tidak berfungsi',
+        'Menggunakan peralatan yang rusak',
+        'Tidak memakai APD',
+        'Pemuatan Material Tidak Sesuai Prosedur',
+        'Penempatan peralatan/unit tidak sesuai prosedur',
+        'Berada pada posisi/daerah yang tidak aman',
+        'Memperbaiki unit/alat yang sedang beroperasi',
+        'Berada di bawah pengaruh obat-obatan atau alkohol',
+        'Bercanda berlebihan atau tidak serius melakukan pekerjaan secara benar',
+        'Menggunakan peralatan yang tidak sesuai',
+        'LOTO/Barikade/Safety Cone',
+        'Lain-Lain Tindakan Tidak Aman',
+    ],
+    KTA: [
+        'Sarana Pelindung/Pengaman tidak memadai',
+        'APD tidak layak/rusak',
+        'Alat, peralatan dan material yang rusak',
+        'Ruang Gerak Terbatas',
+        'Bahaya kebakaran dan ledakan',
+        'Pemeliharaan yang kurang',
+        'Kondisi lingkungan yang berbahaya',
+        'Paparan kebisingan',
+        'Paparan radiasi',
+        'Paparan terhadap suhu tinggi atau rendah',
+        'Pencahayaan yang kurang',
+        'Ventilasi yang tidak memadai',
+        'Sistem Peringatan yang tidak memadai',
+        'Kondisi Ergonomi',
+        'Alat, peralatan dan material tidak sesuai',
+        'Lain-lain Kondisi Tidak Aman',
+    ],
+};
+
+const KATEGORI = [
+    { value: 'KTA', label: 'KTA · Kondisi', sub: 'Kondisi tidak aman' },
+    { value: 'TTA', label: 'TTA · Tindakan', sub: 'Tindakan tidak aman' },
 ];
+
+const STATUS_OPTIONS: { value: StatusTindakan; Icon: typeof Clock }[] = [
+    { value: 'pending', Icon: Clock },
+    { value: 'continue', Icon: CircleDot },
+    { value: 'progress', Icon: Loader },
+    { value: 'close', Icon: CheckCircle2 },
+];
+
+const STEP_LABELS = ['Lokasi & foto', 'Tingkat bahaya', 'Tindakan'];
+
+// Step each field lives on, so a server error jumps to the right place.
+const FIELD_STEP: Record<string, number> = {
+    foto: 1,
+    foto_2: 1,
+    kategori: 1,
+    klasifikasi_bahaya: 1,
+    site: 1,
+    lokasi: 1,
+    detail_lokasi: 1,
+    tanggal: 1,
+    waktu_pengamatan: 1,
+    probabilitas: 2,
+    frekuensi: 2,
+    severity: 2,
+};
 
 const toProperCase = (str: string) =>
     str.replace(/\b\w/g, (c) => c.toUpperCase());
 
-const STEPS = [
-    { label: 'Lokasi & Foto', icon: '📷' },
-    { label: 'Tingkat Bahaya', icon: '⚠️' },
-    { label: 'Tindakan', icon: '🔧' },
-];
-
-// Langkah form tempat setiap field berada, untuk menampilkan error dari server.
-const FIELD_STEP: Record<string, number> = {
-    tanggal: 0,
-    site: 0,
-    waktu_pengamatan: 0,
-    kategori: 0,
-    klasifikasi_bahaya: 0,
-    lokasi: 0,
-    detail_lokasi: 0,
-    deskripsi_bahaya: 0,
-    foto: 0,
-    probabilitas: 1,
-    frekuensi: 1,
-    severity: 1,
-    tindakan_perbaikan: 2,
-    status_tindakan: 2,
-    pic_user_id: 2,
+type FormData = {
+    site: string;
+    tanggal: string;
+    waktu_pengamatan: string;
+    kategori: string;
+    klasifikasi_bahaya: string;
+    lokasi: string;
+    detail_lokasi: string;
+    deskripsi_bahaya: string;
+    tindakan_perbaikan: string;
+    probabilitas: string;
+    frekuensi: string;
+    severity: string;
+    status_tindakan: StatusTindakan;
+    pic_user_id: string;
 };
 
 export default function LaporanBahayaCreate({ user, sites, pics }: Props) {
     const today = new Date().toLocaleDateString('en-CA', {
         timeZone: 'Asia/Jakarta',
     });
-    const galleryRef = useRef<HTMLInputElement>(null);
-    const [preview, setPreview] = useState<string | null>(null);
-    const [currentStep, setCurrentStep] = useState(0);
-    const [photoSheet, setPhotoSheet] = useState(false);
-    const [showCamera, setShowCamera] = useState(false);
+    const [step, setStep] = useState(1);
+    const [fotos, setFotos] = useState<File[]>([]);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+
+    const { data, setData, post, processing, errors, transform } =
+        useForm<FormData>({
+            site:
+                user.site && sites.some((s) => s.value === user.site)
+                    ? user.site
+                    : (sites[0]?.value ?? ''),
+            tanggal: today,
+            waktu_pengamatan: '',
+            kategori: '',
+            klasifikasi_bahaya: '',
+            lokasi: '',
+            detail_lokasi: '',
+            deskripsi_bahaya: '',
+            tindakan_perbaikan: '',
+            probabilitas: '',
+            frekuensi: '',
+            severity: '',
+            status_tindakan: 'pending',
+            pic_user_id: '',
+        });
+
+    // Photos are not kept in the draft; text fields survive a lost signal.
+    const draft = useDraft('laporan-bahaya', data, (saved) =>
+        setData((current) => ({
+            ...current,
+            ...saved,
+            site:
+                saved.site && sites.some((s) => s.value === saved.site)
+                    ? saved.site
+                    : current.site,
+        })),
+    );
+
     useEffect(() => {
         window.scrollTo(0, 0);
-    }, [currentStep]);
-    const [lokasiOpen, setLokasiOpen] = useState(false);
-    const [klasifikasiOpen, setKlasifikasiOpen] = useState(false);
-    const [picOpen, setPicOpen] = useState(false);
+    }, [step]);
 
-    function openPhotoSource(source: 'camera' | 'gallery') {
-        setPhotoSheet(false);
+    const lokasiOptions = (
+        sites.find((s) => s.value === data.site)?.locations ?? []
+    ).map((l) => ({ value: l, label: l }));
+    const picOptions = pics
+        .filter((p) => p.sites.includes(data.site))
+        .map((p) => ({
+            value: String(p.id),
+            label: p.name,
+            sub: [p.jabatan, p.sites.join(', ')].filter(Boolean).join(' · '),
+        }));
+    const klasifikasiOptions = (
+        KLASIFIKASI[data.kategori as 'KTA' | 'TTA'] ?? []
+    ).map((k) => ({ value: k, label: k }));
 
-        if (source === 'camera') {
-setShowCamera(true);
-} else {
-galleryRef.current?.click();
-}
-    }
+    const risk =
+        Number(data.probabilitas) &&
+        Number(data.frekuensi) &&
+        Number(data.severity)
+            ? computeRisk(
+                  Number(data.probabilitas),
+                  Number(data.frekuensi),
+                  Number(data.severity),
+              )
+            : null;
 
-    const { data, setData, post, processing, errors } = useForm({
-        site:
-            user.site && sites.some((site) => site.value === user.site)
-                ? user.site
-                : (sites[0]?.value ?? ''),
-        tanggal: today,
-        waktu_pengamatan: '',
-        kategori: '',
-        klasifikasi_bahaya: '',
-        lokasi: '',
-        detail_lokasi: '',
-        deskripsi_bahaya: '',
-        tindakan_perbaikan: '',
-        probabilitas: '',
-        frekuensi: '',
-        severity: '',
-        status_tindakan: 'pending',
-        pic_user_id: '' as string,
-        foto: null as File | null,
-    });
-
-    const lokasiOptions = sites.find((site) => site.value === data.site)?.locations ?? [];
-    const availablePics = pics.filter((pic) => pic.sites.includes(data.site));
-
-    const p = parseInt(data.probabilitas) || 0;
-    const f = parseInt(data.frekuensi) || 0;
-    const s = parseInt(data.severity) || 0;
-    const risk = p && f && s ? computeRisk(p, f, s) : null;
-
-    const step1Valid = !!(
+    const step1OK = !!(
         data.site &&
         data.tanggal &&
         data.waktu_pengamatan &&
         data.kategori &&
         data.klasifikasi_bahaya &&
-        data.lokasi &&
-        data.deskripsi_bahaya
+        data.lokasi
     );
-    const step2Valid = !!(data.probabilitas && data.frekuensi && data.severity);
-    const step3Valid = !!(data.tindakan_perbaikan && data.pic_user_id);
+    const step2OK = !!risk;
+    const step3OK = !!(
+        data.deskripsi_bahaya.trim() &&
+        data.tindakan_perbaikan.trim() &&
+        data.pic_user_id
+    );
+    const canNext =
+        step === 1
+            ? step1OK
+            : step === 2
+              ? step2OK
+              : step1OK && step2OK && step3OK;
 
-    const handleFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-
-        if (file) {
-            const compressed = await compressImageWithToast(file);
-            setData('foto', compressed);
-            setPreview(URL.createObjectURL(compressed));
-        }
-    };
-
-    const removeFoto = () => {
-        setData('foto', null);
-        setPreview(null);
-
-        if (galleryRef.current) {
-galleryRef.current.value = '';
-}
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
+    const submit = (e: FormEvent) => {
         e.preventDefault();
+
+        if (step < 3) {
+            if (canNext) {
+                setStep((s) => s + 1);
+            }
+
+            return;
+        }
+
+        if (!canNext) {
+            return;
+        }
+
+        transform((d) => ({
+            ...d,
+            foto: fotos[0] ?? null,
+            foto_2: fotos[1] ?? null,
+        }));
         setUploadProgress(0);
         post('/laporan-bahaya', {
             forceFormData: true,
-            onProgress: (e) => setUploadProgress(e?.percentage ?? null),
+            onProgress: (ev) => setUploadProgress(ev?.percentage ?? null),
             onFinish: () => setUploadProgress(null),
+            onSuccess: () => draft.clear(),
             onError: (errs) => {
-                // Error bisa berasal dari langkah sebelumnya; pindah ke langkah
-                // pertama yang bermasalah agar pesannya terlihat.
-                const step = Object.keys(errs).reduce(
-                    (min, field) => Math.min(min, FIELD_STEP[field] ?? STEPS.length - 1),
-                    STEPS.length - 1,
+                setStep(
+                    Object.keys(errs).reduce(
+                        (min, field) => Math.min(min, FIELD_STEP[field] ?? 3),
+                        3,
+                    ),
                 );
-                setCurrentStep(step);
-                toast.error('Laporan belum tersimpan. Periksa kembali isian yang ditandai.');
+                toast.error(
+                    'Laporan belum tersimpan. Periksa kembali isian yang ditandai.',
+                );
             },
         });
     };
 
-    // ── Step bar ──
-    const renderStepBar = () => (
-        <div className="flex items-center gap-0">
-            {STEPS.map((s, i) => (
-                <Fragment key={s.label}>
-                    <div className="flex flex-shrink-0 flex-col items-center gap-1.5">
-                        <div
-                            className={cn(
-                                'flex size-11 items-center justify-center rounded-full border-2 text-lg font-bold transition-all',
-                                i < currentStep &&
-                                    'border-primary bg-primary text-primary-foreground',
-                                i === currentStep &&
-                                    'border-primary bg-primary/10 text-primary',
-                                i > currentStep &&
-                                    'border-muted-foreground/30 bg-muted text-muted-foreground',
-                            )}
-                        >
-                            {i < currentStep ? (
-                                <Check size={18} />
-                            ) : (
-                                <span>{s.icon}</span>
-                            )}
-                        </div>
-
-                        <span
-                            className={cn(
-                                'max-w-[60px] text-center text-[11px] leading-tight font-semibold',
-                                i === currentStep
-                                    ? 'text-primary'
-                                    : 'text-muted-foreground',
-                            )}
-                        >
-                            {s.label}
-                        </span>
-                    </div>
-                    {i < STEPS.length - 1 && (
-                        <div
-                            className={cn(
-                                'mx-1 mb-5 h-0.5 flex-1 transition-all',
-                                i < currentStep ? 'bg-primary' : 'bg-muted',
-                            )}
-                        />
-                    )}
-                </Fragment>
-            ))}
-        </div>
-    );
-
-    // ── Nav buttons ──
-    const renderNavButtons = ({ canNext }: { canNext: boolean }) => (
-        <div
-            className={cn(
-                'flex gap-3 pt-4',
-                currentStep === 0 ? 'justify-end' : 'justify-between',
-            )}
-        >
-            {currentStep > 0 && (
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setCurrentStep((s) => s - 1)}
-                    className="h-14 gap-2 px-6 text-base"
-                >
-                    <ChevronLeft size={18} /> Kembali
-                </Button>
-            )}
-            {currentStep < STEPS.length - 1 ? (
-                <Button
-                    type="button"
-                    disabled={!canNext}
-                    onClick={() => setCurrentStep((s) => s + 1)}
-                    className="h-14 flex-1 gap-2 text-base font-bold"
-                >
-                    Lanjut <ChevronRight size={18} />
-                </Button>
-            ) : (
-                <Button
-                    type="submit"
-                    disabled={
-                        processing || !step1Valid || !step2Valid || !step3Valid
-                    }
-                    className="h-14 flex-1 gap-2 text-base font-bold"
-                >
-                    {processing ? (
-                        'Menyimpan...'
-                    ) : (
-                        <>
-                            <CheckCircle2 size={18} /> Kirim Laporan
-                        </>
-                    )}
-                </Button>
-            )}
-        </div>
-    );
+    const picked = picOptions.find((p) => p.value === data.pic_user_id);
 
     return (
         <>
             <Head title="Laporan Bahaya" />
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                {/* Header */}
-                <div>
-                    <h2 className="text-xl font-bold">Laporan Bahaya</h2>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                        WBK-HSE-FO-010 — Hazard Report
-                    </p>
-                </div>
+            <form
+                onSubmit={submit}
+                className="flex flex-col gap-4 pt-2 lg:mx-auto lg:max-w-[560px]"
+            >
+                <ModuleHeader
+                    backHref="/laporan-bahaya"
+                    title="Laporan Bahaya"
+                    eyebrow="Draft tersimpan otomatis"
+                    step={{ current: step, total: 3 }}
+                />
 
-                {renderStepBar()}
-                <Separator />
-
-                {/* ══════════════════════════════════════
-                    STEP 1 — Lokasi & Foto
-                ══════════════════════════════════════ */}
-                {currentStep === 0 && (
-                    <div className="flex flex-col gap-6">
-                        {/* Reporter */}
-                        <div className="flex items-center gap-4 rounded-2xl border border-orange-200 bg-orange-50 p-4 dark:bg-orange-950/20">
-                            <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-orange-200 text-xl font-bold text-orange-700 dark:bg-orange-900/50">
-                                {user.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                                <p className="truncate text-base font-bold">
-                                    {user.name}
-                                </p>
-                                <p className="mt-0.5 text-sm text-muted-foreground">
-                                    {[
-                                        user.nik,
-                                        user.jabatan,
-                                        user.site
-                                            ? user.site
-                                                  .charAt(0)
-                                                  .toUpperCase() +
-                                              user.site.slice(1)
-                                            : null,
-                                    ]
-                                        .filter(Boolean)
-                                        .join(' · ') || '—'}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <label className="text-base font-bold">
-                                📍 Site Pelaporan
-                            </label>
-                            <p className="-mt-1 text-sm text-muted-foreground">
-                                Pilih site tempat bahaya ditemukan. PIC akan
-                                disaring sesuai assignment site ini.
-                            </p>
-                            <SiteCombobox
-                                value={data.site}
-                                options={sites}
-                                onChange={(value) => {
-                                    setData('site', value);
-                                    setData('pic_user_id', '');
-                                    setData('lokasi', '');
-                                }}
-                                placeholder="Pilih site pelaporan"
-                            />
-                            {errors.site && (
-                                <p className="text-sm text-destructive">
-                                    {errors.site}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Tanggal */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-base font-bold">
-                                📅 Tanggal Kejadian
-                            </label>
-                            <DatePickerInput
-                                value={data.tanggal}
-                                onChange={(val) => setData('tanggal', val)}
-                                max={today}
-                                error={!!errors.tanggal}
-                            />
-                            {errors.tanggal && (
-                                <p className="text-sm text-destructive">
-                                    {errors.tanggal}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Waktu Pengamatan */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-base font-bold">
-                                🕐 Waktu Pengamatan
-                            </label>
-                            <p className="-mt-1 text-sm text-muted-foreground">
-                                Jam berapa Anda melihat bahaya ini?
-                            </p>
-                            <TimePickerInput
-                                value={data.waktu_pengamatan}
-                                onChange={(val) =>
-                                    setData('waktu_pengamatan', val)
-                                }
-                                error={!!errors.waktu_pengamatan}
-                            />
-                            {errors.waktu_pengamatan && (
-                                <p className="text-sm text-destructive">
-                                    {errors.waktu_pengamatan}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Kategori */}
-                        <div className="flex flex-col gap-3">
-                            <label className="text-base font-bold">
-                                🏷️ Kategori Bahaya
-                            </label>
-                            <p className="-mt-1 text-sm text-muted-foreground">
-                                Pilih jenis bahaya yang Anda temukan.
-                            </p>
-                            <div className="grid grid-cols-2 gap-3">
-                                {[
-                                    {
-                                        value: 'KTA',
-                                        emoji: '⚠️',
-                                        label: 'KTA',
-                                        fullLabel: 'Kondisi Tidak Aman',
-                                        sub: 'Bahaya dari kondisi fisik / lingkungan kerja',
-                                        selCls: 'border-orange-400 bg-orange-50 dark:bg-orange-950/30',
-                                    },
-                                    {
-                                        value: 'TTA',
-                                        emoji: '🚷',
-                                        label: 'TTA',
-                                        fullLabel: 'Tindakan Tidak Aman',
-                                        sub: 'Bahaya dari perilaku / tindakan seseorang',
-                                        selCls: 'border-red-400 bg-red-50 dark:bg-red-950/30',
-                                    },
-                                ].map(
-                                    ({
-                                        value,
-                                        emoji,
-                                        label,
-                                        fullLabel,
-                                        sub,
-                                        selCls,
-                                    }) => {
-                                        const sel = data.kategori === value;
-
-                                        return (
-                                            <button
-                                                key={value}
-                                                type="button"
-                                                onClick={() => {
-                                                    setData('kategori', value);
-                                                    setData(
-                                                        'klasifikasi_bahaya',
-                                                        '',
-                                                    );
-                                                }}
-                                                className={cn(
-                                                    'flex flex-col items-center gap-2 rounded-2xl border-2 px-3 py-5 text-center transition-all',
-                                                    sel
-                                                        ? selCls
-                                                        : 'border-border bg-card hover:border-primary/40 hover:bg-muted/40',
-                                                )}
-                                            >
-                                                <span className="text-3xl">
-                                                    {emoji}
-                                                </span>
-                                                <div>
-                                                    <p className="text-base font-black">
-                                                        {label}
-                                                    </p>
-                                                    <p className="text-xs font-semibold text-muted-foreground">
-                                                        {fullLabel}
-                                                    </p>
-                                                    <p className="mt-1 text-xs leading-tight text-muted-foreground">
-                                                        {sub}
-                                                    </p>
-                                                </div>
-                                                {sel && (
-                                                    <div className="flex size-6 items-center justify-center rounded-full bg-primary">
-                                                        <Check
-                                                            size={13}
-                                                            className="text-primary-foreground"
-                                                        />
-                                                    </div>
-                                                )}
-                                            </button>
-                                        );
-                                    },
-                                )}
-                            </div>
-                            {errors.kategori && (
-                                <p className="text-sm text-destructive">
-                                    {errors.kategori}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Klasifikasi Bahaya */}
-                        {data.kategori && (
-                            <div className="flex flex-col gap-2">
-                                <label className="text-base font-bold">
-                                    🔍 Klasifikasi Bahaya
-                                </label>
-                                <p className="-mt-1 text-sm text-muted-foreground">
-                                    {data.kategori === 'TTA'
-                                        ? 'Pilih jenis tindakan tidak aman yang terjadi.'
-                                        : 'Pilih jenis kondisi tidak aman yang ditemukan.'}
-                                </p>
-                                <Popover
-                                    open={klasifikasiOpen}
-                                    onOpenChange={setKlasifikasiOpen}
-                                >
-                                    <PopoverTrigger asChild>
-                                        <button
-                                            type="button"
-                                            role="combobox"
-                                            aria-expanded={klasifikasiOpen}
-                                            className={cn(
-                                                'flex h-14 w-full items-center justify-between rounded-xl border-2 px-4 text-base transition-all',
-                                                'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
-                                                data.klasifikasi_bahaya
-                                                    ? 'border-orange-400 bg-orange-50 text-orange-800 dark:bg-orange-950/30 dark:text-orange-200'
-                                                    : 'border-input bg-background text-muted-foreground',
-                                            )}
-                                        >
-                                            <span className="truncate text-left">
-                                                {data.klasifikasi_bahaya ||
-                                                    'Pilih klasifikasi...'}
-                                            </span>
-                                            <ChevronsUpDown
-                                                size={16}
-                                                className="shrink-0 opacity-50"
-                                            />
-                                        </button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        className="w-[var(--radix-popover-trigger-width)] p-0"
-                                        align="start"
-                                    >
-                                        <Command>
-                                            <CommandInput
-                                                placeholder="Cari klasifikasi..."
-                                                className="h-11 text-base"
-                                            />
-                                            <CommandList>
-                                                <CommandEmpty>
-                                                    Tidak ditemukan.
-                                                </CommandEmpty>
-                                                <CommandGroup>
-                                                    {(data.kategori === 'TTA'
-                                                        ? KLASIFIKASI_TTA
-                                                        : KLASIFIKASI_KTA
-                                                    ).map((item) => (
-                                                        <CommandItem
-                                                            key={item}
-                                                            value={item}
-                                                            onSelect={(val) => {
-                                                                setData(
-                                                                    'klasifikasi_bahaya',
-                                                                    val ===
-                                                                        data.klasifikasi_bahaya
-                                                                        ? ''
-                                                                        : val,
-                                                                );
-                                                                setKlasifikasiOpen(
-                                                                    false,
-                                                                );
-                                                            }}
-                                                            className="py-3 text-sm"
-                                                        >
-                                                            {item}
-                                                            <Check
-                                                                size={15}
-                                                                className={cn(
-                                                                    'ml-auto',
-                                                                    data.klasifikasi_bahaya ===
-                                                                        item
-                                                                        ? 'text-orange-600 opacity-100'
-                                                                        : 'opacity-0',
-                                                                )}
-                                                            />
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                                {errors.klasifikasi_bahaya && (
-                                    <p className="text-sm text-destructive">
-                                        {errors.klasifikasi_bahaya}
-                                    </p>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Lokasi */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-base font-bold">
-                                📍 Lokasi Bahaya
-                            </label>
-                            <p className="-mt-1 text-sm text-muted-foreground">
-                                Di mana Anda melihat bahaya ini?
-                            </p>
-                            <Popover
-                                open={lokasiOpen}
-                                onOpenChange={setLokasiOpen}
+                <FormStepper
+                    step={step}
+                    total={3}
+                    labels={STEP_LABELS}
+                    secondary={
+                        step > 1 ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="lg"
+                                onClick={() => setStep((s) => s - 1)}
                             >
-                                <PopoverTrigger asChild>
-                                    <button
-                                        type="button"
-                                        role="combobox"
-                                        aria-expanded={lokasiOpen}
-                                        className={cn(
-                                            'flex h-14 w-full items-center justify-between rounded-xl border-2 px-4 text-base transition-all',
-                                            'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
-                                            data.lokasi
-                                                ? 'border-orange-400 bg-orange-50 text-orange-800 dark:bg-orange-950/30 dark:text-orange-200'
-                                                : 'border-input bg-background text-muted-foreground',
-                                        )}
-                                    >
-                                        <span className="flex items-center gap-2 truncate">
-                                            <MapPin
-                                                size={16}
-                                                className={
-                                                    data.lokasi
-                                                        ? 'shrink-0 text-orange-500'
-                                                        : 'shrink-0 text-muted-foreground'
-                                                }
-                                            />
-                                            {data.lokasi || 'Pilih lokasi...'}
-                                        </span>
-                                        <ChevronsUpDown
-                                            size={16}
-                                            className="shrink-0 opacity-50"
-                                        />
-                                    </button>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                    className="w-[var(--radix-popover-trigger-width)] p-0"
-                                    align="start"
-                                >
-                                    <Command>
-                                        <CommandInput
-                                            placeholder="Cari lokasi..."
-                                            className="h-11 text-base"
-                                        />
-                                        <CommandList>
-                                            <CommandEmpty>
-                                                Lokasi tidak ditemukan.
-                                            </CommandEmpty>
-                                            <CommandGroup>
-                                                {lokasiOptions.map((lokasi) => (
-                                                    <CommandItem
-                                                        key={lokasi}
-                                                        value={lokasi}
-                                                        onSelect={(val) => {
-                                                            setData(
-                                                                'lokasi',
-                                                                val ===
-                                                                    data.lokasi
-                                                                    ? ''
-                                                                    : val,
-                                                            );
-                                                            setLokasiOpen(
-                                                                false,
-                                                            );
-                                                        }}
-                                                        className="py-3 text-sm"
-                                                    >
-                                                        {lokasi}
-                                                        <Check
-                                                            size={15}
-                                                            className={cn(
-                                                                'ml-auto',
-                                                                data.lokasi ===
-                                                                    lokasi
-                                                                    ? 'text-orange-600 opacity-100'
-                                                                    : 'opacity-0',
-                                                            )}
-                                                        />
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                            {errors.lokasi && (
-                                <p className="text-sm text-destructive">
-                                    {errors.lokasi}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Detail Lokasi */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-base font-bold">
-                                📌 Detail Lokasi{' '}
-                                <span className="text-sm font-normal text-muted-foreground">
-                                    (opsional)
-                                </span>
-                            </label>
-                            <p className="-mt-1 text-sm text-muted-foreground">
-                                Tambahkan keterangan lokasi yang lebih spesifik.
-                            </p>
-                            <input
-                                type="text"
-                                value={data.detail_lokasi}
-                                onChange={(e) =>
-                                    setData(
-                                        'detail_lokasi',
-                                        toProperCase(e.target.value),
-                                    )
-                                }
-                                placeholder="Contoh: Ruang Pantry, Lantai 2 Gedung A..."
-                                className={cn(
-                                    'h-14 w-full rounded-xl border-2 border-input bg-background px-4 text-base text-foreground shadow-xs',
-                                    'placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
-                                )}
-                            />
-                            {errors.detail_lokasi && (
-                                <p className="text-sm text-destructive">
-                                    {errors.detail_lokasi}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Deskripsi */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-base font-bold">
-                                ⚠️ Ceritakan Bahayanya
-                            </label>
-                            <p className="-mt-1 text-sm text-muted-foreground">
-                                Apa yang Anda lihat? Jelaskan kondisi bahayanya.
-                            </p>
-                            <textarea
-                                value={data.deskripsi_bahaya}
-                                onChange={(e) =>
-                                    setData('deskripsi_bahaya', e.target.value)
-                                }
-                                placeholder="Contoh: Ada kabel listrik terkelupas di dekat pintu masuk, bisa menyetrum orang yang lewat..."
-                                rows={4}
-                                className={cn(
-                                    'w-full rounded-xl border-2 border-input bg-background px-4 py-3 text-base text-foreground shadow-xs',
-                                    'resize-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
-                                )}
-                            />
-                            {errors.deskripsi_bahaya && (
-                                <p className="text-sm text-destructive">
-                                    {errors.deskripsi_bahaya}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Foto */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-base font-bold">
-                                📸 Foto Bahaya{' '}
-                                <span className="text-sm font-normal text-muted-foreground">
-                                    (opsional)
-                                </span>
-                            </label>
-                            <p className="-mt-1 text-sm text-muted-foreground">
-                                Foto membantu verifikasi laporan Anda.
-                            </p>
-                            {preview ? (
-                                <div className="relative">
-                                    <img
-                                        src={preview}
-                                        alt="Preview"
-                                        className="max-h-64 w-full rounded-2xl object-cover"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={removeFoto}
-                                        className="absolute top-3 right-3 flex size-9 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                    <div className="absolute bottom-3 left-3 rounded-lg bg-black/50 px-3 py-1 text-sm font-medium text-white backdrop-blur-sm">
-                                        ✓ Foto terpilih
-                                    </div>
-                                </div>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => setPhotoSheet(true)}
-                                    className="flex h-44 w-full flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-border bg-muted/20 transition-all hover:border-orange-400/60 hover:bg-orange-50/50 dark:hover:bg-orange-950/20"
-                                >
-                                    <div className="flex size-16 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-950/40">
-                                        <Camera
-                                            size={28}
-                                            className="text-orange-600"
-                                        />
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="text-base font-semibold">
-                                            Ambil / Pilih Foto
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">
-                                            Ketuk untuk membuka kamera atau
-                                            galeri
-                                        </p>
-                                    </div>
-                                </button>
-                            )}
-                            <input
-                                ref={galleryRef}
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={handleFoto}
-                            />
-                            {errors.foto && (
-                                <p className="text-sm text-destructive">
-                                    {errors.foto}
-                                </p>
-                            )}
-                        </div>
-
-                        {renderNavButtons({ canNext: step1Valid })}
-                    </div>
-                )}
-
-                {/* ══════════════════════════════════════
-                    STEP 2 — Tingkat Bahaya (P×F×S)
-                ══════════════════════════════════════ */}
-                {currentStep === 1 && (
-                    <div className="flex flex-col gap-6">
-                        <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 dark:bg-blue-950/20">
-                            <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                                ℹ️ Jawab 3 pertanyaan berikut untuk menentukan
-                                seberapa berbahaya kondisi yang Anda laporkan.
-                            </p>
-                        </div>
-
-                        {/* Probabilitas */}
-                        <div className="flex flex-col gap-3">
-                            <div>
-                                <p className="text-base font-bold">
-                                    1. Seberapa mungkin bahaya ini terjadi?
-                                </p>
-                                <p className="mt-0.5 text-sm text-muted-foreground">
-                                    Pilih yang paling mendekati kondisi
-                                    sebenarnya.
-                                </p>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                {PROBABILITAS.map(({ value, label, sub }) => {
-                                    const sel = data.probabilitas === value;
-
-                                    return (
-                                        <button
-                                            key={value}
-                                            type="button"
-                                            onClick={() =>
-                                                setData('probabilitas', value)
-                                            }
-                                            className={cn(
-                                                'flex items-center gap-4 rounded-2xl border-2 px-4 py-3.5 text-left transition-all',
-                                                sel
-                                                    ? 'border-primary bg-primary/10'
-                                                    : 'border-border bg-card hover:border-primary/40 hover:bg-muted/40',
-                                            )}
+                                Kembali
+                            </Button>
+                        ) : undefined
+                    }
+                    primary={
+                        <Button
+                            type="submit"
+                            size="lg"
+                            disabled={!canNext}
+                            loading={processing}
+                        >
+                            {step === 1
+                                ? 'Lanjut · Tingkat bahaya'
+                                : step === 2
+                                  ? 'Lanjut · Tindakan'
+                                  : 'Kirim laporan'}
+                        </Button>
+                    }
+                >
+                    {step === 1 && (
+                        <>
+                            <PhotoPicker value={fotos} onChange={setFotos} />
+                            <InputError
+                                message={
+                                    (
+                                        errors as Record<
+                                            string,
+                                            string | undefined
                                         >
-                                            <div
-                                                className={cn(
-                                                    'flex size-9 shrink-0 items-center justify-center rounded-full border-2 text-base font-black transition-all',
-                                                    sel
-                                                        ? 'border-primary bg-primary text-primary-foreground'
-                                                        : 'border-muted-foreground/30 text-muted-foreground',
-                                                )}
-                                            >
-                                                {value}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p
-                                                    className={cn(
-                                                        'text-base font-semibold',
-                                                        sel && 'text-primary',
-                                                    )}
-                                                >
-                                                    {label}
-                                                </p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {sub}
-                                                </p>
-                                            </div>
-                                            {sel && (
-                                                <Check
-                                                    size={18}
-                                                    className="ml-auto shrink-0 text-primary"
-                                                />
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            {errors.probabilitas && (
-                                <p className="text-sm text-destructive">
-                                    {errors.probabilitas}
-                                </p>
-                            )}
-                        </div>
-
-                        <Separator />
-
-                        {/* Frekuensi */}
-                        <div className="flex flex-col gap-3">
-                            <div>
-                                <p className="text-base font-bold">
-                                    2. Seberapa sering orang berada di dekat
-                                    bahaya ini?
-                                </p>
-                                <p className="mt-0.5 text-sm text-muted-foreground">
-                                    Pilih seberapa sering orang terpapar kondisi
-                                    ini.
-                                </p>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                {FREKUENSI.map(({ value, label, sub }) => {
-                                    const sel = data.frekuensi === value;
-
-                                    return (
-                                        <button
-                                            key={value}
-                                            type="button"
-                                            onClick={() =>
-                                                setData('frekuensi', value)
-                                            }
-                                            className={cn(
-                                                'flex items-center gap-4 rounded-2xl border-2 px-4 py-3.5 text-left transition-all',
-                                                sel
-                                                    ? 'border-primary bg-primary/10'
-                                                    : 'border-border bg-card hover:border-primary/40 hover:bg-muted/40',
-                                            )}
+                                    ).foto ??
+                                    (
+                                        errors as Record<
+                                            string,
+                                            string | undefined
                                         >
-                                            <div
-                                                className={cn(
-                                                    'flex size-9 shrink-0 items-center justify-center rounded-full border-2 text-base font-black transition-all',
-                                                    sel
-                                                        ? 'border-primary bg-primary text-primary-foreground'
-                                                        : 'border-muted-foreground/30 text-muted-foreground',
-                                                )}
-                                            >
-                                                {value}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p
-                                                    className={cn(
-                                                        'text-base font-semibold',
-                                                        sel && 'text-primary',
-                                                    )}
-                                                >
-                                                    {label}
-                                                </p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {sub}
-                                                </p>
-                                            </div>
-                                            {sel && (
-                                                <Check
-                                                    size={18}
-                                                    className="ml-auto shrink-0 text-primary"
-                                                />
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            {errors.frekuensi && (
-                                <p className="text-sm text-destructive">
-                                    {errors.frekuensi}
-                                </p>
-                            )}
-                        </div>
+                                    ).foto_2
+                                }
+                            />
 
-                        <Separator />
-
-                        {/* Severity */}
-                        <div className="flex flex-col gap-3">
-                            <div>
-                                <p className="text-base font-bold">
-                                    3. Seberapa parah akibatnya jika terjadi?
-                                </p>
-                                <p className="mt-0.5 text-sm text-muted-foreground">
-                                    Pilih dampak terburuk yang mungkin terjadi.
-                                </p>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                {SEVERITY.map(
-                                    ({ value, label, sub, color }) => {
-                                        const sel = data.severity === value;
-                                        const colorCls = {
-                                            green: {
-                                                sel: 'border-green-400 bg-green-50 dark:bg-green-950/30',
-                                                num: 'border-green-400 bg-green-100 text-green-700',
-                                                check: 'text-green-600',
-                                            },
-                                            lime: {
-                                                sel: 'border-lime-400 bg-lime-50 dark:bg-lime-950/30',
-                                                num: 'border-lime-400 bg-lime-100 text-lime-700',
-                                                check: 'text-lime-600',
-                                            },
-                                            yellow: {
-                                                sel: 'border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30',
-                                                num: 'border-yellow-400 bg-yellow-100 text-yellow-700',
-                                                check: 'text-yellow-600',
-                                            },
-                                            orange: {
-                                                sel: 'border-orange-400 bg-orange-50 dark:bg-orange-950/30',
-                                                num: 'border-orange-400 bg-orange-100 text-orange-700',
-                                                check: 'text-orange-600',
-                                            },
-                                            red: {
-                                                sel: 'border-red-400 bg-red-50 dark:bg-red-950/30',
-                                                num: 'border-red-400 bg-red-100 text-red-700',
-                                                check: 'text-red-600',
-                                            },
-                                        }[color]!;
+                            <div
+                                role="radiogroup"
+                                aria-labelledby="kategori-label"
+                                className="flex flex-col gap-2"
+                            >
+                                <span
+                                    id="kategori-label"
+                                    className="text-[13px] font-semibold"
+                                >
+                                    Kategori
+                                </span>
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    {KATEGORI.map((k) => {
+                                        const on = data.kategori === k.value;
 
                                         return (
                                             <button
-                                                key={value}
+                                                key={k.value}
                                                 type="button"
+                                                role="radio"
+                                                aria-checked={on}
                                                 onClick={() =>
-                                                    setData('severity', value)
+                                                    setData((d) => ({
+                                                        ...d,
+                                                        kategori: k.value,
+                                                        klasifikasi_bahaya: '',
+                                                    }))
                                                 }
                                                 className={cn(
-                                                    'flex items-center gap-4 rounded-2xl border-2 px-4 py-3.5 text-left transition-all',
-                                                    sel
-                                                        ? colorCls.sel
-                                                        : 'border-border bg-card hover:border-primary/40 hover:bg-muted/40',
+                                                    'flex min-h-[64px] flex-col items-start justify-center rounded-lg px-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                                                    on
+                                                        ? 'border-2 border-foreground bg-accent-soft'
+                                                        : 'border border-border bg-card hover:bg-muted',
                                                 )}
                                             >
-                                                <div
-                                                    className={cn(
-                                                        'flex size-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-black transition-all',
-                                                        sel
-                                                            ? colorCls.num
-                                                            : 'border-muted-foreground/30 text-muted-foreground',
-                                                    )}
-                                                >
-                                                    S{value}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-base font-semibold">
-                                                        {label}
-                                                    </p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {sub}
-                                                    </p>
-                                                </div>
-                                                {sel && (
-                                                    <Check
-                                                        size={18}
-                                                        className={cn(
-                                                            'ml-auto shrink-0',
-                                                            colorCls.check,
-                                                        )}
-                                                    />
-                                                )}
+                                                <span className="text-sm font-bold">
+                                                    {k.label}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {k.sub}
+                                                </span>
                                             </button>
                                         );
-                                    },
-                                )}
+                                    })}
+                                </div>
+                                <InputError message={errors.kategori} />
                             </div>
-                            {errors.severity && (
-                                <p className="text-sm text-destructive">
-                                    {errors.severity}
-                                </p>
-                            )}
-                        </div>
 
-                        {/* Risk result */}
-                        {risk &&
-                            (() => {
-                                const rc = RISK_COLORS[risk.level];
-
-                                return (
-                                    <div
-                                        className={cn(
-                                            'flex flex-col items-center gap-3 rounded-2xl border-2 py-7 text-center',
-                                            rc.bg,
-                                        )}
-                                    >
-                                        <p className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-                                            Hasil Penilaian Risiko
-                                        </p>
-                                        <p
-                                            className={cn(
-                                                'text-6xl font-black tabular-nums',
-                                                rc.text,
-                                            )}
-                                        >
-                                            {risk.nilai}
-                                        </p>
-                                        <RiskBadge level={risk.level} />
-                                        <p className="px-4 text-sm text-muted-foreground">
-                                            {rc.desc}
-                                        </p>
-                                    </div>
-                                );
-                            })()}
-
-                        {renderNavButtons({ canNext: step2Valid })}
-                    </div>
-                )}
-
-                {/* ══════════════════════════════════════
-                    STEP 3 — Tindakan
-                ══════════════════════════════════════ */}
-                {currentStep === 2 && (
-                    <div className="flex flex-col gap-6">
-                        {/* Summary */}
-                        <Card>
-                            <CardContent className="py-0">
-                                <p className="py-3 text-sm font-bold tracking-wide text-muted-foreground uppercase">
-                                    Ringkasan Laporan
-                                </p>
-                                <Separator />
-                                {[
-                                    {
-                                        label: 'Tanggal',
-                                        value: new Date(
-                                            data.tanggal,
-                                        ).toLocaleDateString('id-ID', {
-                                            day: 'numeric',
-                                            month: 'long',
-                                            year: 'numeric',
-                                        }),
-                                    },
-                                    {
-                                        label: 'Waktu',
-                                        value: data.waktu_pengamatan || '—',
-                                    },
-                                    {
-                                        label: 'Kategori',
-                                        value:
-                                            data.kategori === 'KTA'
-                                                ? '⚠️ KTA — Kondisi Tidak Aman'
-                                                : data.kategori === 'TTA'
-                                                  ? '🚷 TTA — Tindakan Tidak Aman'
-                                                  : '—',
-                                    },
-                                    { label: 'Lokasi', value: data.lokasi },
-                                    ...(risk
-                                        ? [
-                                              {
-                                                  label: 'Nilai Risiko',
-                                                  value: `${risk.nilai} (${risk.level})`,
-                                              },
-                                          ]
-                                        : []),
-                                ].map(({ label, value }, idx, arr) => (
-                                    <div key={label}>
-                                        <div className="flex items-center justify-between py-3.5 text-sm">
-                                            <span className="text-muted-foreground">
-                                                {label}
-                                            </span>
-                                            <span className="max-w-[60%] truncate text-right font-semibold">
-                                                {value}
-                                            </span>
-                                        </div>
-                                        {idx < arr.length - 1 && <Separator />}
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-
-                        {/* Tindakan perbaikan */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-base font-bold">
-                                🔧 Tindakan yang Sudah atau Akan Dilakukan
-                            </label>
-                            <p className="-mt-1 text-sm text-muted-foreground">
-                                Apa yang sudah Anda lakukan, atau apa yang perlu
-                                dilakukan untuk mengatasi bahaya ini?
-                            </p>
-                            <textarea
-                                value={data.tindakan_perbaikan}
-                                onChange={(e) =>
-                                    setData(
-                                        'tindakan_perbaikan',
-                                        e.target.value,
-                                    )
+                            <ComboField
+                                id="klasifikasi"
+                                label="Klasifikasi"
+                                value={data.klasifikasi_bahaya}
+                                options={klasifikasiOptions}
+                                onChange={(v) =>
+                                    setData('klasifikasi_bahaya', v)
                                 }
-                                placeholder="Contoh: Sudah memasang tanda peringatan. Perlu diperbaiki oleh teknisi dalam 2 hari..."
-                                rows={4}
-                                className={cn(
-                                    'w-full rounded-xl border-2 border-input bg-background px-4 py-3 text-base text-foreground shadow-xs',
-                                    'resize-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
-                                )}
+                                placeholder={
+                                    data.kategori
+                                        ? 'Pilih klasifikasi'
+                                        : 'Pilih kategori dulu'
+                                }
+                                searchPlaceholder="Cari klasifikasi…"
+                                disabled={!data.kategori}
+                                error={errors.klasifikasi_bahaya}
                             />
-                            {errors.tindakan_perbaikan && (
-                                <p className="text-sm text-destructive">
-                                    {errors.tindakan_perbaikan}
-                                </p>
-                            )}
-                        </div>
 
-                        {/* Status tindakan */}
-                        <div className="flex flex-col gap-3">
-                            <label className="text-base font-bold">
-                                📋 Status Penanganan
-                            </label>
-                            <div className="grid grid-cols-2 gap-3">
-                                {[
-                                    {
-                                        value: 'pending',
-                                        emoji: '⏳',
-                                        label: 'Pending',
-                                        sub: 'Belum ditangani',
-                                        selCls: 'border-amber-400 bg-amber-50 dark:bg-amber-950/30',
-                                    },
-                                    {
-                                        value: 'continue',
-                                        emoji: '🔵',
-                                        label: 'Continue',
-                                        sub: 'Dilanjutkan penanganan',
-                                        selCls: 'border-blue-400 bg-blue-50 dark:bg-blue-950/30',
-                                    },
-                                    {
-                                        value: 'progress',
-                                        emoji: '🟡',
-                                        label: 'Progress',
-                                        sub: 'Sedang dalam proses',
-                                        selCls: 'border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30',
-                                    },
-                                    {
-                                        value: 'close',
-                                        emoji: '✅',
-                                        label: 'Close',
-                                        sub: 'Bahaya sudah ditangani',
-                                        selCls: 'border-green-400 bg-green-50 dark:bg-green-950/30',
-                                    },
-                                ].map(
-                                    ({ value, emoji, label, sub, selCls }) => {
-                                        const sel =
+                            <div className="grid grid-cols-2 gap-2.5">
+                                <div className="flex min-w-0 flex-col gap-1.5">
+                                    <span className="text-[13px] font-semibold">
+                                        Site
+                                    </span>
+                                    <SiteCombobox
+                                        value={data.site}
+                                        options={sites}
+                                        onChange={(value) =>
+                                            setData((d) => ({
+                                                ...d,
+                                                site: value,
+                                                pic_user_id: '',
+                                                lokasi: '',
+                                            }))
+                                        }
+                                        placeholder="Pilih site"
+                                    />
+                                    <InputError message={errors.site} />
+                                </div>
+                                <ComboField
+                                    id="lokasi"
+                                    label="Lokasi"
+                                    value={data.lokasi}
+                                    options={lokasiOptions}
+                                    onChange={(v) => setData('lokasi', v)}
+                                    placeholder="Pilih lokasi"
+                                    searchPlaceholder="Cari lokasi…"
+                                    emptyText="Lokasi tidak ditemukan."
+                                    error={errors.lokasi}
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <Label
+                                    htmlFor="detail_lokasi"
+                                    className="text-[13px] font-semibold"
+                                >
+                                    Detail lokasi{' '}
+                                    <span className="font-normal text-muted-foreground">
+                                        (opsional)
+                                    </span>
+                                </Label>
+                                <Input
+                                    id="detail_lokasi"
+                                    value={data.detail_lokasi}
+                                    maxLength={255}
+                                    onChange={(e) =>
+                                        setData(
+                                            'detail_lokasi',
+                                            toProperCase(e.target.value),
+                                        )
+                                    }
+                                    placeholder="Contoh: KM 4, tikungan sebelum pos"
+                                />
+                                <InputError message={errors.detail_lokasi} />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2.5">
+                                <div className="flex min-w-0 flex-col gap-1.5">
+                                    <span className="text-[13px] font-semibold">
+                                        Tanggal
+                                    </span>
+                                    <DatePickerInput
+                                        value={data.tanggal}
+                                        onChange={(v) => setData('tanggal', v)}
+                                        max={today}
+                                        error={!!errors.tanggal}
+                                    />
+                                    <InputError message={errors.tanggal} />
+                                </div>
+                                <div className="flex min-w-0 flex-col gap-1.5">
+                                    <span className="text-[13px] font-semibold">
+                                        Waktu
+                                    </span>
+                                    <TimePickerInput
+                                        value={data.waktu_pengamatan}
+                                        onChange={(v) =>
+                                            setData('waktu_pengamatan', v)
+                                        }
+                                        error={!!errors.waktu_pengamatan}
+                                    />
+                                    <InputError
+                                        message={errors.waktu_pengamatan}
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {step === 2 && (
+                        <RiskMatrix
+                            axes={RISK_AXES}
+                            value={{
+                                probabilitas: data.probabilitas,
+                                frekuensi: data.frekuensi,
+                                severity: data.severity,
+                            }}
+                            onChange={(key: RiskAxis, v) => setData(key, v)}
+                            errors={{
+                                probabilitas: errors.probabilitas,
+                                frekuensi: errors.frekuensi,
+                                severity: errors.severity,
+                            }}
+                        />
+                    )}
+
+                    {step === 3 && (
+                        <>
+                            {risk && (
+                                <div className="flex items-center gap-3 rounded-lg bg-muted px-4 py-3">
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block text-sm font-bold">
+                                            {riskLabels[risk.level]} ·{' '}
+                                            {risk.level} · {risk.nilai}
+                                        </span>
+                                        <span className="block truncate text-xs text-muted-foreground">
+                                            {data.kategori} · {data.lokasi}
+                                            {data.detail_lokasi
+                                                ? ` ${data.detail_lokasi}`
+                                                : ''}{' '}
+                                            · {fotos.length} foto
+                                        </span>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStep(1)}
+                                        className="min-h-11 px-2 text-[13px] font-semibold hover:underline"
+                                    >
+                                        Ubah
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="flex flex-col gap-1.5">
+                                <Label
+                                    htmlFor="deskripsi_bahaya"
+                                    className="text-[13px] font-semibold"
+                                >
+                                    Uraian bahaya
+                                </Label>
+                                <Textarea
+                                    id="deskripsi_bahaya"
+                                    rows={3}
+                                    value={data.deskripsi_bahaya}
+                                    onChange={(e) =>
+                                        setData(
+                                            'deskripsi_bahaya',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="Apa yang Anda lihat, di mana, dan mengapa berbahaya?"
+                                    aria-invalid={
+                                        errors.deskripsi_bahaya
+                                            ? true
+                                            : undefined
+                                    }
+                                />
+                                <InputError message={errors.deskripsi_bahaya} />
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <Label
+                                    htmlFor="tindakan_perbaikan"
+                                    className="text-[13px] font-semibold"
+                                >
+                                    Tindakan yang sudah / perlu dilakukan
+                                </Label>
+                                <Textarea
+                                    id="tindakan_perbaikan"
+                                    rows={3}
+                                    value={data.tindakan_perbaikan}
+                                    onChange={(e) =>
+                                        setData(
+                                            'tindakan_perbaikan',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="Contoh: pasang rambu dan cone, minta grader perbaiki."
+                                    aria-invalid={
+                                        errors.tindakan_perbaikan
+                                            ? true
+                                            : undefined
+                                    }
+                                />
+                                <InputError
+                                    message={errors.tindakan_perbaikan}
+                                />
+                            </div>
+
+                            <div
+                                role="radiogroup"
+                                aria-labelledby="status-label"
+                                className="flex flex-col gap-2"
+                            >
+                                <span
+                                    id="status-label"
+                                    className="text-[13px] font-semibold"
+                                >
+                                    Status tindakan
+                                </span>
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                    {STATUS_OPTIONS.map(({ value, Icon }) => {
+                                        const on =
                                             data.status_tindakan === value;
 
                                         return (
                                             <button
                                                 key={value}
                                                 type="button"
+                                                role="radio"
+                                                aria-checked={on}
                                                 onClick={() =>
                                                     setData(
                                                         'status_tindakan',
@@ -1365,219 +672,52 @@ galleryRef.current.value = '';
                                                     )
                                                 }
                                                 className={cn(
-                                                    'flex flex-col items-center gap-2 rounded-2xl border-2 py-5 text-center transition-all',
-                                                    sel
-                                                        ? selCls
-                                                        : 'border-border bg-card hover:border-primary/40 hover:bg-muted/40',
+                                                    'flex h-11 items-center justify-center gap-1.5 rounded-full text-[13px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                                                    on
+                                                        ? 'bg-primary text-primary-foreground'
+                                                        : 'border border-border bg-card hover:bg-muted',
                                                 )}
                                             >
-                                                <span className="text-3xl">
-                                                    {emoji}
-                                                </span>
-                                                <div>
-                                                    <p className="text-base font-bold">
-                                                        {label}
-                                                    </p>
-                                                    <p className="mt-0.5 text-xs text-muted-foreground">
-                                                        {sub}
-                                                    </p>
-                                                </div>
-                                                {sel && (
-                                                    <div className="flex size-6 items-center justify-center rounded-full bg-primary">
-                                                        <Check
-                                                            size={13}
-                                                            className="text-primary-foreground"
-                                                        />
-                                                    </div>
-                                                )}
+                                                <Icon className="size-4" />
+                                                {tindakanLabels[value]}
                                             </button>
                                         );
-                                    },
-                                )}
+                                    })}
+                                </div>
+                                <InputError message={errors.status_tindakan} />
                             </div>
-                        </div>
 
-                        {/* PIC */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-base font-bold">
-                                👤 PIC
-                            </label>
-                            <p className="-mt-1 text-sm text-muted-foreground">
-                                Pilih penanggung jawab tindakan perbaikan.
-                            </p>
-                            {availablePics.length > 0 ? (
-                                <Popover
-                                    open={picOpen}
-                                    onOpenChange={setPicOpen}
-                                >
-                                    <PopoverTrigger asChild>
-                                        <button
-                                            type="button"
-                                            role="combobox"
-                                            aria-expanded={picOpen}
-                                            className={cn(
-                                                'flex h-14 w-full items-center justify-between rounded-xl border-2 px-4 text-base transition-all',
-                                                'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
-                                                data.pic_user_id
-                                                    ? 'border-orange-400 bg-orange-50 text-orange-800 dark:bg-orange-950/30 dark:text-orange-200'
-                                                    : errors.pic_user_id
-                                                      ? 'border-destructive bg-background text-muted-foreground'
-                                                      : 'border-input bg-background text-muted-foreground',
-                                            )}
-                                        >
-                                            <span className="truncate text-left">
-                                                {data.pic_user_id
-                                                    ? (() => {
-                                                          const p =
-                                                              availablePics.find(
-                                                                  (p) =>
-                                                                      String(
-                                                                          p.id,
-                                                                      ) ===
-                                                                      data.pic_user_id,
-                                                              );
-
-                                                          return p
-                                                              ? `${p.name}${p.jabatan ? ` — ${p.jabatan}` : ''}`
-                                                              : 'Pilih PIC...';
-                                                      })()
-                                                    : 'Pilih PIC...'}
-                                            </span>
-                                            <ChevronsUpDown
-                                                size={16}
-                                                className="shrink-0 opacity-50"
-                                            />
-                                        </button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        className="w-[var(--radix-popover-trigger-width)] p-0"
-                                        align="start"
-                                    >
-                                        <Command>
-                                            <CommandInput
-                                                placeholder="Cari nama PIC..."
-                                                className="h-11 text-base"
-                                            />
-                                            <CommandList>
-                                                <CommandEmpty>
-                                                    Tidak ditemukan.
-                                                </CommandEmpty>
-                                                <CommandGroup>
-                                                    {availablePics.map(
-                                                        (pic) => (
-                                                            <CommandItem
-                                                                key={pic.id}
-                                                                value={`${pic.name} ${pic.jabatan ?? ''}`}
-                                                                onSelect={() => {
-                                                                    setData(
-                                                                        'pic_user_id',
-                                                                        data.pic_user_id ===
-                                                                            String(
-                                                                                pic.id,
-                                                                            )
-                                                                            ? ''
-                                                                            : String(
-                                                                                  pic.id,
-                                                                              ),
-                                                                    );
-                                                                    setPicOpen(
-                                                                        false,
-                                                                    );
-                                                                }}
-                                                                className="py-3 text-sm"
-                                                            >
-                                                                <div>
-                                                                    <p className="font-medium">
-                                                                        {
-                                                                            pic.name
-                                                                        }
-                                                                    </p>
-                                                                    {pic.jabatan && (
-                                                                        <p className="text-xs text-muted-foreground">
-                                                                            {
-                                                                                pic.jabatan
-                                                                            }
-                                                                        </p>
-                                                                    )}
-                                                                </div>
-                                                                <Check
-                                                                    size={15}
-                                                                    className={cn(
-                                                                        'ml-auto shrink-0',
-                                                                        data.pic_user_id ===
-                                                                            String(
-                                                                                pic.id,
-                                                                            )
-                                                                            ? 'text-orange-600 opacity-100'
-                                                                            : 'opacity-0',
-                                                                    )}
-                                                                />
-                                                            </CommandItem>
-                                                        ),
-                                                    )}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                            ) : (
-                                <p className="text-sm text-destructive">
-                                    Tidak ada PIC tersedia untuk site ini.
+                            <ComboField
+                                id="pic"
+                                label="PIC penanggung jawab"
+                                value={data.pic_user_id}
+                                options={picOptions}
+                                onChange={(v) => setData('pic_user_id', v)}
+                                placeholder={
+                                    picOptions.length
+                                        ? 'Pilih PIC'
+                                        : 'Belum ada PIC di site ini'
+                                }
+                                searchPlaceholder="Cari nama PIC…"
+                                emptyText="PIC tidak ditemukan."
+                                error={errors.pic_user_id}
+                                disabled={picOptions.length === 0}
+                            />
+                            {picked && (
+                                <p className="-mt-2 text-xs text-muted-foreground">
+                                    PIC akan menerima notifikasi setelah laporan
+                                    dikirim.
                                 </p>
                             )}
-                            {errors.pic_user_id && (
-                                <p className="text-sm text-destructive">
-                                    {errors.pic_user_id}
-                                </p>
-                            )}
-                        </div>
-
-                        {renderNavButtons({ canNext: step3Valid })}
-                    </div>
-                )}
-
-                <p className="pb-2 text-center text-xs text-muted-foreground">
-                    Datang sehat — kerja aman — pulang selamat
-                </p>
+                        </>
+                    )}
+                </FormStepper>
             </form>
 
-            <Sheet open={photoSheet} onOpenChange={setPhotoSheet}>
-                <SheetContent side="bottom" className="pb-8">
-                    <SheetHeader>
-                        <SheetTitle>Pilih Sumber Foto</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-4 flex flex-col gap-3">
-                        <Button
-                            variant="outline"
-                            className="h-14 gap-3 text-base"
-                            onClick={() => openPhotoSource('camera')}
-                        >
-                            <Camera size={22} /> Ambil dari Kamera
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="h-14 gap-3 text-base"
-                            onClick={() => openPhotoSource('gallery')}
-                        >
-                            <Images size={22} /> Pilih dari Galeri
-                        </Button>
-                    </div>
-                </SheetContent>
-            </Sheet>
             <UploadOverlay
                 open={processing}
                 progress={uploadProgress}
-                label="Menyimpan laporan..."
-            />
-            <CameraCapture
-                open={showCamera}
-                onCapture={async (file) => {
-                    setShowCamera(false);
-                    const compressed = await compressImageWithToast(file);
-                    setData('foto', compressed);
-                    setPreview(URL.createObjectURL(compressed));
-                }}
-                onClose={() => setShowCamera(false)}
+                label="Mengirim laporan..."
             />
         </>
     );

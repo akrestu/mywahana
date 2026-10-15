@@ -87,6 +87,7 @@ class LaporanBahayaController extends Controller
             'status_tindakan' => ['required', 'in:pending,continue,progress,close'],
             'pic_user_id' => ['required', 'exists:users,id'],
             'foto' => ['nullable', 'image', 'max:5120'],
+            'foto_2' => ['nullable', 'image', 'max:5120'],
         ]);
 
         $reporter = $request->user()->load('sites:id,value');
@@ -103,14 +104,18 @@ class LaporanBahayaController extends Controller
             ]);
         }
 
-        $fotoPath = null;
-        if ($request->hasFile('foto')) {
-            $fotoPath = $request->file('foto')->store("laporan-bahaya/{$request->user()->id}", 'public');
-        }
+        // Dua slot foto; foto kedua naik ke slot pertama bila hanya itu yang diisi.
+        $fotoPaths = collect(['foto', 'foto_2'])
+            ->filter(fn ($field) => $request->hasFile($field))
+            ->map(fn ($field) => $request->file($field)->store("laporan-bahaya/{$request->user()->id}", 'public'))
+            ->values();
+
+        unset($validated['foto'], $validated['foto_2']);
 
         $record = $reporter->laporanBahayas()->create([
             ...$validated,
-            'foto_path' => $fotoPath,
+            'foto_path' => $fotoPaths->get(0),
+            'foto_path_2' => $fotoPaths->get(1),
         ]);
 
         app(BadgeService::class)->checkAndAward($request->user());
@@ -120,9 +125,7 @@ class LaporanBahayaController extends Controller
             $record->pic->notify(new LaporanBahayaPicDitugaskan($record));
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Laporan Bahaya berhasil disimpan.']);
-
-        return redirect()->route('laporan-bahaya.index');
+        return redirect()->route('laporan-bahaya.show', [$record, 'terkirim' => 1]);
     }
 
     public function show(Request $request, LaporanBahaya $laporanBahaya)
@@ -153,6 +156,8 @@ class LaporanBahayaController extends Controller
             'fotoUrl' => $laporanBahaya->foto_path
                 ? Storage::url($laporanBahaya->foto_path)
                 : null,
+            'fotoUrls' => array_map(fn ($p) => Storage::url($p), $laporanBahaya->fotoPaths()),
+            'terkirim' => $request->boolean('terkirim') && $user->id === $laporanBahaya->user_id,
             'back_url' => $backUrl,
             'is_pic' => $user->id === $laporanBahaya->pic_user_id,
             'attachment_urls' => $attachmentUrls,
@@ -212,13 +217,14 @@ class LaporanBahayaController extends Controller
 
         $laporanBahaya->load('user');
 
-        $fotoAbsPath = $laporanBahaya->foto_path
-            ? Storage::disk('public')->path($laporanBahaya->foto_path)
-            : null;
+        $fotoAbsPaths = array_map(
+            fn ($p) => Storage::disk('public')->path($p),
+            $laporanBahaya->fotoPaths(),
+        );
 
         $pdf = Pdf::loadView('pdf.laporan-bahaya', [
             'record' => $laporanBahaya,
-            'fotoAbsPath' => $fotoAbsPath,
+            'fotoAbsPaths' => $fotoAbsPaths,
         ])->setPaper('a4', 'portrait');
 
         return $pdf->stream('laporan-bahaya-'.$laporanBahaya->id.'.pdf');

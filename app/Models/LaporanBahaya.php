@@ -17,7 +17,7 @@ class LaporanBahaya extends Model
         'deskripsi_bahaya', 'tindakan_perbaikan',
         'probabilitas', 'frekuensi', 'severity',
         'nilai_risiko', 'tingkat_risiko',
-        'status_tindakan', 'pic_user_id', 'foto_path',
+        'status_tindakan', 'pic_user_id', 'foto_path', 'foto_path_2',
     ];
 
     protected $casts = [
@@ -72,6 +72,16 @@ class LaporanBahaya extends Model
     }
 
     /**
+     * Foto bahaya yang terisi (maksimal dua), urut sesuai unggahan.
+     *
+     * @return list<string>
+     */
+    public function fotoPaths(): array
+    {
+        return array_values(array_filter([$this->foto_path, $this->foto_path_2]));
+    }
+
+    /**
      * Foto laporan beserta lampiran semua review-nya
      * (review ikut terhapus lewat cascade di database).
      */
@@ -79,6 +89,6 @@ class LaporanBahaya extends Model
     {
         $reviewPaths = $this->reviews()->get(['attachment_paths'])->pluck('attachment_paths')->flatten()->all();
 
-        return [$this->foto_path, ...$reviewPaths];
+        return [...$this->fotoPaths(), ...$reviewPaths];
     }
 }

@@ -4,7 +4,7 @@ import { useState  } from 'react';
 import type {ReactNode} from 'react';
 import AppLogo from '@/components/app-logo';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
-import { BottomNav } from '@/components/bottom-nav';
+import { BottomNav, isFocusedFlow } from '@/components/bottom-nav';
 import { CommandPalette } from '@/components/command-palette';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -26,6 +26,7 @@ import {
     SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { useAutoHideNav } from '@/hooks/use-auto-hide-nav';
+import { cn } from '@/lib/utils';
 import { modules, programsFor } from '@/modules/registry';
 import type { Auth } from '@/types';
 
@@ -565,7 +566,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 />}
 
                 {/* Page content */}
-                <main className="flex-1 px-4 py-4 pb-[calc(7rem+env(safe-area-inset-bottom))] lg:p-6 lg:pb-6">
+                <main className={cn('flex-1 px-4 py-4 lg:p-6 lg:pb-6', !isAdmin && isFocusedFlow(url) ? 'pb-0' : 'pb-[calc(7rem+env(safe-area-inset-bottom))]')}>
                     {/* Mobile: constrain to phone-width; Desktop: full width */}
                     <div className="mx-auto w-full max-w-lg lg:max-w-none">
                         {children}

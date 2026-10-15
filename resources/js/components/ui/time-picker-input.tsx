@@ -67,14 +67,15 @@ export function TimePickerInput({
                 variant="outline"
                 onClick={() => setOpen(true)}
                 className={cn(
-                    'h-14 w-full justify-start rounded-xl border-2 px-4 text-base font-normal',
+                    'h-11 w-full min-w-0 justify-start rounded-md border-2 border-transparent bg-input px-4 text-[15px] font-normal shadow-none hover:bg-input focus-visible:border-foreground focus-visible:ring-0 dark:focus-visible:border-accent',
                     !displayValue && 'text-muted-foreground',
                     error && 'border-destructive',
                     className,
                 )}
             >
-                <ClockIcon size={18} className="mr-2 shrink-0 text-muted-foreground" />
-                {displayValue ?? placeholder}
+                <ClockIcon size={18} className="shrink-0 text-muted-foreground" />
+                <span className="truncate">
+                {displayValue ?? placeholder}</span>
             </Button>
 
             <Dialog open={open} onOpenChange={setOpen}>

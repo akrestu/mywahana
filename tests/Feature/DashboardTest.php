@@ -1,6 +1,9 @@
 <?php
 
+use App\Models\BugarSelamat;
+use App\Models\LaporanBahaya;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia;
 
 test('guests are redirected to the login page', function () {
     $user = User::factory()->create();
@@ -22,7 +25,7 @@ test('dashboard user tidak lagi memuat papan peringkat dan statistik lama', func
 
     $this->actingAs($user)
         ->get(route('app.home'))
-        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('dashboard')
             ->missing('leaderboard')
             ->missing('stats')
@@ -33,14 +36,14 @@ test('dashboard user tidak lagi memuat papan peringkat dan statistik lama', func
 
 test('target bugar menyertakan tanggal yang terisi untuk kalender', function () {
     $user = User::factory()->create(['participation_level' => 'nonstaff']);
-    App\Models\BugarSelamat::create([
+    BugarSelamat::create([
         'user_id' => $user->id, 'tanggal' => today()->toDateString(), 'shift' => 'Pagi', 'hari_ke' => 1,
         'jam_tidur' => '>6', 'status_kelayakan' => 'layak',
     ]);
 
     $this->actingAs($user)
         ->get(route('app.home'))
-        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('target.bugar.tanggal_terisi', [today()->toDateString()])
             ->where('target.bugar.hari_terpenuhi', 1));
 });
@@ -49,7 +52,7 @@ test('beranda menampilkan maksimal tiga item perlu tindakan dari inbox', functio
     $pic = User::factory()->create();
     $reporter = User::factory()->create();
     foreach (range(1, 4) as $i) {
-        App\Models\LaporanBahaya::create([
+        LaporanBahaya::create([
             'user_id' => $reporter->id, 'site' => 'BAU', 'tanggal' => today()->toDateString(), 'lokasi' => "Pit {$i}",
             'deskripsi_bahaya' => 'Jalan licin', 'tindakan_perbaikan' => 'Pasang rambu',
             'probabilitas' => 1, 'frekuensi' => 1, 'severity' => 1, 'pic_user_id' => $pic->id, 'status_tindakan' => 'pending',
@@ -58,7 +61,7 @@ test('beranda menampilkan maksimal tiga item perlu tindakan dari inbox', functio
 
     $this->actingAs($pic)
         ->get(route('app.home'))
-        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->has('perlu_tindakan', 3)
             ->where('perlu_tindakan_total', 4));
 });

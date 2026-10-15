@@ -53,7 +53,7 @@ export function FormStepper({
                 {children}
             </div>
 
-            <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-10 -mx-4 flex gap-3 bg-gradient-to-t from-background via-background to-background/0 px-4 pt-6 pb-2 lg:bottom-0 lg:mx-0 lg:px-0">
+            <div className="sticky bottom-0 z-10 -mx-4 flex gap-3 bg-gradient-to-t from-background via-background to-background/0 px-4 pt-6 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:bottom-0 lg:mx-0 lg:px-0">
                 {secondary && (
                     <div className="flex-1 [&>*]:w-full">{secondary}</div>
                 )}

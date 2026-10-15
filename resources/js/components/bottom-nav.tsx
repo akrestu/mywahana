@@ -46,12 +46,23 @@ const slots: [Slot, Slot, Slot, Slot] = [
     },
 ];
 
+const FOCUSED_FLOW = /\/(create|konfirmasi|re-inspeksi|quiz|feedback)(\/|\?|$)/;
+
+export function isFocusedFlow(url: string): boolean {
+    return FOCUSED_FLOW.test(url);
+}
+
 /** Floating mobile navigation: Beranda · Modul · [+] · Inbox · Profil. */
 export function BottomNav() {
     const { url, props } = usePage<{ inbox_count?: number }>();
     const [quickOpen, setQuickOpen] = useState(false);
     const visible = useAutoHideNav(url);
     const inboxCount = props.inbox_count ?? 0;
+
+    // Form flows are full-screen: their sticky footer takes the nav's place.
+    if (isFocusedFlow(url)) {
+        return null;
+    }
 
     const renderSlot = (slot: Slot) => {
         const active = slot.active(url);

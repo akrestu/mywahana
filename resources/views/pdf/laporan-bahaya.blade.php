@@ -64,10 +64,15 @@
     </tr>
 </table>
 
-@if($fotoAbsPath && file_exists($fotoAbsPath))
+@php
+    $fotoAda = array_values(array_filter($fotoAbsPaths ?? [], 'file_exists'));
+@endphp
+@if(count($fotoAda))
 <div style="margin-bottom:10px;">
     <strong>Foto Bahaya:</strong><br>
-    <img src="{{ $fotoAbsPath }}" class="foto-img" alt="Foto Bahaya">
+    @foreach($fotoAda as $fotoAbsPath)
+    <img src="{{ $fotoAbsPath }}" class="foto-img" alt="Foto Bahaya {{ $loop->iteration }}" style="{{ count($fotoAda) > 1 ? 'max-width:48%;margin-right:2%;' : '' }}">
+    @endforeach
 </div>
 @endif
 

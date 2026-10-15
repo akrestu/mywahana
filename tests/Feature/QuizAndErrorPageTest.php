@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\AssessmentSession;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
