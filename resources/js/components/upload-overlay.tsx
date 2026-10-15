@@ -1,49 +1,121 @@
-import { Loader2 } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
-
 interface Props {
     open: boolean;
     progress?: number | null;
     label?: string;
 }
 
-export function UploadOverlay({ open, progress, label = 'Menyimpan...' }: Props) {
+const RING_RADIUS = 42;
+const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
+
+/**
+ * Full-screen sending state for form submissions. Follows the error and
+ * result screens: logo at the centre, topo motif, extrabold title and the
+ * ink-on-border progress track used by FormStepper.
+ */
+export function UploadOverlay({
+    open,
+    progress,
+    label = 'Menyimpan...',
+}: Props) {
     if (!open) {
-return null;
-}
+        return null;
+    }
 
     const pct = Math.min(Math.round(progress ?? 0), 100);
-    const hasProgress = progress != null && progress > 0;
+    const uploading = progress != null && progress > 0 && pct < 100;
+    const phase = uploading
+        ? `Mengunggah lampiran · ${pct}%`
+        : 'Menyimpan ke server, mohon tunggu sebentar.';
 
     return (
         <div
-            className="fixed inset-0 z-[9990] flex items-center justify-center bg-background/80 backdrop-blur-md"
-            aria-modal="true"
+            className="fixed inset-0 isolate z-[9990] flex animate-in flex-col items-center justify-center overflow-hidden bg-background px-6 py-12 duration-200 fade-in-0"
             role="dialog"
+            aria-modal="true"
+            aria-busy="true"
+            aria-labelledby="upload-overlay-title"
+            aria-describedby="upload-overlay-phase"
         >
-            <div className="flex w-72 flex-col items-center gap-6 rounded-[24px] bg-card px-8 py-10 shadow-[0_20px_48px_oklch(0.191_0_0/0.14)]">
-                {/* Spinner with pulsing ring */}
-                <div className="relative flex items-center justify-center">
-                    <span className="absolute size-20 animate-ping rounded-full bg-primary/20" />
-                    <span className="absolute size-16 rounded-full bg-primary/10" />
-                    <Loader2 size={40} className="relative text-primary animate-spin" />
+            <img
+                src="/images/topo.png"
+                alt=""
+                aria-hidden
+                className="pointer-events-none absolute -right-[280px] -bottom-[160px] -z-10 w-[760px] max-w-none opacity-30 dark:opacity-10 dark:invert"
+            />
+
+            <div className="flex w-full max-w-sm flex-col items-center gap-6 text-center">
+                <div className="relative flex size-24 items-center justify-center">
+                    <svg
+                        viewBox="0 0 96 96"
+                        aria-hidden
+                        className={`absolute inset-0 size-full -rotate-90 ${uploading ? '' : 'motion-safe:animate-[spin_1.1s_linear_infinite]'}`}
+                    >
+                        <circle
+                            cx="48"
+                            cy="48"
+                            r={RING_RADIUS}
+                            fill="none"
+                            strokeWidth="4"
+                            className="stroke-border"
+                        />
+                        <circle
+                            cx="48"
+                            cy="48"
+                            r={RING_RADIUS}
+                            fill="none"
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                            strokeDasharray={RING_LENGTH}
+                            strokeDashoffset={
+                                uploading
+                                    ? RING_LENGTH * (1 - pct / 100)
+                                    : RING_LENGTH * 0.72
+                            }
+                            className="stroke-foreground transition-[stroke-dashoffset] duration-300"
+                        />
+                    </svg>
+                    <img src="/logo.png" alt="" className="size-12" />
                 </div>
 
-                {/* Label */}
-                <div className="text-center">
-                    <p className="text-base font-bold text-foreground">{label}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">Mohon tunggu sebentar...</p>
+                <div className="space-y-2">
+                    <h1
+                        id="upload-overlay-title"
+                        className="text-xl font-extrabold tracking-tight"
+                    >
+                        {label}
+                    </h1>
+                    <p
+                        id="upload-overlay-phase"
+                        className="tabular text-sm leading-relaxed text-muted-foreground"
+                        aria-live="polite"
+                    >
+                        {phase}
+                    </p>
                 </div>
 
-                {/* Progress */}
-                {hasProgress && (
-                    <div className="w-full flex flex-col gap-2">
-                        <Progress value={pct} className="h-2.5" />
-                        <p className="text-center text-sm font-semibold tabular-nums text-muted-foreground">
-                            {pct}%
-                        </p>
+                <div className="w-full">
+                    <div
+                        className="h-1.5 w-full overflow-hidden rounded-full bg-border"
+                        role="progressbar"
+                        aria-label="Progres pengiriman"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={uploading ? pct : undefined}
+                    >
+                        <div
+                            className={`h-full rounded-full bg-foreground transition-[width] duration-300 ${uploading ? '' : 'motion-safe:animate-pulse'}`}
+                            style={{ width: `${uploading ? pct : 100}%` }}
+                        />
                     </div>
-                )}
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                    Jangan tutup aplikasi atau pindah halaman sampai selesai.
+                </p>
+
+                <p className="pt-4 text-xs text-muted-foreground/60">
+                    Datang sehat — kerja aman — pulang selamat
+                </p>
             </div>
         </div>
     );
