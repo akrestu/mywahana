@@ -14,7 +14,8 @@ import type { NavItem } from '@/types';
 
 export type NavGroup = {
     label?: string;
-    items: (NavItem & { badge?: number | string })[];
+    /** match: path prefix that also marks the item active, or false to never mark it. */
+    items: (NavItem & { badge?: number | string; match?: string | false })[];
 };
 
 type HrefType = NonNullable<InertiaLinkProps['href']>;
@@ -26,7 +27,7 @@ export function NavMain({
     groups?: NavGroup[];
     items?: NavItem[];
 }) {
-    const { isCurrentUrl } = useCurrentUrl();
+    const { isCurrentUrl, currentUrl } = useCurrentUrl();
 
     // backward-compat: wrap flat items array into a single group
     const resolvedGroups: NavGroup[] = groups ?? (items ? [{ items }] : []);
@@ -38,6 +39,7 @@ export function NavMain({
                     key={group.label ?? i}
                     group={group}
                     isActive={isCurrentUrl}
+                    currentUrl={currentUrl}
                 />
             ))}
         </>
@@ -48,9 +50,11 @@ export function NavMain({
 function NavGroup({
     group,
     isActive,
+    currentUrl,
 }: {
     group: NavGroup;
     isActive: (href: HrefType) => boolean;
+    currentUrl: string;
 }) {
     const { isMobile, setOpenMobile } = useSidebar();
 
@@ -63,7 +67,12 @@ function NavGroup({
             )}
             <SidebarMenu className="gap-0.5">
                 {group.items.map((item) => {
-                    const active = isActive(item.href);
+                    const active =
+                        item.match === false
+                            ? false
+                            : item.match
+                              ? currentUrl.startsWith(item.match)
+                              : isActive(item.href);
                     const badge =
                         typeof item.badge === 'number' && item.badge > 99
                             ? '99+'

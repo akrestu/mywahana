@@ -809,6 +809,7 @@ export default function AdminIndex({
                 {overview && <AdminOverview overview={overview} />}
 
                 {/* ④ TABLE */}
+                <div id="rekap-karyawan" className="scroll-mt-20" />
                 <EmployeeRecapTable recap={employee_recap} filter={filter} exportRef={exportRef} />
 
             </div>

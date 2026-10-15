@@ -94,13 +94,6 @@ class UserController extends Controller
         ]);
     }
 
-    public function createUser(Request $request)
-    {
-        return Inertia::render('admin/user-form', [
-            'mode' => 'create',
-            'sites' => $this->manageableSites($request),
-        ]);
-    }
 
     public function storeUser(Request $request)
     {
@@ -140,19 +133,6 @@ class UserController extends Controller
         return redirect()->route('admin.users');
     }
 
-    public function editUser(Request $request, User $user)
-    {
-        $this->ensureManagesUser($request, $user);
-
-        return Inertia::render('admin/user-form', [
-            'mode' => 'edit',
-            'user' => [
-                ...$user->only('id', 'name', 'nik', 'email', 'jabatan', 'departemen', 'site', 'is_admin', 'participation_level'),
-                'site_ids' => $user->sites()->pluck('sites.value')->all(),
-            ],
-            'sites' => $this->manageableSites($request),
-        ]);
-    }
 
     public function updateUser(Request $request, User $user)
     {
@@ -204,8 +184,8 @@ class UserController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data pengguna berhasil diperbarui.']);
 
-        // The inline edit panel on the user list stays on the filtered page.
-        return $request->boolean('stay') ? back() : redirect()->route('admin.users');
+        // Edits come from the side panel on the user list; stay on the filtered page.
+        return back();
     }
 
     public function destroyUser(Request $request, User $user)
@@ -306,14 +286,6 @@ class UserController extends Controller
         abort_unless(User::whereKey($user->id)->assignedToSite($adminSite)->exists(), 403);
     }
 
-    private function manageableSites(Request $request)
-    {
-        $adminSite = $request->user()->site;
-
-        return Site::when($adminSite, fn ($q) => $q->where('value', $adminSite))
-            ->orderBy('label')
-            ->get(['value', 'label']);
-    }
 
     private function adminSite(Request $request): ?string
     {

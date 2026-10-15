@@ -19,6 +19,7 @@ import {
 } from '@/components/admin/data-table';
 import DateRangeFilter from '@/components/admin/DateRangeFilter';
 import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
+import { SegmentTabs } from '@/components/patterns/segment-tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -222,6 +223,20 @@ export function InspeksiMonitor({
                             </DropdownMenuItem>
                         </MoreMenu>
                     </div>
+                </div>
+
+                <div className="max-w-lg">
+                    <SegmentTabs
+                        label="Jenis inspeksi"
+                        value={slug}
+                        onChange={(v) => router.get(`/admin/inspeksi-${v}`)}
+                        tabs={[
+                            { key: 'kantor', label: 'Kantor' },
+                            { key: 'tambang', label: 'Tambang' },
+                            { key: 'workshop', label: 'Workshop' },
+                            { key: 'mess', label: 'Mess' },
+                        ]}
+                    />
                 </div>
 
                 <FilterBar>

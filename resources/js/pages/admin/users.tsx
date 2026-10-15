@@ -186,7 +186,6 @@ type PanelFields = {
     site_ids: string[];
     is_admin: boolean;
     participation_level: Level;
-    stay: boolean;
 };
 
 /** Right-hand edit/create panel from AUsers.html. */
@@ -217,7 +216,6 @@ function UserPanel({
         site_ids: user?.site_ids ?? [],
         is_admin: user?.is_admin ?? false,
         participation_level: (user?.participation_level as Level) ?? 'nonstaff',
-        stay: true,
     });
     const { data, setData, errors, processing } = form;
 

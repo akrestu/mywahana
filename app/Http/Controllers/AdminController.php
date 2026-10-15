@@ -29,6 +29,7 @@ use App\Models\ParticipationTarget;
 use App\Models\Site;
 use App\Models\User;
 use App\Notifications\LaporanBahayaPicDitugaskan;
+use App\Services\AdminInboxService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -198,6 +199,14 @@ class AdminController extends Controller
             'admin_site' => $adminSite,
             'filters' => $request->only('site', 'status', 'search', 'periode', 'view', 'date_from', 'date_to'),
             'summary' => $summary,
+        ]);
+    }
+
+    /** Inbox approval: pending items across K3 modules (ADashboard sidebar). */
+    public function inbox(Request $request, AdminInboxService $inbox)
+    {
+        return Inertia::render('admin/inbox', [
+            'groups' => $inbox->items($request->user()),
         ]);
     }
 

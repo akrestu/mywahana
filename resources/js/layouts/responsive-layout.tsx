@@ -447,6 +447,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
 
     const userMobileNavItems = baseUserMobileNavItems;
     const inboxCount = (usePage<{ inbox_count?: number }>().props.inbox_count ?? 0);
+    const adminInboxCount = (usePage<{ admin_inbox_count?: number }>().props.admin_inbox_count ?? 0);
     const [quickOpen, setQuickOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
 
@@ -454,16 +455,15 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
         ? [
             { items: [
                 { title: 'Ringkasan', href: '/home', icon: ShieldCheck },
+                { title: 'Inbox approval', href: '/admin/inbox', icon: Inbox, badge: adminInboxCount > 0 ? adminInboxCount : undefined },
             ]},
             { label: 'K3 / Safety', items: [
                 { title: 'Bugar Selamat',     href: '/admin/bugar-selamat',         icon: HeartPulse },
                 { title: 'Laporan Bahaya',    href: '/admin/laporan-bahaya',        icon: AlertTriangle },
                 { title: 'Observasi',         href: '/admin/observasi-keselamatan', icon: ClipboardCheck },
                 { title: 'Komunikasi JSA',    href: '/admin/komunikasi-jsa',        icon: BookOpen },
-                { title: 'Inspeksi Kantor',   href: '/admin/inspeksi-kantor',       icon: Building2 },
-                { title: 'Inspeksi Tambang',  href: '/admin/inspeksi-tambang',      icon: Mountain },
-                { title: 'Inspeksi Workshop', href: '/admin/inspeksi-workshop',     icon: Wrench },
-                { title: 'Inspeksi Mess',     href: '/admin/inspeksi-mess',         icon: BedDouble },
+                { title: 'Inspeksi',          href: '/admin/inspeksi-kantor',       icon: Building2, match: '/admin/inspeksi-' },
+                { title: 'Rekap karyawan',    href: '/home#rekap-karyawan',         icon: Users, match: false as const },
             ]},
             { label: 'Assessment', items: [
                 { title: 'Safety',           href: '/admin/assessment',                    icon: GraduationCap },

@@ -138,6 +138,7 @@ Route::middleware(['auth'])->group(function () {
     // Admin
     Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('index');
+        Route::get('/inbox', [AdminController::class, 'inbox'])->name('inbox');
 
         // Bugar Selamat monitoring
         Route::get('/bugar-selamat/export', [AdminController::class, 'exportBugarSelamat'])->name('bugar-selamat.export');
@@ -238,9 +239,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/users/export', [AdminUserController::class, 'exportUsers'])->name('users.export');
         Route::get('/users/import-template', [AdminUserController::class, 'importTemplate'])->name('users.import-template');
         Route::post('/users/import', [AdminUserController::class, 'importUsers'])->name('users.import');
-        Route::get('/users/create', [AdminUserController::class, 'createUser'])->name('users.create');
         Route::post('/users', [AdminUserController::class, 'storeUser'])->name('users.store');
-        Route::get('/users/{user}/edit', [AdminUserController::class, 'editUser'])->name('users.edit');
         Route::put('/users/{user}', [AdminUserController::class, 'updateUser'])->name('users.update');
         Route::delete('/users/{user}', [AdminUserController::class, 'destroyUser'])->name('users.destroy');
         Route::get('/users', [AdminUserController::class, 'users'])->name('users');

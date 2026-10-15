@@ -64,7 +64,6 @@ test('admin site tidak bisa mengelola user site lain atau admin global', functio
     $global = User::factory()->create(['is_admin' => true, 'site' => null]);
 
     foreach ([$other, $global] as $target) {
-        $this->actingAs($admin)->get("/admin/users/{$target->id}/edit")->assertForbidden();
         $this->actingAs($admin)->put("/admin/users/{$target->id}", userPayload(['nik' => $target->nik]))->assertForbidden();
         $this->actingAs($admin)->patch("/admin/users/{$target->id}/level", ['participation_level' => 'staff'])->assertForbidden();
         $this->actingAs($admin)->delete("/admin/users/{$target->id}")->assertForbidden();
