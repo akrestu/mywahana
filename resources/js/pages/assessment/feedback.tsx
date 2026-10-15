@@ -1,5 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
-import { ClipboardList, Send, Star } from 'lucide-react';
+import { Send, Star } from 'lucide-react';
+import { ModuleHeader } from '@/components/patterns/module-header';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -75,8 +76,8 @@ function ScaleRow({
                         className={cn(
                             'flex flex-col items-center justify-center rounded-lg border py-2 text-sm font-bold transition-all',
                             value === n
-                                ? 'border-info/60 bg-info text-white shadow-sm'
-                                : 'hover:border-info/60 hover:bg-info-soft',
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-border hover:bg-muted',
                         )}
                     >
                         {n}
@@ -147,34 +148,36 @@ export default function AssessmentFeedback({
 
             <form
                 onSubmit={handleSubmit}
-                className="mx-auto max-w-xl space-y-5 px-4 py-5"
+                className="mx-auto max-w-xl space-y-5 pt-2 pb-5"
             >
-                <div className="space-y-1.5 rounded-2xl bg-gradient-to-br from-info-soft to-info-soft px-5 py-5 text-white shadow-lg">
-                    <div className="flex items-center gap-2 text-xs font-medium tracking-wide text-info uppercase">
-                        <ClipboardList className="h-3.5 w-3.5" />
-                        Lembar Penilaian
-                    </div>
-                    <h1 className="text-xl font-bold">
-                        Penilaian Induksi Safety
-                    </h1>
-                    <p className="text-sm text-info">
+                <ModuleHeader
+                    eyebrow="Lembar penilaian"
+                    title="Penilaian Induksi Safety"
+                />
+                <div className="flex flex-col gap-2">
+                    <p className="text-sm text-muted-foreground">
                         Isi penilaian berikut untuk melihat hasil assessment
                         Anda. Jawaban Anda membantu kami meningkatkan kualitas
                         induksi.
                     </p>
-                    <div className="pt-2">
-                        <div className="h-1.5 overflow-hidden rounded-full bg-white/25">
-                            <div
-                                className="h-full bg-white transition-all"
-                                style={{
-                                    width: `${(answered / totalItems) * 100}%`,
-                                }}
-                            />
-                        </div>
-                        <p className="mt-1 text-xs text-info">
-                            {answered} / {totalItems} pertanyaan terjawab
-                        </p>
+                    <div
+                        role="progressbar"
+                        aria-valuemin={0}
+                        aria-valuemax={totalItems}
+                        aria-valuenow={answered}
+                        aria-label="Pertanyaan terjawab"
+                        className="h-1.5 overflow-hidden rounded-full bg-border"
+                    >
+                        <div
+                            className="h-full rounded-full bg-primary transition-all"
+                            style={{
+                                width: `${(answered / totalItems) * 100}%`,
+                            }}
+                        />
                     </div>
+                    <p className="tabular text-xs text-muted-foreground">
+                        {answered} / {totalItems} pertanyaan terjawab
+                    </p>
                 </div>
 
                 {/* Pemateri */}

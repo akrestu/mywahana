@@ -1,25 +1,29 @@
-import { Form, Head, router, usePage } from '@inertiajs/react';
-import { Link } from '@inertiajs/react';
+import { Form, Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Briefcase,
     Building2,
     Camera,
     ChevronDown,
     IdCard,
-    LogOut,
     Mail,
-    Save,
     User,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import InputError from '@/components/input-error';
+import { SectionLabel } from '@/components/patterns/module-header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import type { Auth } from '@/types';
@@ -42,20 +46,24 @@ function FieldRow({
     children,
     error,
 }: {
-    icon: React.ReactNode;
+    icon: ReactNode;
     label: string;
     hint?: string;
-    children: React.ReactNode;
+    children: ReactNode;
     error?: string;
 }) {
     return (
         <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">{icon}</span>
-                <Label className="text-sm font-semibold text-foreground">{label}</Label>
+                <Label className="text-[13px] font-semibold text-foreground">
+                    {label}
+                </Label>
             </div>
             {children}
-            {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
+            {hint && !error && (
+                <p className="text-xs text-muted-foreground">{hint}</p>
+            )}
             {error && <InputError message={error} />}
         </div>
     );
@@ -81,6 +89,8 @@ const DEPARTEMEN_OPTIONS = [
     'Management',
 ];
 
+const readOnlyClass = 'h-11 cursor-not-allowed text-base opacity-70';
+
 export default function Profile({
     mustVerifyEmail,
     status,
@@ -96,7 +106,9 @@ export default function Profile({
     const user = auth.user;
     const isAdmin = user.is_admin === true;
     const [showDelete, setShowDelete] = useState(false);
-    const [avatarPreview, setAvatarPreview] = useState<string | null>((user as any).avatar_url ?? null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(
+        (user as { avatar_url?: string | null }).avatar_url ?? null,
+    );
     const [uploading, setUploading] = useState(false);
     const fileRef = useRef<HTMLInputElement>(null);
 
@@ -104,8 +116,8 @@ export default function Profile({
         const file = e.target.files?.[0];
 
         if (!file) {
-return;
-}
+            return;
+        }
 
         setAvatarPreview(URL.createObjectURL(file));
         setUploading(true);
@@ -121,34 +133,36 @@ return;
         <>
             <Head title="Profil Saya" />
 
-            <div className="space-y-6">
-                {/* Avatar + Nama Header */}
-                <div className="flex flex-col items-center gap-3 py-4">
-                    <button
-                        type="button"
-                        onClick={() => fileRef.current?.click()}
-                        className="group relative h-20 w-20 overflow-hidden rounded-full shadow-md focus:outline-none"
-                        disabled={uploading}
-                        aria-label="Ganti foto profil"
-                    >
+            <div className="flex flex-col gap-6">
+                {/* Foto profil — the name and role already sit in the layout hero */}
+                <div className="flex items-center gap-3">
+                    <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent text-sm font-extrabold text-accent-foreground">
                         {avatarPreview ? (
-                            <img src={avatarPreview} alt={user.name} className="h-full w-full object-cover" />
+                            <img
+                                src={avatarPreview}
+                                alt=""
+                                className="size-full object-cover"
+                            />
                         ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-primary text-2xl font-bold text-primary-foreground">
-                                {getInitials(user.name)}
-                            </div>
+                            getInitials(user.name)
                         )}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                            {uploading ? (
-                                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                            ) : (
-                                <>
-                                    <Camera className="h-5 w-5 text-white" />
-                                    <span className="text-[11px] font-medium text-white">Ganti</span>
-                                </>
-                            )}
-                        </div>
-                    </button>
+                    </span>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-semibold">Foto profil</p>
+                        <p className="text-xs text-muted-foreground">
+                            JPG atau PNG, tampil di header dan laporan.
+                        </p>
+                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileRef.current?.click()}
+                        disabled={uploading}
+                    >
+                        <Camera />
+                        {uploading ? 'Mengunggah…' : 'Ganti foto'}
+                    </Button>
                     <input
                         ref={fileRef}
                         type="file"
@@ -156,250 +170,287 @@ return;
                         className="hidden"
                         onChange={handleAvatarChange}
                     />
-                    <div className="text-center">
-                        <p className="text-lg font-bold">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                    </div>
                 </div>
 
-                {/* Form Card */}
-                <Card className="border-0">
-                    <CardContent className="pt-5">
-                        <Form
-                            {...ProfileController.update.form()}
-                            options={{ preserveScroll: true }}
-                            className="space-y-5"
-                        >
-                            {({ processing, errors }) => (
-                                <>
-                                    <FieldRow
-                                        icon={<User size={16} />}
-                                        label="Nama Lengkap"
-                                        hint="Nama sesuai kartu identitas"
-                                        error={errors.name}
-                                    >
-                                        <Input
-                                            id="name"
-                                            name="name"
-                                            defaultValue={user.name}
-                                            placeholder="Contoh: Budi Santoso"
-                                            autoComplete="name"
-                                            required
-                                            className="h-11 text-base"
-                                        />
-                                    </FieldRow>
+                <Form
+                    {...ProfileController.update.form()}
+                    options={{ preserveScroll: true }}
+                    className="flex flex-col gap-5"
+                >
+                    {({ processing, errors }) => (
+                        <>
+                            <FieldRow
+                                icon={<User size={16} />}
+                                label="Nama lengkap"
+                                hint="Nama sesuai kartu identitas"
+                                error={errors.name}
+                            >
+                                <Input
+                                    id="name"
+                                    name="name"
+                                    defaultValue={user.name}
+                                    placeholder="Contoh: Budi Santoso"
+                                    autoComplete="name"
+                                    required
+                                    className="h-11 text-base"
+                                />
+                            </FieldRow>
 
-                                    <FieldRow
-                                        icon={<Mail size={16} />}
-                                        label="Alamat Email"
-                                        hint="Email digunakan untuk masuk ke aplikasi"
-                                        error={errors.email}
-                                    >
-                                        <Input
-                                            id="email"
-                                            name="email"
-                                            type="email"
-                                            defaultValue={user.email}
-                                            placeholder="Contoh: budi@wahana.com"
-                                            autoComplete="username"
-                                            className="h-11 text-base"
-                                        />
-                                    </FieldRow>
+                            <FieldRow
+                                icon={<Mail size={16} />}
+                                label="Alamat email"
+                                hint="Email digunakan untuk masuk ke aplikasi"
+                                error={errors.email}
+                            >
+                                <Input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    defaultValue={user.email}
+                                    placeholder="Contoh: budi@wahana.com"
+                                    autoComplete="username"
+                                    className="h-11 text-base"
+                                />
+                            </FieldRow>
 
-                                    {mustVerifyEmail && user.email_verified_at === null && (
-                                        <div className="rounded-lg bg-warning-soft px-4 py-3 text-sm">
-                                            <p className="font-medium text-warning">
-                                                Email belum diverifikasi
+                            {mustVerifyEmail &&
+                                user.email_verified_at === null && (
+                                    <div className="rounded-lg bg-warning-soft px-4 py-3 text-sm text-warning">
+                                        <p className="font-semibold">
+                                            Email belum diverifikasi
+                                        </p>
+                                        <Link
+                                            href={send()}
+                                            as="button"
+                                            className="mt-0.5 underline"
+                                        >
+                                            Kirim ulang email verifikasi
+                                        </Link>
+                                        {status ===
+                                            'verification-link-sent' && (
+                                            <p className="mt-1 font-semibold text-success">
+                                                Email verifikasi telah dikirim
                                             </p>
-                                            <p className="mt-0.5 text-warning">
-                                                <Link
-                                                    href={send()}
-                                                    as="button"
-                                                    className="underline"
+                                        )}
+                                    </div>
+                                )}
+
+                            <FieldRow
+                                icon={<IdCard size={16} />}
+                                label="NIK / NRPP"
+                                hint={
+                                    isAdmin
+                                        ? 'Nomor Induk Karyawan'
+                                        : 'NIK hanya dapat diubah oleh admin'
+                                }
+                                error={errors.nik}
+                            >
+                                {isAdmin ? (
+                                    <Input
+                                        id="nik"
+                                        name="nik"
+                                        defaultValue={user.nik ?? ''}
+                                        placeholder="Contoh: 12345678"
+                                        maxLength={16}
+                                        className="tabular h-11 text-base"
+                                    />
+                                ) : (
+                                    <Input
+                                        value={user.nik ?? '—'}
+                                        readOnly
+                                        disabled
+                                        className={readOnlyClass}
+                                    />
+                                )}
+                            </FieldRow>
+
+                            <FieldRow
+                                icon={<Briefcase size={16} />}
+                                label="Jabatan"
+                                hint={
+                                    isAdmin
+                                        ? 'Posisi atau jabatan di perusahaan'
+                                        : 'Jabatan hanya dapat diubah oleh admin'
+                                }
+                                error={errors.jabatan}
+                            >
+                                {isAdmin ? (
+                                    <Input
+                                        id="jabatan"
+                                        name="jabatan"
+                                        defaultValue={user.jabatan ?? ''}
+                                        placeholder="Contoh: Operator, Mekanik, Supervisor"
+                                        className="h-11 text-base"
+                                    />
+                                ) : (
+                                    <Input
+                                        value={user.jabatan ?? '—'}
+                                        readOnly
+                                        disabled
+                                        className={readOnlyClass}
+                                    />
+                                )}
+                            </FieldRow>
+
+                            <FieldRow
+                                icon={<Building2 size={16} />}
+                                label="Departemen"
+                                hint={
+                                    isAdmin
+                                        ? 'Departemen tempat bekerja'
+                                        : 'Departemen hanya dapat diubah oleh admin'
+                                }
+                                error={errors.departemen}
+                            >
+                                {isAdmin ? (
+                                    <Select
+                                        name="departemen"
+                                        defaultValue={user.departemen ?? ''}
+                                    >
+                                        <SelectTrigger
+                                            id="departemen"
+                                            className="h-11 w-full text-base"
+                                        >
+                                            <SelectValue placeholder="Pilih departemen" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {DEPARTEMEN_OPTIONS.map((d) => (
+                                                <SelectItem key={d} value={d}>
+                                                    {d}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                ) : (
+                                    <Input
+                                        value={user.departemen ?? '—'}
+                                        readOnly
+                                        disabled
+                                        className={readOnlyClass}
+                                    />
+                                )}
+                            </FieldRow>
+
+                            <FieldRow
+                                icon={<Building2 size={16} />}
+                                label="Site"
+                                hint={
+                                    isAdmin
+                                        ? 'Lokasi tempat bekerja'
+                                        : 'Site hanya dapat diubah oleh admin'
+                                }
+                                error={errors.site}
+                            >
+                                {isAdmin ? (
+                                    <Select
+                                        name="site"
+                                        defaultValue={user.site ?? ''}
+                                    >
+                                        <SelectTrigger
+                                            id="site"
+                                            className="h-11 w-full text-base"
+                                        >
+                                            <SelectValue placeholder="Pilih site" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {sites.map((s) => (
+                                                <SelectItem
+                                                    key={s.value}
+                                                    value={s.value}
                                                 >
-                                                    Klik di sini untuk kirim ulang email verifikasi
-                                                </Link>
-                                            </p>
-                                            {status === 'verification-link-sent' && (
-                                                <p className="mt-1 font-medium text-success">
-                                                    ✓ Email verifikasi telah dikirim
-                                                </p>
-                                            )}
-                                        </div>
-                                    )}
+                                                    {s.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                ) : (
+                                    <Input
+                                        value={
+                                            sites.find(
+                                                (s) => s.value === user.site,
+                                            )?.label ??
+                                            user.site ??
+                                            '—'
+                                        }
+                                        readOnly
+                                        disabled
+                                        className={readOnlyClass}
+                                    />
+                                )}
+                            </FieldRow>
 
-                                    <FieldRow
-                                        icon={<IdCard size={16} />}
-                                        label="NIK / NRPP"
-                                        hint={isAdmin ? 'Nomor Induk Karyawan' : 'NIK hanya dapat diubah oleh admin'}
-                                        error={errors.nik}
-                                    >
-                                        {isAdmin ? (
-                                            <Input
-                                                id="nik"
-                                                name="nik"
-                                                defaultValue={user.nik ?? ''}
-                                                placeholder="Contoh: 12345678"
-                                                maxLength={16}
-                                                className="h-11 text-base"
-                                            />
-                                        ) : (
-                                            <Input
-                                                value={user.nik ?? '—'}
-                                                readOnly
-                                                disabled
-                                                className="h-11 text-base bg-muted cursor-not-allowed"
-                                            />
-                                        )}
-                                    </FieldRow>
+                            <Button
+                                type="submit"
+                                size="lg"
+                                disabled={processing}
+                                data-test="update-profile-button"
+                            >
+                                {processing ? 'Menyimpan…' : 'Simpan perubahan'}
+                            </Button>
+                        </>
+                    )}
+                </Form>
 
-                                    <FieldRow
-                                        icon={<Briefcase size={16} />}
-                                        label="Jabatan"
-                                        hint={isAdmin ? 'Posisi atau jabatan di perusahaan' : 'Jabatan hanya dapat diubah oleh admin'}
-                                        error={errors.jabatan}
-                                    >
-                                        {isAdmin ? (
-                                            <Input
-                                                id="jabatan"
-                                                name="jabatan"
-                                                defaultValue={user.jabatan ?? ''}
-                                                placeholder="Contoh: Operator, Mekanik, Supervisor"
-                                                className="h-11 text-base"
-                                            />
-                                        ) : (
-                                            <Input
-                                                value={user.jabatan ?? '—'}
-                                                readOnly
-                                                disabled
-                                                className="h-11 text-base bg-muted cursor-not-allowed"
-                                            />
-                                        )}
-                                    </FieldRow>
-
-                                    <FieldRow
-                                        icon={<Building2 size={16} />}
-                                        label="Departemen"
-                                        hint={isAdmin ? 'Pilih departemen tempat user bekerja' : 'Departemen hanya dapat diubah oleh admin'}
-                                        error={errors.departemen}
-                                    >
-                                        {isAdmin ? (
-                                            <Select name="departemen" defaultValue={user.departemen ?? ''}>
-                                                <SelectTrigger id="departemen" className="h-11 w-full text-base">
-                                                    <SelectValue placeholder="— Pilih Departemen —" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {DEPARTEMEN_OPTIONS.map((d) => (
-                                                        <SelectItem key={d} value={d}>{d}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        ) : (
-                                            <Input
-                                                value={user.departemen ?? '—'}
-                                                readOnly
-                                                disabled
-                                                className="h-11 text-base bg-muted cursor-not-allowed"
-                                            />
-                                        )}
-                                    </FieldRow>
-
-                                    <FieldRow
-                                        icon={<Building2 size={16} />}
-                                        label="Lokasi Site"
-                                        hint={isAdmin ? 'Pilih lokasi tempat user bekerja' : 'Site hanya dapat diubah oleh admin'}
-                                        error={errors.site}
-                                    >
-                                        {isAdmin ? (
-                                            <Select name="site" defaultValue={user.site ?? ''}>
-                                                <SelectTrigger id="site" className="h-11 w-full text-base">
-                                                    <SelectValue placeholder="— Pilih Site —" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {sites.map((s) => (
-                                                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        ) : (
-                                            <Input
-                                                value={sites.find((s) => s.value === user.site)?.label ?? user.site ?? '—'}
-                                                readOnly
-                                                disabled
-                                                className="h-11 text-base bg-muted cursor-not-allowed"
-                                            />
-                                        )}
-                                    </FieldRow>
-
-                                    <Button
-                                        type="submit"
-                                        disabled={processing}
-                                        className="h-12 w-full gap-2 text-base font-semibold"
-                                        data-test="update-profile-button"
-                                    >
-                                        <Save size={18} />
-                                        {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
-                                    </Button>
-                                </>
-                            )}
-                        </Form>
-                    </CardContent>
-                </Card>
-
-                {/* Pencapaian / Badge */}
-                <div className="rounded-lg border">
-                    <div className="px-4 py-3 border-b">
-                        <h3 className="text-sm font-semibold">🏅 Pencapaian</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                            {badges.length === 0 ? 'Belum ada pencapaian. Mulai isi form untuk mendapatkan badge!' : `${badges.length} badge diraih`}
+                <div className="flex flex-col gap-3">
+                    <SectionLabel
+                        action={
+                            badges.length > 0 && (
+                                <span className="tabular text-xs text-muted-foreground">
+                                    {badges.length} diraih
+                                </span>
+                            )
+                        }
+                    >
+                        Pencapaian
+                    </SectionLabel>
+                    {badges.length === 0 ? (
+                        <p className="rounded-lg bg-muted px-4 py-5 text-center text-sm text-muted-foreground">
+                            Belum ada badge. Isi form K3 untuk mendapatkannya.
                         </p>
-                    </div>
-                    <div className="p-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        {badges.map((b) => (
-                            <div key={b.key} className="flex flex-col items-center gap-1 rounded-lg bg-muted px-3 py-3 text-center">
-                                <span className="text-2xl">{b.icon}</span>
-                                <p className="text-xs font-semibold leading-tight">{b.nama}</p>
-                                <p className="text-[11px] text-muted-foreground leading-tight">{b.desc}</p>
-                            </div>
-                        ))}
-                        {badges.length === 0 && (
-                            <div className="col-span-2 sm:col-span-3 rounded-lg bg-muted py-6 text-center">
-                                <p className="text-sm text-muted-foreground">Belum ada badge</p>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                            {badges.map((b) => (
+                                <div
+                                    key={b.key}
+                                    className="flex flex-col items-center gap-1 rounded-lg bg-muted px-3 py-3 text-center"
+                                >
+                                    <span className="text-2xl" aria-hidden>
+                                        {b.icon}
+                                    </span>
+                                    <p className="text-xs leading-tight font-bold">
+                                        {b.nama}
+                                    </p>
+                                    <p className="text-[11px] leading-tight text-muted-foreground">
+                                        {b.desc}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Hapus akun — hanya untuk admin */}
+                {isAdmin && (
+                    <div className="rounded-lg bg-destructive-soft">
+                        <button
+                            type="button"
+                            onClick={() => setShowDelete((v) => !v)}
+                            aria-expanded={showDelete}
+                            className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-destructive"
+                        >
+                            <span>Hapus akun</span>
+                            <ChevronDown
+                                size={16}
+                                className={`transition-transform duration-200 ${showDelete ? 'rotate-180' : ''}`}
+                            />
+                        </button>
+                        {showDelete && (
+                            <div className="px-4 pb-4">
+                                <DeleteUser />
                             </div>
                         )}
                     </div>
-                </div>
-
-                {/* Logout */}
-                <Link
-                    href="/logout"
-                    method="post"
-                    as="button"
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                    <LogOut size={16} />
-                    Keluar dari Akun
-                </Link>
-
-                {/* Hapus Akun — hanya untuk admin */}
-                {isAdmin && <div className="rounded-lg border border-destructive/30">
-                    <button
-                        type="button"
-                        onClick={() => setShowDelete((v) => !v)}
-                        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-destructive"
-                    >
-                        <span>Hapus Akun</span>
-                        <ChevronDown
-                            size={16}
-                            className={`transition-transform duration-200 ${showDelete ? 'rotate-180' : ''}`}
-                        />
-                    </button>
-                    {showDelete && (
-                        <div className="border-t border-destructive/30 px-4 py-4">
-                            <DeleteUser />
-                        </div>
-                    )}
-                </div>}
+                )}
             </div>
         </>
     );

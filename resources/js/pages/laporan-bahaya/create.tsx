@@ -492,7 +492,7 @@ export default function LaporanBahayaCreate({ user, sites, pics }: Props) {
                                 error={errors.klasifikasi_bahaya}
                             />
 
-                            <div className="grid grid-cols-2 gap-2.5">
+                            <div className="grid gap-2.5 sm:grid-cols-2">
                                 <div className="flex min-w-0 flex-col gap-1.5">
                                     <span className="text-[13px] font-semibold">
                                         Site

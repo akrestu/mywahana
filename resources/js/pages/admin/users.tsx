@@ -335,7 +335,7 @@ function UserPanel({
                                         className={cn(
                                             'h-9 flex-1 rounded-full text-xs transition-colors',
                                             on
-                                                ? 'bg-card font-bold shadow-[0_1px_2px_oklch(0.191_0_0/0.08)]'
+                                                ? 'bg-card font-bold shadow-[0_1px_2px_oklch(0.191_0_0/0.08)] dark:bg-primary dark:text-primary-foreground'
                                                 : 'font-medium text-muted-foreground hover:text-foreground',
                                         )}
                                     >

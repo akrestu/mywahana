@@ -111,7 +111,7 @@ export function AssessmentHome({
                             className={cn(
                                 'flex h-10 flex-1 items-center justify-center rounded-full text-[13px] transition-all',
                                 kind === t.key
-                                    ? 'bg-card font-bold shadow-[0_1px_2px_oklch(0.191_0_0/0.08)]'
+                                    ? 'bg-card font-bold shadow-[0_1px_2px_oklch(0.191_0_0/0.08)] dark:bg-primary dark:text-primary-foreground'
                                     : 'font-semibold text-muted-foreground',
                             )}
                         >

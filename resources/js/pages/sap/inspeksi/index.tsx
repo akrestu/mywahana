@@ -268,10 +268,10 @@ export default function InspeksiIndex({
                         { key: 'my', label: 'Inspeksi saya' },
                         {
                             key: 'pending',
-                            label: 'Perlu re-inspeksi',
+                            label: 'Re-inspeksi',
                             count: pending,
                         },
-                        { key: 'done', label: 'Riwayat RI' },
+                        { key: 'done', label: 'Sudah dicek' },
                     ]}
                 />
 

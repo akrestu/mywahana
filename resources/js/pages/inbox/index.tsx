@@ -217,7 +217,7 @@ export default function InboxIndex({ for_me, submitted, done }: Props) {
                                 className={cn(
                                     'flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-[13px] transition-all duration-200 focus-visible:outline-2 focus-visible:outline-ring',
                                     selected
-                                        ? 'bg-card font-bold shadow-[0_1px_2px_oklch(0.191_0_0/0.08)]'
+                                        ? 'bg-card font-bold shadow-[0_1px_2px_oklch(0.191_0_0/0.08)] dark:bg-primary dark:text-primary-foreground'
                                         : 'font-semibold text-muted-foreground',
                                 )}
                             >

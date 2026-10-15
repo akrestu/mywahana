@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, FileQuestion, GraduationCap, HeartPulse, Home, Inbox, LayoutGrid, MapPin, Mountain, Plus, Search, ShieldCheck, Target, User, UserCheck, Users, Wrench } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useState  } from 'react';
 import type {ReactNode} from 'react';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
@@ -31,6 +32,31 @@ import { useNavigating } from '@/hooks/use-navigating';
 import { cn } from '@/lib/utils';
 import { modules, programsFor } from '@/modules/registry';
 import type { Auth } from '@/types';
+
+/**
+ * Sidebar view of a module's programs: the four inspection types collapse into
+ * one entry for the /sap/inspeksi hub (the quick-action sheet still lists each
+ * type), and long labels are shortened to match the admin sidebar.
+ */
+function sidebarItems(programs: ReturnType<typeof programsFor>) {
+    const items: { title: string; href: string; icon: LucideIcon; match?: string }[] = [];
+    let inspeksiAdded = false;
+
+    for (const p of programs) {
+        if (p.key.startsWith('inspeksi-')) {
+            if (!inspeksiAdded) {
+                items.push({ title: 'Inspeksi', href: '/sap/inspeksi', icon: ClipboardList, match: '/sap/inspeksi' });
+                inspeksiAdded = true;
+            }
+
+            continue;
+        }
+
+        items.push({ title: p.key === 'observasi' ? 'Observasi' : p.label, href: p.href, icon: p.icon });
+    }
+
+    return items;
+}
 
 type Props = {
     children: ReactNode;
@@ -488,7 +514,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 .filter((m) => m.status === 'active')
                 .map((m) => ({
                     label: m.label,
-                    items: programsFor(m, participationLevel).map((p) => ({ title: p.label, href: p.href, icon: p.icon })),
+                    items: sidebarItems(programsFor(m, participationLevel)),
                 })),
           ];
 

@@ -415,7 +415,7 @@ export default function AdminTargets({ targets, users, filters, sites }: Props) 
                                                                 className={cn(
                                                                     'h-8 rounded-full px-3 text-xs transition-colors disabled:opacity-60',
                                                                     on
-                                                                        ? 'bg-card font-bold shadow-[0_1px_2px_oklch(0.191_0_0/0.08)]'
+                                                                        ? 'bg-card font-bold shadow-[0_1px_2px_oklch(0.191_0_0/0.08)] dark:bg-primary dark:text-primary-foreground'
                                                                         : 'font-medium text-muted-foreground hover:text-foreground',
                                                                 )}
                                                             >

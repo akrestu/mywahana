@@ -228,10 +228,10 @@ export function InspeksiList({
                         { key: 'my', label: 'Inspeksi saya' },
                         {
                             key: 'pending',
-                            label: 'Perlu re-inspeksi',
+                            label: 'Re-inspeksi',
                             count: pendingReInspeksi.data.length,
                         },
-                        { key: 'done', label: 'Riwayat RI' },
+                        { key: 'done', label: 'Sudah dicek' },
                     ]}
                 />
 

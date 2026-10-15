@@ -133,7 +133,7 @@ export default function ModulesIndex({ counts }: Props) {
                                             <span className="block text-base font-bold">
                                                 {m.label}
                                             </span>
-                                            <span className="block text-xs text-muted-foreground">
+                                            <span className="line-clamp-2 block min-h-[2lh] text-xs text-muted-foreground">
                                                 {m.description}
                                             </span>
                                         </span>
