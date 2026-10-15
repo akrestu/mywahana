@@ -138,7 +138,6 @@ Route::middleware(['auth'])->group(function () {
     // Admin
     Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('index');
-        Route::get('/inbox', [AdminController::class, 'inbox'])->name('inbox');
 
         // Bugar Selamat monitoring
         Route::get('/bugar-selamat/export', [AdminController::class, 'exportBugarSelamat'])->name('bugar-selamat.export');

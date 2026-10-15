@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Services\AdminInboxService;
 use App\Services\InboxService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -61,9 +60,6 @@ class HandleInertiaRequests extends Middleware
                 : [],
             'inbox_count' => fn () => $user && ! $user->is_admin
                 ? app(InboxService::class)->countForMe($user)
-                : 0,
-            'admin_inbox_count' => fn () => $user?->is_admin
-                ? app(AdminInboxService::class)->count($user)
                 : 0,
             'unread_notifications_count' => fn () => $user
                 ? $user->unreadNotifications()->count()

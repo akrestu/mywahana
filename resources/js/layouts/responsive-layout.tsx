@@ -450,7 +450,6 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
     const userMobileNavItems = baseUserMobileNavItems;
     const inboxCount = (usePage<{ inbox_count?: number }>().props.inbox_count ?? 0);
     const navigatingTo = useNavigating();
-    const adminInboxCount = (usePage<{ admin_inbox_count?: number }>().props.admin_inbox_count ?? 0);
     const [quickOpen, setQuickOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
 
@@ -458,7 +457,6 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
         ? [
             { items: [
                 { title: 'Ringkasan', href: '/home', icon: ShieldCheck },
-                { title: 'Inbox approval', href: '/admin/inbox', icon: Inbox, badge: adminInboxCount > 0 ? adminInboxCount : undefined },
             ]},
             { label: 'K3 / Safety', items: [
                 { title: 'Bugar Selamat',     href: '/admin/bugar-selamat',         icon: HeartPulse },
@@ -466,7 +464,6 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 { title: 'Observasi',         href: '/admin/observasi-keselamatan', icon: ClipboardCheck },
                 { title: 'Komunikasi JSA',    href: '/admin/komunikasi-jsa',        icon: BookOpen },
                 { title: 'Inspeksi',          href: '/admin/inspeksi-kantor',       icon: Building2, match: '/admin/inspeksi-' },
-                { title: 'Rekap karyawan',    href: '/home#rekap-karyawan',         icon: Users, match: false as const },
             ]},
             { label: 'Assessment', items: [
                 { title: 'Safety',           href: '/admin/assessment',                    icon: GraduationCap },
