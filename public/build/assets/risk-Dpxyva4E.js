@@ -1,0 +1,1 @@
+function e(e,t,n){let r=e*t*n;return{nilai:r,level:r>=125?`AA`:r>=25?`A`:r>=10?`B`:`C`}}var t={AA:`Ekstrem`,A:`Tinggi`,B:`Sedang`,C:`Rendah`};export{t as n,e as t};
