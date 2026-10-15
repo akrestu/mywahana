@@ -8,23 +8,31 @@ export default function AuthSimpleLayout({
     description,
 }: AuthLayoutProps) {
     return (
-        <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
-            <div className="w-full max-w-sm">
-                <div className="flex flex-col gap-8">
-                    <div className="flex flex-col items-center gap-4">
+        <div className="relative isolate flex min-h-svh flex-col items-center justify-center overflow-hidden bg-background p-6 md:p-10">
+            <img
+                src="/images/topo.png"
+                alt=""
+                aria-hidden
+                className="pointer-events-none absolute -right-[280px] -bottom-[160px] -z-10 w-[760px] max-w-none opacity-30 dark:opacity-10 dark:invert"
+            />
+            <div className="w-full max-w-sm rounded-[28px] bg-card p-6 shadow-[0_24px_60px_oklch(0.191_0_0/0.08)] sm:p-8">
+                <div className="flex flex-col gap-7">
+                    <div className="flex flex-col gap-4">
                         <Link
                             href="/home"
-                            className="flex flex-col items-center gap-2 font-medium"
+                            className="flex items-center gap-2.5 self-start rounded-full bg-muted py-1.5 pr-3.5 pl-1.5"
                         >
-                            <div className="mb-1 flex h-9 w-9 items-center justify-center overflow-hidden rounded-md">
-                                <AppLogoIcon className="size-9 object-contain" />
-                            </div>
-                            <span className="sr-only">{title}</span>
+                            <AppLogoIcon className="size-[30px] object-contain" />
+                            <span className="text-xs font-extrabold tracking-[0.1em]">
+                                MYWAHANA
+                            </span>
                         </Link>
 
-                        <div className="space-y-2 text-center">
-                            <h1 className="text-xl font-medium">{title}</h1>
-                            <p className="text-center text-sm text-muted-foreground">
+                        <div className="space-y-1.5">
+                            <h1 className="text-2xl font-extrabold tracking-tight">
+                                {title}
+                            </h1>
+                            <p className="text-sm text-muted-foreground">
                                 {description}
                             </p>
                         </div>

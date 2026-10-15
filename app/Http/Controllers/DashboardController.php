@@ -14,6 +14,7 @@ use App\Models\ParticipationTarget;
 use App\Models\Site;
 use App\Models\User;
 use App\Models\UserBadge;
+use App\Services\InboxService;
 use App\Services\UserTargetService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -150,7 +151,11 @@ class DashboardController extends Controller
                 'earned_at' => $b->earned_at,
             ]);
 
+        $perluTindakan = app(InboxService::class)->forMe($user);
+
         return Inertia::render('dashboard', [
+            'perlu_tindakan' => $perluTindakan->take(3)->values(),
+            'perlu_tindakan_total' => $perluTindakan->count(),
             'recent_bugar_selamat' => $recent_bugar_selamat,
             'recent_laporan_bahaya' => $recent_laporan_bahaya,
             'recent_observasi' => $recent_observasi,

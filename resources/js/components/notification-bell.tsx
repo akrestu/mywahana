@@ -20,9 +20,10 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 import * as notificationRoutes from '@/routes/notifications';
 
-export function NotificationBell() {
+export function NotificationBell({ className }: { className?: string } = {}) {
     const { notifications, unread_notifications_count } = usePage().props;
     const [confirmClear, setConfirmClear] = useState(false);
 
@@ -56,7 +57,7 @@ export function NotificationBell() {
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button aria-label="Notifikasi" variant="ghost" size="icon" className="relative">
+                    <Button aria-label="Notifikasi" variant="ghost" size="icon" className={cn('relative', className)}>
                         <Bell className="h-4 w-4" />
                         {unread_notifications_count > 0 && (
                             <Badge className="absolute -top-1 -right-1 h-4 min-w-4 rounded-full px-1 text-[10px] leading-none flex items-center justify-center">

@@ -44,3 +44,21 @@ test('target bugar menyertakan tanggal yang terisi untuk kalender', function () 
             ->where('target.bugar.tanggal_terisi', [today()->toDateString()])
             ->where('target.bugar.hari_terpenuhi', 1));
 });
+
+test('beranda menampilkan maksimal tiga item perlu tindakan dari inbox', function () {
+    $pic = User::factory()->create();
+    $reporter = User::factory()->create();
+    foreach (range(1, 4) as $i) {
+        App\Models\LaporanBahaya::create([
+            'user_id' => $reporter->id, 'site' => 'BAU', 'tanggal' => today()->toDateString(), 'lokasi' => "Pit {$i}",
+            'deskripsi_bahaya' => 'Jalan licin', 'tindakan_perbaikan' => 'Pasang rambu',
+            'probabilitas' => 1, 'frekuensi' => 1, 'severity' => 1, 'pic_user_id' => $pic->id, 'status_tindakan' => 'pending',
+        ]);
+    }
+
+    $this->actingAs($pic)
+        ->get(route('app.home'))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->has('perlu_tindakan', 3)
+            ->where('perlu_tindakan_total', 4));
+});

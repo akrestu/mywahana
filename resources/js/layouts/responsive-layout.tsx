@@ -450,6 +450,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
     const isAdmin = auth?.user?.is_admin === true;
     const participationLevel = (auth?.user as { participation_level?: string })?.participation_level ?? '';
     const isStaff = !isAdmin && ['staff', 'srstaff'].includes(participationLevel);
+    const immersive = !isAdmin && (url === '/home' || url.startsWith('/home?'));
 
     const userMobileNavItems = baseUserMobileNavItems;
     const inboxCount = (usePage<{ inbox_count?: number }>().props.inbox_count ?? 0);
@@ -555,13 +556,13 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                     </div>
                 </header>
 
-                {/* Mobile header */}
-                <MobileHeader
+                {/* Mobile header — Beranda draws its own hero instead */}
+                {!immersive && <MobileHeader
                     title={title}
                     showBack={showBack}
                     backHref={backHref}
                     isAdmin={auth?.user?.is_admin}
-                />
+                />}
 
                 {/* Page content */}
                 <main className="flex-1 px-4 py-4 pb-[calc(7rem+env(safe-area-inset-bottom))] lg:p-6 lg:pb-6">

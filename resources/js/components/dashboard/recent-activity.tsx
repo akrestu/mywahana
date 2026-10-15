@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { tindakanLabels } from '@/lib/status';
 import { cn } from '@/lib/utils';
 
 type Tone = 'ok' | 'warn' | 'bad';
@@ -61,10 +62,10 @@ const KELAYAKAN: Record<RecentBugar['status_kelayakan'], [string, Tone]> = {
 };
 
 const TINDAKAN: Record<RecentLaporan['status_tindakan'], [string, Tone]> = {
-    pending: ['Pending', 'bad'],
-    continue: ['Continue', 'warn'],
-    progress: ['Progress', 'warn'],
-    close: ['Selesai', 'ok'],
+    pending: [tindakanLabels.pending, 'bad'],
+    continue: [tindakanLabels.continue, 'warn'],
+    progress: [tindakanLabels.progress, 'warn'],
+    close: [tindakanLabels.close, 'ok'],
 };
 
 // Status form SAP: menunggu_* = menunggu pihak lain, ditolak = perlu diperbaiki.
