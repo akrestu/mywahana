@@ -1,15 +1,10 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import {
-    AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight,
-    Download, FileText, Minus, TrendingUp, Users,
-} from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { Fragment } from 'react';
+import { Download, FileText } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
 import type { Overview } from '@/components/admin/admin-overview';
 import { AdminOverview } from '@/components/admin/admin-overview';
 import { chipClass } from '@/components/admin/data-table';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -17,15 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 type DilarangEntry  = { id: number | null; name: string; jabatan: string | null; site: string | null; avatar: string | null };
 type ComplianceData = { total_karyawan: number; sudah_submit_bs: number; dilarang_list: DilarangEntry[] };
 
-type WeekCell     = { count: number; target: number; met: boolean | null };
-type EmployeeWeek = { laporan: WeekCell; inspeksi: WeekCell; observasi: WeekCell; jsa: WeekCell };
-type WeekMeta     = { num: number; start: string; end: string };
-type EmployeeRecapRow = {
-    id: number; name: string; jabatan: string | null; departemen: string | null;
-    level: string; site: string; avatar: string | null;
-    weeks: EmployeeWeek[];
-};
-type EmployeeRecap = { weeks: WeekMeta[]; employees: EmployeeRecapRow[] };
 type Filter       = { bulan: number; tahun: number; site: string; departemen: string; level: string; jabatan: string };
 type SiteOption   = { value: string; label: string };
 
@@ -45,7 +31,6 @@ type SapMonitoring = {
 type Props = {
     overview?: Overview;
     compliance:       ComplianceData;
-    employee_recap:   EmployeeRecap;
     filter:           Filter;
     sites:            SiteOption[];
     jabatan_options:  string[];
@@ -63,27 +48,9 @@ const BULAN_NAMES = [
 const LEVEL_LABELS: Record<string, string> = {
     nonstaff: 'Non-Staff', staff: 'Staff', srstaff: 'Sr. Staff',
 };
-const LEVEL_COLORS: Record<string, string> = {
-    nonstaff: 'bg-muted text-foreground',
-    staff:    'bg-info-soft text-info',
-    srstaff:  'bg-success-soft text-success',
-};
-
 const DEPT_OPTIONS = ['Management','Production','Maintenance','Supply Chain','Engineering','HSE','HRGA'];
 
 // Warna latar tiap departemen untuk group header
-const DEPT_COLORS: Record<string, { bg: string; text: string; badge: string }> = {
-    'Production':    { bg: 'bg-warning-soft ',  text: 'text-warning',  badge: 'bg-warning-soft text-warning' },
-    'Maintenance':   { bg: 'bg-info-soft   ',    text: 'text-info  ',    badge: 'bg-info-soft   text-info    ' },
-    'Supply Chain':  { bg: 'bg-info-soft ',  text: 'text-info',  badge: 'bg-info-soft text-info' },
-    'Engineering':   { bg: 'bg-info-soft   ',    text: 'text-info  ',    badge: 'bg-info-soft   text-info    ' },
-    'HSE':           { bg: 'bg-success-soft  ',   text: 'text-success ',   badge: 'bg-success-soft  text-success  ' },
-    'HRGA':          { bg: 'bg-pink-50    dark:bg-pink-950/50',    text: 'text-pink-800   dark:text-pink-200',    badge: 'bg-pink-200   text-pink-800   dark:bg-pink-900   dark:text-pink-200' },
-    'Management':    { bg: 'bg-warning-soft  ',   text: 'text-warning ',   badge: 'bg-warning-soft  text-warning  ' },
-};
-const DEFAULT_DEPT_COLOR = { bg: 'bg-muted/40', text: 'text-foreground', badge: 'bg-muted text-muted-foreground' };
-
-
 const ACTIVITIES = [
     { key: 'laporan'   as const, label: 'Laporan Bahaya',  unit: 'minggu',  icon: '⚠️' },
     { key: 'inspeksi'  as const, label: 'Inspeksi',         unit: 'minggu',  icon: '🏗️' },
@@ -113,56 +80,6 @@ function percentTone(persen: number): { text: string; bg: string } {
     }
 
     return { text: 'text-destructive', bg: 'bg-destructive-soft' };
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-type ActivitySummary = { met: number; total: number };
-
-function computeActivitySummary(
-    weeks: EmployeeWeek[], key: keyof EmployeeWeek, weekMetas: WeekMeta[],
-): ActivitySummary {
-    if (key === 'jsa') {
-        const seen = new Set<number>();
-        let met = 0, total = 0;
-        weeks.forEach((w, i) => {
-            if (i >= weekMetas.length) {
-return;
-}
-
-            const period = new Date(weekMetas[i].start).getDate() <= 15 ? 1 : 2;
-
-            if (!seen.has(period)) {
-                seen.add(period);
-
-                if (w.jsa.met !== null) {
- total++;
-
- if (w.jsa.met) {
-met++;
-} 
-}
-            }
-        });
-
-        return { met, total };
-    }
-
-    let met = 0, total = 0;
-
-    for (const w of weeks) {
-        const cell = w[key];
-
-        if (cell.met !== null) {
- total++;
-
- if (cell.met) {
-met++;
-} 
-}
-    }
-
-    return { met, total };
 }
 
 // ─── FilterBar ────────────────────────────────────────────────────────────────
@@ -253,303 +170,6 @@ function FilterBar({ filter, sites, jabatanOptions, adminSite }: {
                     Reset filter
                 </button>
             )}
-        </div>
-    );
-}
-
-// ─── ActivityCell ─────────────────────────────────────────────────────────────
-
-function ActivityCell({ summary }: { summary: ActivitySummary }) {
-    const { met, total } = summary;
-
-    if (total === 0) {
-        return (
-            <div className="flex items-center justify-center py-1">
-                <Minus className="h-3 w-3 text-muted-foreground/25" />
-            </div>
-        );
-    }
-
-    const all  = met === total;
-    const none = met === 0;
-    const circleCls = all ? 'bg-success' : none ? 'bg-destructive' : 'bg-warning';
-    const txtCls    = all ? 'text-success' : none ? 'text-destructive' : 'text-warning';
-    const IconEl    = all ? <CheckCircle2 className="h-2.5 w-2.5 text-white" /> : none ? <AlertTriangle className="h-2.5 w-2.5 text-white" /> : <TrendingUp className="h-2.5 w-2.5 text-white" />;
-
-    return (
-        <div className="flex flex-col items-center gap-0.5 py-1">
-            <div className={`flex h-5 w-5 items-center justify-center rounded-full ${circleCls}`}>{IconEl}</div>
-            <span className={`text-[11px] font-bold tabular-nums leading-none ${txtCls}`}>
-                {met}<span className="font-normal opacity-50">/{total}</span>
-            </span>
-        </div>
-    );
-}
-
-// ─── ScoreBadge ───────────────────────────────────────────────────────────────
-
-function ScoreBadge({ pct }: { pct: number | null }) {
-    if (pct === null) {
-return <span className="text-[11px] text-muted-foreground/50">—</span>;
-}
-
-    const cls = pct >= 80
-        ? 'bg-success-soft text-success ring-1 ring-success/60'
-        : pct >= 50
-        ? 'bg-warning-soft text-warning ring-1 ring-warning/60'
-        : 'bg-destructive-soft text-destructive ring-1 ring-destructive/60';
-
-    return (
-        <span className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${cls}`}>
-            {pct}%
-        </span>
-    );
-}
-
-// ─── EmployeeRecapTable ───────────────────────────────────────────────────────
-
-const PAGE_SIZE = 50;
-
-type RowData = {
-    emp: EmployeeRecapRow;
-    summaries: ({ key: typeof ACTIVITIES[number]['key']; label: string; unit: string; icon: string; summary: ActivitySummary })[];
-    score: number | null;
-};
-
-function EmployeeRecapTable({ recap, filter, exportRef }: {
-    recap: EmployeeRecap; filter: Filter; exportRef: React.RefObject<HTMLDivElement | null>;
-}) {
-    const { weeks, employees } = recap;
-    const bulanLabel = BULAN_NAMES[filter.bulan - 1] ?? '';
-    const [page, setPage] = useState(0);
-
-    const allRows = useMemo<RowData[]>(() =>
-        employees.map(emp => {
-            const summaries = ACTIVITIES.map(act => ({
-                ...act,
-                summary: computeActivitySummary(emp.weeks, act.key, weeks),
-            }));
-            let metTotal = 0, appTotal = 0;
-            summaries.forEach(({ summary }) => {
- metTotal += summary.met; appTotal += summary.total; 
-});
-
-            return { emp, summaries, score: appTotal > 0 ? Math.round(metTotal / appTotal * 100) : null };
-        }),
-        [employees, weeks]
-    );
-
-    const deptGroups = useMemo(() => {
-        const map = new Map<string, RowData[]>();
-
-        for (const row of allRows) {
-            const dept = row.emp.departemen ?? 'Lainnya';
-
-            if (!map.has(dept)) {
-map.set(dept, []);
-}
-
-            map.get(dept)!.push(row);
-        }
-
-        map.forEach(rows => rows.sort((a, b) => {
-            if (a.score === null && b.score === null) {
-return 0;
-}
-
-            if (a.score === null) {
-return 1;
-}
-
-            if (b.score === null) {
-return -1;
-}
-
-            return b.score - a.score;
-        }));
-
-        return [...map.entries()].sort(([a], [b]) => {
-            const ai = DEPT_OPTIONS.indexOf(a);
-            const bi = DEPT_OPTIONS.indexOf(b);
-
-            return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-        });
-    }, [allRows]);
-
-    // Flatten all rows preserving dept order for pagination
-    const flatRows = useMemo(() => deptGroups.flatMap(([dept, rows]) =>
-        rows.map(r => ({ ...r, dept }))
-    ), [deptGroups]);
-
-    // Reset ke halaman pertama saat data karyawan berubah (tanpa efek berantai)
-    const [prevEmployees, setPrevEmployees] = useState(employees);
-
-    if (employees !== prevEmployees) {
-        setPrevEmployees(employees);
-        setPage(0);
-    }
-
-    const totalPages = Math.ceil(flatRows.length / PAGE_SIZE);
-    const pageRows   = flatRows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-
-    const agg = useMemo(() => {
-        const valid = allRows.filter(r => r.score !== null);
-
-        if (valid.length === 0) {
-return null;
-}
-
-        const avg  = Math.round(valid.reduce((s, r) => s + (r.score ?? 0), 0) / valid.length);
-        const full = valid.filter(r => r.score === 100).length;
-
-        return { avg, full, total: employees.length };
-    }, [allRows, employees.length]);
-
-    if (employees.length === 0) {
-        return (
-            <Card>
-                <CardHeader className="px-4 pt-4 pb-2">
-                    <p className="text-sm font-bold">Rekap Capaian Karyawan</p>
-                    <p className="text-xs text-muted-foreground">{bulanLabel} {filter.tahun}</p>
-                </CardHeader>
-                <CardContent className="pt-0 pb-10 text-center">
-                    <Users className="h-9 w-9 text-muted-foreground/30 mx-auto mb-2 mt-6" />
-                    <p className="text-sm font-medium text-muted-foreground">Tidak ada karyawan</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">Coba ubah filter di atas</p>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    return (
-        <div className="space-y-2">
-            {/* Section header */}
-            <div className="flex items-center justify-between gap-2">
-                <div>
-                    <h2 className="text-base font-bold">Rekap capaian karyawan</h2>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {bulanLabel} {filter.tahun} · {employees.length} karyawan · {deptGroups.length} departemen
-                    </p>
-                </div>
-                {agg && (
-                    <div className="text-right shrink-0">
-                        <p className={`text-sm font-bold ${agg.avg >= 80 ? 'text-success' : agg.avg >= 50 ? 'text-warning' : 'text-destructive'}`}>
-                            {agg.avg}%
-                        </p>
-                        <p className="text-[11px] text-muted-foreground">{agg.full} capai 100%</p>
-                    </div>
-                )}
-            </div>
-
-            {/* Legend — single compact row */}
-            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground px-0.5">
-                {[
-                    { cls: 'bg-success', Icon: CheckCircle2,  label: 'Terpenuhi' },
-                    { cls: 'bg-warning', Icon: TrendingUp,    label: 'Sebagian'  },
-                    { cls: 'bg-destructive',   Icon: AlertTriangle, label: 'Belum'     },
-                    { cls: 'bg-muted',     Icon: Minus,         label: 'N/A'       },
-                ].map(({ cls, Icon, label }) => (
-                    <span key={label} className="flex items-center gap-1">
-                        <span className={`flex h-3.5 w-3.5 items-center justify-center rounded-full ${cls}`}>
-                            <Icon className="h-2 w-2 text-white" />
-                        </span>
-                        {label}
-                    </span>
-                ))}
-            </div>
-
-            <div ref={exportRef} className="overflow-x-auto rounded-lg border border-border bg-card">
-                <table className="min-w-full border-separate border-spacing-0">
-                    <thead>
-                        <tr className="border-b border-border text-[11px] font-bold tracking-[0.08em] text-muted-foreground uppercase">
-                            <th className="sticky left-0 top-0 z-20 bg-background px-4 py-3 text-left border-b border-r border-border min-w-[140px]">
-                                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Karyawan</span>
-                            </th>
-                            {ACTIVITIES.map(act => (
-                                <th key={act.key} className="sticky top-0 z-10 bg-background px-2 py-3 text-center border-b border-border min-w-[64px]">
-                                    <div className="flex flex-col items-center gap-0.5">
-                                        <span className="text-xs leading-none">{act.icon}</span>
-                                        <span className="text-[11px] font-medium text-muted-foreground leading-tight">{act.label}</span>
-                                    </div>
-                                </th>
-                            ))}
-                            <th className="sticky top-0 z-10 bg-background px-3 py-3 text-center border-b border-l border-border min-w-[44px]">
-                                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Skor</span>
-                            </th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {pageRows.map((row, i) => {
-                            const { emp, summaries, score, dept } = row;
-                            const levelCls = LEVEL_COLORS[emp.level] ?? LEVEL_COLORS['staff'];
-                            const rowBg    = i % 2 === 0 ? 'bg-background' : 'bg-muted/10';
-                            const deptColor = DEPT_COLORS[dept] ?? DEFAULT_DEPT_COLOR;
-
-                            // Show dept header row when dept changes
-                            const prevDept = i > 0 ? pageRows[i - 1].dept : null;
-                            const showDeptHeader = dept !== prevDept;
-
-                            return (
-                                <Fragment key={emp.id}>
-                                    {showDeptHeader && (
-                                        <tr>
-                                            <td colSpan={ACTIVITIES.length + 2} className={`${deptColor.bg} border-b border-t border-border/50 px-4 py-1.5`}>
-                                                <span className={`text-[11px] font-semibold ${deptColor.text}`}>
-                                                    {dept}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    )}
-                                    <tr>
-                                        <td className={`sticky left-0 z-10 ${rowBg} border-b border-r border-border/40 px-4 py-2.5`}>
-                                            <p className="font-semibold text-[13px] leading-tight truncate max-w-[170px]">{emp.name}</p>
-                                            <div className="flex items-center gap-1 mt-0.5">
-                                                <span className={`inline-flex rounded-full px-1 text-[11px] font-medium leading-tight ${levelCls}`}>
-                                                    {LEVEL_LABELS[emp.level] ?? emp.level}
-                                                </span>
-                                                {emp.jabatan && (
-                                                    <span className="text-[11px] text-muted-foreground truncate max-w-[60px] leading-tight">{emp.jabatan}</span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        {summaries.map(({ key, summary }) => (
-                                            <td key={key} className={`${rowBg} border-b border-border/40 px-0 py-0 text-center`}>
-                                                <ActivityCell summary={summary} />
-                                            </td>
-                                        ))}
-                                        <td className={`${rowBg} border-b border-l border-border/40 px-3 py-2.5 text-center`}>
-                                            <ScoreBadge pct={score} />
-                                        </td>
-                                    </tr>
-                                </Fragment>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-between px-1">
-                    <p className="text-[11px] text-muted-foreground">
-                        {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, flatRows.length)} dari {flatRows.length}
-                    </p>
-                    <div className="flex items-center gap-1">
-                        <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>
-                            <ChevronLeft className="h-3.5 w-3.5" />
-                        </Button>
-                        <span className="text-[11px] font-medium px-1">{page + 1} / {totalPages}</span>
-                        <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}>
-                            <ChevronRight className="h-3.5 w-3.5" />
-                        </Button>
-                    </div>
-                </div>
-            )}
-
-            <p className="text-[11px] text-muted-foreground/60 text-center">
-                Geser ke kanan untuk melihat semua kolom →
-            </p>
         </div>
     );
 }
@@ -732,11 +352,9 @@ const DEFAULT_FILTER: Filter = {
     bulan: new Date().getMonth() + 1, tahun: new Date().getFullYear(),
     site: 'all', departemen: 'all', level: 'all', jabatan: 'all',
 };
-const DEFAULT_RECAP: EmployeeRecap = { weeks: [], employees: [] };
 
 export default function AdminIndex({
     compliance: rawCompliance,
-    employee_recap  = DEFAULT_RECAP,
     filter          = DEFAULT_FILTER,
     sites           = [],
     jabatan_options = [],
@@ -772,6 +390,7 @@ export default function AdminIndex({
 
                 <FilterBar filter={filter} sites={sites} jabatanOptions={jabatan_options} adminSite={admin_site} />
 
+                <div ref={exportRef} className="space-y-4 bg-background">
                 {/* ② RINGKASAN — stat cards */}
                 <StatCardsRow
                     compliance={compliance}
@@ -807,10 +426,8 @@ export default function AdminIndex({
                 )}
 
                 {overview && <AdminOverview overview={overview} />}
+                </div>
 
-                {/* ④ TABLE */}
-                <div id="rekap-karyawan" className="scroll-mt-20" />
-                <EmployeeRecapTable recap={employee_recap} filter={filter} exportRef={exportRef} />
 
             </div>
         </>
