@@ -1,11 +1,21 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { CalendarDays, ChevronRight, ClipboardCheck, Plus } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import {
+    BedDouble,
+    Building2,
+    ChevronRight,
+    ClipboardList,
+    Mountain,
+    Plus,
+    Wrench,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Separator } from '@/components/ui/separator';
+import { EmptyState } from '@/components/patterns/empty-state';
+import {
+    ModuleHeader,
+    SectionLabel,
+} from '@/components/patterns/module-header';
+import { Pager, SegmentTabs } from '@/components/patterns/segment-tabs';
 import { cn } from '@/lib/utils';
 
 type Jenis = 'kantor' | 'tambang' | 'workshop' | 'mess';
@@ -21,186 +31,255 @@ type Rec = {
     user: { id: number; name: string } | null;
     re_inspektor: { id: number; name: string } | null;
 };
-type Paginated = { data: Rec[]; next_page_url: string | null; prev_page_url: string | null; total: number };
-type Props = { myRecords: Paginated; pendingReInspeksi: Paginated; selesaiAsRI: Paginated };
-
-const JENIS: Record<Jenis, { label: string; emoji: string; badge: string }> = {
-    kantor: { label: 'Kantor', emoji: '🏢', badge: 'bg-info-soft text-info border-info/60' },
-    tambang: { label: 'Tambang', emoji: '⛏️', badge: 'bg-warning-soft text-warning border-warning/60' },
-    workshop: { label: 'Workshop', emoji: '🔧', badge: 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700' },
-    mess: { label: 'Mess', emoji: '🏠', badge: 'bg-success-soft text-success border-success/60' },
+type Paginated = {
+    data: Rec[];
+    next_page_url: string | null;
+    prev_page_url: string | null;
+    total: number;
+};
+type Props = {
+    myRecords: Paginated;
+    pendingReInspeksi: Paginated;
+    selesaiAsRI: Paginated;
 };
 
-const RISK = {
-    L: { l: 'Baik', c: 'bg-success-soft text-success border-success/60' },
-    M: { l: 'Cukup', c: 'bg-warning-soft text-warning border-warning/60' },
-    H: { l: 'Perhatian', c: 'bg-warning-soft text-warning border-warning/60' },
-    VH: { l: 'Perlu Tindakan', c: 'bg-destructive-soft text-destructive border-destructive/60' },
+const JENIS: Record<Jenis, { label: string; icon: LucideIcon; tint: string }> =
+    {
+        kantor: {
+            label: 'Kantor',
+            icon: Building2,
+            tint: 'bg-info-soft text-info',
+        },
+        tambang: {
+            label: 'Tambang',
+            icon: Mountain,
+            tint: 'bg-accent-soft text-foreground',
+        },
+        workshop: {
+            label: 'Workshop',
+            icon: Wrench,
+            tint: 'bg-muted text-foreground',
+        },
+        mess: {
+            label: 'Mess',
+            icon: BedDouble,
+            tint: 'bg-success-soft text-success',
+        },
+    };
+
+const STATUS = {
+    selesai: { label: 'Selesai', cls: 'bg-success-soft text-success' },
+    ditolak: { label: 'Ditolak', cls: 'bg-destructive-soft text-destructive' },
+    menunggu_re_inspeksi: {
+        label: 'Menunggu re-inspeksi',
+        cls: 'bg-warning-soft text-warning',
+    },
+};
+
+const LEVEL = {
+    L: { label: 'Baik', cls: 'bg-success-soft text-success' },
+    M: { label: 'Cukup', cls: 'bg-accent-soft text-foreground' },
+    H: { label: 'Perhatian', cls: 'bg-warning-soft text-warning' },
+    VH: {
+        label: 'Perlu tindakan',
+        cls: 'bg-destructive-soft text-destructive',
+    },
 };
 
 function groupByMonth(records: Rec[]) {
     const groups: Record<string, Rec[]> = {};
 
     for (const r of records) {
-        const key = new Date(r.tanggal).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        const key = new Date(r.tanggal).toLocaleDateString('id-ID', {
+            month: 'long',
+            year: 'numeric',
+        });
         (groups[key] ??= []).push(r);
     }
 
     return Object.entries(groups);
 }
 
-function StatusBadge({ s }: { s: Rec['status'] }) {
-    if (s === 'selesai') {
-        return <Badge className="border-success/60 bg-success-soft text-success hover:bg-success-soft">Selesai</Badge>;
-    }
-
-    if (s === 'ditolak') {
-        return <Badge className="border-destructive/60 bg-destructive-soft text-destructive hover:bg-destructive-soft">Ditolak</Badge>;
-    }
-
-    return <Badge className="border-warning/60 bg-warning-soft text-warning hover:bg-warning-soft">Menunggu Re-Inspeksi</Badge>;
-}
-
-function RecordList({ records, asRI = false }: { records: Paginated; asRI?: boolean }) {
-    if (!records.data.length) {
+function RecordList({ page, asRi }: { page: Paginated; asRi?: boolean }) {
+    if (!page.data.length) {
         return (
-            <div className="flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed px-6 py-12 text-center">
-                <div className="flex size-16 items-center justify-center rounded-full bg-muted">
-                    <ClipboardCheck size={28} className="text-muted-foreground" />
-                </div>
-                <p className="text-sm text-muted-foreground">Belum ada data</p>
-            </div>
+            <EmptyState
+                icon={ClipboardList}
+                title="Belum ada inspeksi"
+                description="Pilih jenis inspeksi di atas untuk memulai."
+            />
         );
     }
 
     return (
-        <div className="flex flex-col gap-5">
-            {groupByMonth(records.data).map(([month, items]) => (
-                <div key={month} className="flex flex-col gap-3">
-                    <div className="flex items-center gap-2">
-                        <CalendarDays size={15} className="text-muted-foreground" />
-                        <span className="text-sm font-bold tracking-wider text-muted-foreground uppercase">{month}</span>
-                    </div>
-                    <Card className="overflow-hidden p-0">
-                        {items.map((rec, idx) => (
-                            <div key={`${rec.jenis}-${rec.id}`}>
-                                <Link href={`/sap/inspeksi-${rec.jenis}/${rec.id}`}>
-                                    <div className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted">
-                                        <div
+        <div className="flex flex-col gap-4">
+            {groupByMonth(page.data).map(([month, items]) => (
+                <section key={month} className="flex flex-col gap-2">
+                    <SectionLabel>{month}</SectionLabel>
+                    <ul className="overflow-hidden rounded-lg bg-card">
+                        {items.map((rec) => {
+                            const jenis = JENIS[rec.jenis];
+                            const Icon = jenis.icon;
+                            const status =
+                                STATUS[rec.status] ??
+                                STATUS.menunggu_re_inspeksi;
+                            const level = rec.risk_level
+                                ? LEVEL[rec.risk_level]
+                                : null;
+                            const who = asRi
+                                ? rec.user
+                                    ? `oleh ${rec.user.name}`
+                                    : null
+                                : rec.re_inspektor
+                                  ? `RI ${rec.re_inspektor.name}`
+                                  : null;
+
+                            return (
+                                <li
+                                    key={`${rec.jenis}-${rec.id}`}
+                                    className="border-b border-border/60 last:border-0"
+                                >
+                                    <Link
+                                        href={`/sap/inspeksi-${rec.jenis}/${rec.id}`}
+                                        className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-muted"
+                                    >
+                                        <span
                                             className={cn(
-                                                'h-14 w-1.5 shrink-0 rounded-full',
-                                                rec.status === 'selesai' ? 'bg-success' : rec.status === 'ditolak' ? 'bg-destructive' : 'bg-warning',
+                                                'flex size-10 shrink-0 items-center justify-center rounded-[14px]',
+                                                jenis.tint,
                                             )}
-                                        />
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <Badge variant="outline" className={cn('shrink-0', JENIS[rec.jenis].badge)}>
-                                                    {JENIS[rec.jenis].emoji} {JENIS[rec.jenis].label}
-                                                </Badge>
-                                            </div>
-                                            <p className="mt-1.5 text-base font-bold">
-                                                {new Date(rec.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
-                                            </p>
-                                            <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                                                {rec.project_site}
-                                                {rec.keterangan ? ` · ${rec.keterangan}` : ''}
-                                            </p>
-                                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                                                <StatusBadge s={rec.status} />
-                                                {rec.risk_level && rec.persentase !== null && (
-                                                    <Badge className={cn('hover:opacity-100', RISK[rec.risk_level].c)}>
-                                                        {rec.persentase}% — {RISK[rec.risk_level].l}
-                                                    </Badge>
-                                                )}
-                                                {asRI && rec.user && <span className="text-xs text-muted-foreground">oleh {rec.user.name}</span>}
-                                                {!asRI && rec.re_inspektor && <span className="text-xs text-muted-foreground">RI: {rec.re_inspektor.name}</span>}
-                                            </div>
-                                        </div>
-                                        <ChevronRight size={20} className="shrink-0 text-muted-foreground" />
-                                    </div>
-                                </Link>
-                                {idx < items.length - 1 && <Separator />}
-                            </div>
-                        ))}
-                    </Card>
-                </div>
+                                        >
+                                            <Icon
+                                                className="size-5"
+                                                strokeWidth={1.8}
+                                            />
+                                        </span>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block text-sm font-bold">
+                                                {jenis.label} ·{' '}
+                                                {new Date(
+                                                    rec.tanggal,
+                                                ).toLocaleDateString('id-ID', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                })}
+                                            </span>
+                                            <span className="block truncate text-xs text-muted-foreground">
+                                                {[
+                                                    rec.project_site,
+                                                    rec.keterangan,
+                                                    who,
+                                                ]
+                                                    .filter(Boolean)
+                                                    .join(' · ')}
+                                            </span>
+                                            <span className="mt-1.5 flex flex-wrap gap-1.5">
+                                                <span
+                                                    className={cn(
+                                                        'rounded-full px-2 py-0.5 text-[11px] font-bold',
+                                                        status.cls,
+                                                    )}
+                                                >
+                                                    {status.label}
+                                                </span>
+                                                {level &&
+                                                    rec.persentase !== null && (
+                                                        <span
+                                                            className={cn(
+                                                                'tabular rounded-full px-2 py-0.5 text-[11px] font-bold',
+                                                                level.cls,
+                                                            )}
+                                                        >
+                                                            {rec.persentase}% ·{' '}
+                                                            {level.label}
+                                                        </span>
+                                                    )}
+                                            </span>
+                                        </span>
+                                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                                    </Link>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </section>
             ))}
-            {(records.prev_page_url || records.next_page_url) && (
-                <div className="flex justify-between gap-3">
-                    {records.prev_page_url ? (
-                        <Link href={records.prev_page_url}>
-                            <Button variant="outline" className="h-12 px-6 text-base">← Sebelumnya</Button>
-                        </Link>
-                    ) : (
-                        <div />
-                    )}
-                    {records.next_page_url && (
-                        <Link href={records.next_page_url}>
-                            <Button variant="outline" className="h-12 px-6 text-base">Berikutnya →</Button>
-                        </Link>
-                    )}
-                </div>
-            )}
+            <Pager prev={page.prev_page_url} next={page.next_page_url} />
         </div>
     );
 }
 
-export default function InspeksiIndex({ myRecords, pendingReInspeksi, selesaiAsRI }: Props) {
-    const [tab, setTab] = useState<'my' | 'pending' | 'confirmed'>(pendingReInspeksi.total > 0 ? 'pending' : 'my');
+export default function InspeksiIndex({
+    myRecords,
+    pendingReInspeksi,
+    selesaiAsRI,
+}: Props) {
+    const pending = pendingReInspeksi.total ?? pendingReInspeksi.data.length;
+    const [tab, setTab] = useState<'my' | 'pending' | 'done'>(
+        pending > 0 ? 'pending' : 'my',
+    );
 
     return (
         <>
-            <Head title="Semua Inspeksi" />
-            <div className="flex flex-col gap-6">
-                <div className="flex items-start justify-between gap-3">
-                    <div>
-                        <h2 className="text-xl font-bold">Semua Inspeksi</h2>
-                        <p className="mt-0.5 text-sm text-muted-foreground">Kantor, Tambang, Workshop & Mess</p>
-                    </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button className="h-12 shrink-0 gap-2 px-5 text-base font-bold">
-                                <Plus size={18} /> Buat
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-52">
-                            {(Object.keys(JENIS) as Jenis[]).map((j) => (
-                                <DropdownMenuItem key={j} onClick={() => router.visit(`/sap/inspeksi-${j}/create`)}>
-                                    {JENIS[j].emoji} Inspeksi {JENIS[j].label}
-                                </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-                <div className="flex gap-1 rounded-xl bg-muted p-1">
-                    {(
-                        [
-                            { key: 'my', label: 'Inspeksi Saya' },
-                            { key: 'pending', label: 'Perlu Re-Inspeksi', count: pendingReInspeksi.total },
-                            { key: 'confirmed', label: 'Riwayat Re-Inspeksi' },
-                        ] as const
-                    ).map((t) => (
-                        <button
-                            key={t.key}
-                            type="button"
-                            onClick={() => setTab(t.key)}
-                            className={cn(
-                                'flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-all',
-                                tab === t.key ? 'bg-background text-foreground shadow' : 'text-muted-foreground hover:text-foreground',
-                            )}
-                        >
-                            {t.label}
-                            {'count' in t && t.count > 0 && (
-                                <span className="flex size-4 items-center justify-center rounded-full bg-destructive text-[11px] font-bold text-white">
-                                    {t.count}
+            <Head title="Inspeksi" />
+            <div className="flex flex-col gap-4 pt-2">
+                <ModuleHeader
+                    backHref="/k3"
+                    eyebrow="K3 / Safety"
+                    title="Inspeksi"
+                />
+
+                <SectionLabel>Buat inspeksi</SectionLabel>
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                    {(Object.keys(JENIS) as Jenis[]).map((k) => {
+                        const { label, icon: Icon, tint } = JENIS[k];
+
+                        return (
+                            <Link
+                                key={k}
+                                href={`/sap/inspeksi-${k}/create`}
+                                className="flex items-center gap-3 rounded-lg bg-card p-3.5 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_oklch(0.191_0_0/0.08)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                            >
+                                <span
+                                    className={cn(
+                                        'flex size-10 shrink-0 items-center justify-center rounded-[14px]',
+                                        tint,
+                                    )}
+                                >
+                                    <Icon
+                                        className="size-5"
+                                        strokeWidth={1.8}
+                                    />
                                 </span>
-                            )}
-                        </button>
-                    ))}
+                                <span className="min-w-0 flex-1 text-sm font-bold">
+                                    {label}
+                                </span>
+                                <Plus className="size-4 text-muted-foreground" />
+                            </Link>
+                        );
+                    })}
                 </div>
-                {tab === 'my' && <RecordList records={myRecords} />}
-                {tab === 'pending' && <RecordList records={pendingReInspeksi} asRI />}
-                {tab === 'confirmed' && <RecordList records={selesaiAsRI} asRI />}
+
+                <SegmentTabs
+                    label="Kategori inspeksi"
+                    value={tab}
+                    onChange={setTab}
+                    tabs={[
+                        { key: 'my', label: 'Inspeksi saya' },
+                        {
+                            key: 'pending',
+                            label: 'Perlu re-inspeksi',
+                            count: pending,
+                        },
+                        { key: 'done', label: 'Riwayat RI' },
+                    ]}
+                />
+
+                {tab === 'my' && <RecordList page={myRecords} />}
+                {tab === 'pending' && (
+                    <RecordList page={pendingReInspeksi} asRi />
+                )}
+                {tab === 'done' && <RecordList page={selesaiAsRI} asRi />}
             </div>
         </>
     );

@@ -1,14 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
-import { CalendarDays, ChevronRight, ClipboardCheck, Plus } from 'lucide-react';
+import { ClipboardCheck, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
+import { ModuleHeader } from '@/components/patterns/module-header';
+import { RecordList } from '@/components/patterns/record-list';
+import type { RecordRow } from '@/components/patterns/record-list';
+import { SegmentTabs } from '@/components/patterns/segment-tabs';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
 
-type UserInfo = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
-
+type UserInfo = { id: number; name: string };
 type OKRecord = {
     id: number;
     tanggal: string;
@@ -18,233 +17,123 @@ type OKRecord = {
     penanggung_jawab?: UserInfo | null;
     user?: UserInfo | null;
 };
+type Paginated = {
+    data: OKRecord[];
+    next_page_url: string | null;
+    prev_page_url: string | null;
+};
+type Props = {
+    myRecords: Paginated;
+    pendingKonfirmasi: Paginated;
+    confirmedAsPJ: Paginated;
+};
 
-type Paginated = { data: OKRecord[]; next_page_url: string | null; prev_page_url: string | null };
+const STATUS: Record<OKRecord['status'], RecordRow['status']> = {
+    menunggu_konfirmasi: { label: 'Menunggu konfirmasi', tone: 'warning' },
+    dikonfirmasi: { label: 'Dikonfirmasi', tone: 'success' },
+    ditolak: { label: 'Ditolak', tone: 'danger' },
+};
 
-type Props = { myRecords: Paginated; pendingKonfirmasi: Paginated; confirmedAsPJ: Paginated };
+const EMPTY = {
+    icon: ClipboardCheck,
+    title: 'Belum ada observasi',
+    description: 'Form observasi keselamatan akan muncul di sini.',
+};
 
-function groupByMonth(records: OKRecord[]) {
-    const groups: Record<string, OKRecord[]> = {};
+function toRows(page: Paginated, mode: 'my' | 'pending' | 'done'): RecordRow[] {
+    return page.data.map((r) => {
+        const date = new Date(r.tanggal).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+        });
+        const who =
+            mode === 'my'
+                ? r.penanggung_jawab
+                    ? `PJ ${r.penanggung_jawab.name}`
+                    : null
+                : r.user
+                  ? `oleh ${r.user.name}`
+                  : null;
 
-    for (const r of records) {
-        const key = new Date(r.tanggal).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-        (groups[key] ??= []).push(r);
-    }
-
-    return Object.entries(groups);
+        return {
+            key: r.id,
+            href:
+                mode === 'pending'
+                    ? `/sap/observasi-keselamatan/${r.id}/konfirmasi`
+                    : `/sap/observasi-keselamatan/${r.id}`,
+            tanggal: r.tanggal,
+            title: r.jenis_pekerjaan,
+            subtitle: [date, r.lokasi_kerja, who].filter(Boolean).join(' · '),
+            status: STATUS[r.status] ?? STATUS.menunggu_konfirmasi,
+            action: mode === 'pending' ? 'Konfirmasi' : undefined,
+        };
+    });
 }
 
-function StatusBadge({ status }: { status: OKRecord['status'] }) {
-    if (status === 'dikonfirmasi') {
-        return <Badge className="bg-success-soft text-success border-success/60 hover:bg-success-soft">Dikonfirmasi</Badge>;
-    }
-
-    if (status === 'ditolak') {
-        return <Badge className="bg-destructive-soft text-destructive border-destructive/60 hover:bg-destructive-soft">Ditolak</Badge>;
-    }
-
-    return <Badge className="bg-warning-soft text-warning border-warning/60 hover:bg-warning-soft">Menunggu Konfirmasi</Badge>;
-}
-
-function recordBarColor(status: OKRecord['status']) {
-    if (status === 'dikonfirmasi') {
-return 'bg-success';
-}
-
-    if (status === 'ditolak') {
-return 'bg-destructive';
-}
-
-    return 'bg-warning';
-}
-
-function recordBgColor(status: OKRecord['status']) {
-    if (status === 'dikonfirmasi') {
-return 'bg-success-soft';
-}
-
-    if (status === 'ditolak') {
-return 'bg-destructive-soft';
-}
-
-    return 'bg-warning-soft';
-}
-
-function RecordList({ records, asPJ = false }: { records: Paginated; asPJ?: boolean }) {
-    const grouped = groupByMonth(records.data);
-
-    if (records.data.length === 0) {
-        return (
-            <div className="flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed py-12 text-center px-6">
-                <div className="flex size-16 items-center justify-center rounded-full bg-muted">
-                    <ClipboardCheck size={28} className="text-muted-foreground" />
-                </div>
-                <p className="text-muted-foreground text-sm">Belum ada data</p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="flex flex-col gap-5">
-            {grouped.map(([month, items]) => (
-                <div key={month} className="flex flex-col gap-3">
-                    <div className="flex items-center gap-2">
-                        <CalendarDays size={15} className="text-muted-foreground" />
-                        <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">{month}</span>
-                    </div>
-                    <Card className="overflow-hidden p-0">
-                        {items.map((record, idx) => (
-                            <div key={record.id}>
-                                <Link href={`/sap/observasi-keselamatan/${record.id}`}>
-                                    <div className={cn(
-                                        'flex cursor-pointer items-center gap-4 px-4 py-4 transition-colors hover:bg-muted',
-                                        recordBgColor(record.status),
-                                    )}>
-                                        <div className={cn('h-14 w-1.5 shrink-0 rounded-full', recordBarColor(record.status))} />
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-base font-bold">
-                                                {new Date(record.tanggal).toLocaleDateString('id-ID', {
-                                                    weekday: 'long', day: 'numeric', month: 'long',
-                                                })}
-                                            </p>
-                                            <p className="text-sm text-muted-foreground truncate mt-0.5">{record.lokasi_kerja}</p>
-                                            <p className="text-sm text-muted-foreground truncate">{record.jenis_pekerjaan}</p>
-                                            <div className="mt-2 flex flex-wrap gap-1.5 items-center">
-                                                <StatusBadge status={record.status} />
-                                                {asPJ && record.user && (
-                                                    <span className="text-xs text-muted-foreground">oleh {record.user.name}</span>
-                                                )}
-                                                {!asPJ && record.penanggung_jawab && (
-                                                    <span className="text-xs text-muted-foreground">PJ: {record.penanggung_jawab.name}</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <ChevronRight size={20} className="shrink-0 text-muted-foreground" />
-                                    </div>
-                                </Link>
-                                {idx < items.length - 1 && <Separator />}
-                            </div>
-                        ))}
-                    </Card>
-                </div>
-            ))}
-            {(records.prev_page_url || records.next_page_url) && (
-                <div className="flex justify-between gap-3">
-                    {records.prev_page_url
-                        ? <Link href={records.prev_page_url}><Button variant="outline" className="h-12 px-6 text-base">← Sebelumnya</Button></Link>
-                        : <div />}
-                    {records.next_page_url && (
-                        <Link href={records.next_page_url}><Button variant="outline" className="h-12 px-6 text-base">Berikutnya →</Button></Link>
-                    )}
-                </div>
-            )}
-        </div>
+export default function ObservasiKeselamatanIndex({
+    myRecords,
+    pendingKonfirmasi,
+    confirmedAsPJ,
+}: Props) {
+    const pending = pendingKonfirmasi.data.length;
+    const [tab, setTab] = useState<'my' | 'pending' | 'done'>(
+        pending > 0 ? 'pending' : 'my',
     );
-}
-
-function PendingKonfirmasiList({ records }: { records: Paginated }) {
-    const grouped = groupByMonth(records.data);
-
-    return (
-        <div className="flex flex-col gap-5">
-            {grouped.map(([month, items]) => (
-                <div key={month} className="flex flex-col gap-3">
-                    <div className="flex items-center gap-2">
-                        <CalendarDays size={15} className="text-warning" />
-                        <span className="text-sm font-bold uppercase tracking-wider text-warning">{month}</span>
-                    </div>
-                    <Card className="overflow-hidden p-0">
-                        {items.map((record, idx) => (
-                            <div key={record.id}>
-                                <Link href={`/sap/observasi-keselamatan/${record.id}/konfirmasi`}>
-                                    <div className="flex cursor-pointer items-center gap-4 px-4 py-4 transition-colors hover:bg-muted bg-warning-soft">
-                                        <div className="h-14 w-1.5 shrink-0 rounded-full bg-warning" />
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-base font-bold">
-                                                {new Date(record.tanggal).toLocaleDateString('id-ID', {
-                                                    weekday: 'long', day: 'numeric', month: 'long',
-                                                })}
-                                            </p>
-                                            <p className="text-sm text-muted-foreground truncate mt-0.5">{record.lokasi_kerja}</p>
-                                            <p className="text-sm text-muted-foreground truncate">{record.jenis_pekerjaan}</p>
-                                            {record.user && (
-                                                <p className="text-xs text-muted-foreground mt-1">oleh {record.user.name}</p>
-                                            )}
-                                        </div>
-                                        <ChevronRight size={20} className="shrink-0 text-warning" />
-                                    </div>
-                                </Link>
-                                {idx < items.length - 1 && <Separator />}
-                            </div>
-                        ))}
-                    </Card>
-                </div>
-            ))}
-            {(records.prev_page_url || records.next_page_url) && (
-                <div className="flex justify-between gap-3">
-                    {records.prev_page_url
-                        ? <Link href={records.prev_page_url}><Button variant="outline" className="h-12 px-6 text-base">← Sebelumnya</Button></Link>
-                        : <div />}
-                    {records.next_page_url && (
-                        <Link href={records.next_page_url}><Button variant="outline" className="h-12 px-6 text-base">Berikutnya →</Button></Link>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}
-
-export default function ObservasiKeselamatanIndex({ myRecords, pendingKonfirmasi, confirmedAsPJ }: Props) {
-    const [tab, setTab] = useState<'my' | 'pending' | 'confirmed'>('my');
-    const pendingCount = pendingKonfirmasi.data.length;
+    const page =
+        tab === 'my'
+            ? myRecords
+            : tab === 'pending'
+              ? pendingKonfirmasi
+              : confirmedAsPJ;
 
     return (
         <>
             <Head title="Observasi Keselamatan" />
-            <div className="flex flex-col gap-6">
-                <div className="flex items-start justify-between gap-3">
-                    <div>
-                        <h2 className="text-xl font-bold">Observasi Keselamatan</h2>
-                        <p className="text-sm text-muted-foreground mt-0.5">Form OK – WBK-HSE-FO-037</p>
-                    </div>
-                    <Link href="/sap/observasi-keselamatan/create" className="shrink-0">
-                        <Button className="h-12 px-5 gap-2 text-base font-bold">
-                            <Plus size={18} />
-                            Buat OK
-                        </Button>
-                    </Link>
-                </div>
-
-                <div className="flex gap-1 rounded-xl bg-muted p-1">
-                    {([
-                        { key: 'my',        label: 'Form Saya' },
-                        { key: 'pending',   label: 'Perlu Konfirmasi', count: pendingCount },
-                        { key: 'confirmed', label: 'Riwayat Konfirmasi' },
-                    ] as const).map(t => (
-                        <button
-                            key={t.key}
-                            type="button"
-                            onClick={() => setTab(t.key)}
-                            className={cn(
-                                'flex-1 rounded-lg py-2 text-xs font-semibold transition-all flex items-center justify-center gap-1.5',
-                                tab === t.key
-                                    ? 'bg-background shadow text-foreground'
-                                    : 'text-muted-foreground hover:text-foreground',
-                            )}
+            <div className="flex flex-col gap-4 pt-2">
+                <ModuleHeader
+                    backHref="/k3"
+                    eyebrow="WBK-HSE-FO-037"
+                    title="Observasi Keselamatan"
+                    actions={
+                        <Button
+                            asChild
+                            size="sm"
+                            className="hidden sm:inline-flex"
                         >
-                            {t.label}
-                            {'count' in t && t.count > 0 && (
-                                <span className="flex size-4 items-center justify-center rounded-full bg-destructive text-[11px] text-white font-bold">
-                                    {t.count}
-                                </span>
-                            )}
-                        </button>
-                    ))}
-                </div>
+                            <Link href="/sap/observasi-keselamatan/create">
+                                <Plus /> Buat
+                            </Link>
+                        </Button>
+                    }
+                />
 
-                {tab === 'my'        && <RecordList records={myRecords} />}
-                {tab === 'pending'   && <PendingKonfirmasiList records={pendingKonfirmasi} />}
-                {tab === 'confirmed' && <RecordList records={confirmedAsPJ} asPJ />}
+                <SegmentTabs
+                    label="Kategori observasi"
+                    value={tab}
+                    onChange={setTab}
+                    tabs={[
+                        { key: 'my', label: 'Form saya' },
+                        {
+                            key: 'pending',
+                            label: 'Perlu konfirmasi',
+                            count: pending,
+                        },
+                        { key: 'done', label: 'Riwayat PJ' },
+                    ]}
+                />
+
+                <RecordList
+                    rows={toRows(page, tab)}
+                    prev={page.prev_page_url}
+                    next={page.next_page_url}
+                    empty={EMPTY}
+                />
+
+                <Button asChild size="lg" className="sm:hidden">
+                    <Link href="/sap/observasi-keselamatan/create">
+                        <Plus /> Buat observasi
+                    </Link>
+                </Button>
             </div>
         </>
     );

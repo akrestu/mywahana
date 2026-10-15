@@ -1,194 +1,138 @@
 import { Head, Link } from '@inertiajs/react';
-import { BookOpen, Calendar, Clock, MapPin, Users } from 'lucide-react';
+import { CheckCircle2, Clock, OctagonX } from 'lucide-react';
+import { JsaReview } from '@/components/jsa/jsa-review';
+import type { JsaRecord } from '@/components/jsa/jsa-review';
+import {
+    ModuleHeader,
+    SectionLabel,
+} from '@/components/patterns/module-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { konfirmasi as konfirmasiRoute } from '@/routes/sap/komunikasi-jsa';
 
-type UserInfo = { id: number; name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
+type Props = { record: JsaRecord; isTeamLeader: boolean };
 
-type Peserta = { nama: string; jabatan: string; nik: string; tanda_tangan: string };
-
-type Record = {
-    id: number;
-    tanggal: string;
-    lokasi: string;
-    shift: 'siang' | 'malam';
-    durasi: number;
-    kegiatan: string;
-    judul_dokumen: string;
-    catatan: string | null;
-    status: 'selesai' | 'menunggu_konfirmasi' | 'dikonfirmasi' | 'ditolak';
-    peserta: Peserta[];
-    supervisor_signature: string | null;
-    tl_signature: string | null;
-    tl_dikonfirmasi_at: string | null;
-    foto_kelompok: string;
-    foto_dokumen: string;
-    user: UserInfo;
-    team_leader: UserInfo | null;
+const STATUS: Record<
+    JsaRecord['status'],
+    {
+        label: string;
+        variant: 'warning' | 'success' | 'danger';
+        icon: typeof Clock;
+    }
+> = {
+    selesai: { label: 'Selesai', variant: 'success', icon: CheckCircle2 },
+    dikonfirmasi: {
+        label: 'Dikonfirmasi TL',
+        variant: 'success',
+        icon: CheckCircle2,
+    },
+    menunggu_konfirmasi: {
+        label: 'Menunggu tanda tangan TL',
+        variant: 'warning',
+        icon: Clock,
+    },
+    ditolak: { label: 'Ditolak TL', variant: 'danger', icon: OctagonX },
 };
 
-type Props = { record: Record; isTeamLeader: boolean };
-
-function StatusBadge({ status }: { status: Record['status'] }) {
-    if (status === 'selesai') {
-return <Badge className="bg-success-soft text-success border-success/60 hover:bg-success-soft">Selesai</Badge>;
-}
-
-    if (status === 'dikonfirmasi') {
-return <Badge className="bg-success-soft text-success border-success/60 hover:bg-success-soft">Dikonfirmasi</Badge>;
-}
-
-    if (status === 'ditolak') {
-return <Badge className="bg-destructive-soft text-destructive border-destructive/60 hover:bg-destructive-soft">Ditolak</Badge>;
-}
-
-    return <Badge className="bg-warning-soft text-warning border-warning/60 hover:bg-warning-soft">Menunggu Konfirmasi</Badge>;
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-    return (
-        <div className="flex flex-col gap-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-            <div className="text-sm">{children}</div>
-        </div>
-    );
-}
-
 export default function KomunikasiJsaShow({ record, isTeamLeader }: Props) {
+    const status = STATUS[record.status] ?? STATUS.menunggu_konfirmasi;
+    const StatusIcon = status.icon;
+    const signatures = [
+        ...(record.supervisor_signature
+            ? [
+                  {
+                      who: `Supervisor · ${record.user.name}`,
+                      src: record.supervisor_signature,
+                  },
+              ]
+            : []),
+        ...(record.tl_signature
+            ? [
+                  {
+                      who: `Team leader · ${record.team_leader?.name ?? ''}`,
+                      src: record.tl_signature,
+                  },
+              ]
+            : []),
+    ];
+
     return (
         <>
-            <Head title="Detail Komunikasi JSA" />
-            <div className="flex flex-col gap-5 max-w-2xl">
-                <div className="flex items-start justify-between gap-3">
-                    <div>
-                        <h2 className="text-xl font-bold">Lembar Komunikasi JSA/SOP/IK</h2>
-                        <p className="text-sm text-muted-foreground mt-0.5">WBK-HSE-FO-026</p>
-                    </div>
-                    <StatusBadge status={record.status} />
+            <Head title="Komunikasi JSA" />
+            <div className="flex flex-col gap-4 pt-2 pb-4 lg:mx-auto lg:max-w-[640px]">
+                <ModuleHeader
+                    backHref="/sap/komunikasi-jsa"
+                    title="Komunikasi JSA"
+                    eyebrow={new Date(record.tanggal).toLocaleDateString(
+                        'id-ID',
+                        {
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                        },
+                    )}
+                />
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={status.variant}>
+                        <StatusIcon />
+                        {status.label}
+                    </Badge>
+                    {record.tl_dikonfirmasi_at && (
+                        <span className="text-xs text-muted-foreground">
+                            {new Date(
+                                record.tl_dikonfirmasi_at,
+                            ).toLocaleDateString('id-ID', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                            })}
+                        </span>
+                    )}
                 </div>
 
-                {/* Info Dasar */}
-                <Card>
-                    <CardContent className="flex flex-col gap-4 pt-5">
-                        <div className="grid grid-cols-2 gap-4">
-                            <Field label="Tanggal">
-                                <span className="flex items-center gap-1.5"><Calendar size={13} /> {new Date(record.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                            </Field>
-                            <Field label="Shift">
-                                <Badge variant="outline" className="capitalize">{record.shift}</Badge>
-                            </Field>
-                        </div>
-                        <Field label="Lokasi">
-                            <span className="flex items-center gap-1.5"><MapPin size={13} /> {record.lokasi}</span>
-                        </Field>
-                        <Field label="Durasi">
-                            <span className="flex items-center gap-1.5"><Clock size={13} /> {record.durasi} menit</span>
-                        </Field>
-                        <Field label="Kegiatan">
-                            <p className="whitespace-pre-line">{record.kegiatan}</p>
-                        </Field>
-                        <Field label="Judul JSA / SOP / IK">
-                            <span className="flex items-center gap-1.5 font-medium"><BookOpen size={13} /> {record.judul_dokumen}</span>
-                        </Field>
-                        {record.catatan && (
-                            <Field label="Catatan / Masukan">
-                                <p className="whitespace-pre-line text-muted-foreground">{record.catatan}</p>
-                            </Field>
-                        )}
-                        <Separator />
-                        <Field label="Dibuat Oleh">
-                            <p>{record.user.name}</p>
-                            {record.user.jabatan && <p className="text-muted-foreground text-xs">{record.user.jabatan}</p>}
-                        </Field>
-                        {record.team_leader && (
-                            <Field label="Team Leader / Supervisor">
-                                <p>{record.team_leader.name}</p>
-                                {record.team_leader.jabatan && <p className="text-muted-foreground text-xs">{record.team_leader.jabatan}</p>}
-                            </Field>
-                        )}
-                    </CardContent>
-                </Card>
+                <JsaReview record={record} />
 
-                {/* Daftar Peserta */}
-                <div className="flex flex-col gap-3">
-                    <h3 className="text-base font-bold flex items-center gap-2">
-                        <Users size={16} />
-                        Daftar Peserta ({record.peserta.length})
-                    </h3>
-                    <p className="text-sm text-muted-foreground -mt-1">
-                        Yang bertanda tangan di bawah ini menyatakan sudah mendiskusikan/membaca JSA/SOP/IK, memahami dan akan melaksanakannya.
-                    </p>
-                    <div className="flex flex-col gap-2">
-                        {record.peserta.map((p, idx) => (
-                            <Card key={idx}>
-                                <CardContent className="flex items-center gap-4 py-3 px-4">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold">{p.nama || '-'}</p>
-                                        <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
-                                            {p.jabatan && <span>{p.jabatan}</span>}
-                                            {p.nik && <span>NIK: {p.nik}</span>}
-                                        </div>
-                                    </div>
-                                    {p.tanda_tangan && (
-                                        <img src={p.tanda_tangan} alt={`TTD ${p.nama}`} className="h-12 w-24 object-contain border rounded bg-white" />
-                                    )}
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Foto Bukti */}
-                <div className="flex flex-col gap-3">
-                    <h3 className="text-base font-bold">Foto Bukti Komunikasi</h3>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div className="flex flex-col gap-1.5">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Foto Kelompok</p>
-                            <img src={`/storage/${record.foto_kelompok}`} alt="Foto kelompok" className="w-full rounded-lg border object-cover max-h-56" />
-                        </div>
-                        <div className="flex flex-col gap-1.5">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Foto Dokumen JSA/SOP/IK</p>
-                            <img src={`/storage/${record.foto_dokumen}`} alt="Foto dokumen" className="w-full rounded-lg border object-cover max-h-56" />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Tanda Tangan */}
-                {(record.supervisor_signature || record.tl_signature) && (
-                    <div className="flex flex-col gap-3">
-                        <h3 className="text-base font-bold">Tanda Tangan</h3>
-                        {record.supervisor_signature && (
-                            <div className="flex flex-col gap-1.5">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Supervisor</p>
-                                <p className="text-sm">{record.team_leader ? record.user.name : record.user.name}</p>
-                                <img src={record.supervisor_signature} alt="TTD Supervisor" className="h-20 border rounded bg-white object-contain" />
-                            </div>
-                        )}
-                        {record.tl_signature && (
-                            <div className="flex flex-col gap-1.5">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Team Leader</p>
-                                <p className="text-sm">{record.team_leader?.name}</p>
-                                <img src={record.tl_signature} alt="TTD Team Leader" className="h-20 border rounded bg-white object-contain" />
-                                {record.tl_dikonfirmasi_at && (
-                                    <p className="text-xs text-muted-foreground">
-                                        Dikonfirmasi: {new Date(record.tl_dikonfirmasi_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {signatures.length > 0 && (
+                    <>
+                        <SectionLabel>Tanda tangan</SectionLabel>
+                        <div className="grid grid-cols-1 gap-3 rounded-lg bg-card p-4 sm:grid-cols-2">
+                            {signatures.map((s) => (
+                                <div
+                                    key={s.who}
+                                    className="flex flex-col gap-2"
+                                >
+                                    <p className="text-xs font-semibold text-muted-foreground">
+                                        {s.who}
                                     </p>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                                    <img
+                                        src={s.src}
+                                        alt={`Tanda tangan ${s.who}`}
+                                        className="max-h-32 w-full max-w-xs rounded-md bg-white object-contain"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </>
                 )}
 
-                {/* Tombol Konfirmasi untuk TL */}
-                {isTeamLeader && record.status === 'menunggu_konfirmasi' && (
-                    <Link href={konfirmasiRoute(record.id).url}>
-                        <Button className="w-full h-12 text-base font-bold gap-2">
-                            Konfirmasi Form Ini
-                        </Button>
-                    </Link>
+                {record.status === 'menunggu_konfirmasi' && (
+                    <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] -mx-4 bg-gradient-to-t from-background via-background to-background/0 px-4 pt-6 pb-2 lg:bottom-0 lg:mx-0 lg:px-0">
+                        {isTeamLeader ? (
+                            <Button asChild size="lg" className="w-full">
+                                <Link
+                                    href={`/sap/komunikasi-jsa/${record.id}/konfirmasi`}
+                                >
+                                    Tanda tangan sebagai TL
+                                </Link>
+                            </Button>
+                        ) : (
+                            <p className="rounded-full bg-warning-soft px-4 py-3 text-center text-sm font-semibold text-warning">
+                                Menunggu tanda tangan{' '}
+                                {record.team_leader?.name ?? 'team leader'}
+                            </p>
+                        )}
+                    </div>
                 )}
             </div>
         </>
