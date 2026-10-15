@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ApprovalBar } from '@/components/patterns/approval-bar';
 import { EmptyState } from '@/components/patterns/empty-state';
 import { SectionLabel } from '@/components/patterns/module-header';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListSkeleton } from '@/components/patterns/skeletons';
 import { cn } from '@/lib/utils';
 
 export type InboxItem = {
@@ -261,7 +261,7 @@ export default function InboxIndex({ for_me, submitted, done }: Props) {
                         <Deferred
                             data="done"
                             fallback={
-                                <Skeleton className="h-48 w-full rounded-lg" />
+                                <ListSkeleton rows={4} />
                             }
                         >
                             {done && done.length > 0 ? (

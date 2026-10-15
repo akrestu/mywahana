@@ -9,6 +9,7 @@ import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { NotificationBell } from '@/components/notification-bell';
 import { OfflineBanner } from '@/components/offline-banner';
+import { AdminTableSkeleton, ModuleSkeleton } from '@/components/patterns/skeletons';
 import { QuickActionSheet } from '@/components/quick-action-sheet';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -26,6 +27,7 @@ import {
     SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { useAutoHideNav } from '@/hooks/use-auto-hide-nav';
+import { useNavigating } from '@/hooks/use-navigating';
 import { cn } from '@/lib/utils';
 import { modules, programsFor } from '@/modules/registry';
 import type { Auth } from '@/types';
@@ -447,6 +449,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
 
     const userMobileNavItems = baseUserMobileNavItems;
     const inboxCount = (usePage<{ inbox_count?: number }>().props.inbox_count ?? 0);
+    const navigatingTo = useNavigating();
     const adminInboxCount = (usePage<{ admin_inbox_count?: number }>().props.admin_inbox_count ?? 0);
     const [quickOpen, setQuickOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
@@ -573,7 +576,17 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 <main className={cn('flex-1 px-4 py-4 lg:p-6 lg:pb-6', !isAdmin && isFocusedFlow(url) ? 'pb-0' : 'pb-[calc(7rem+env(safe-area-inset-bottom))]')}>
                     {/* Mobile: constrain to phone-width; Desktop: full width */}
                     <div className="mx-auto w-full max-w-lg lg:max-w-none">
-                        {children}
+                        {navigatingTo ? (
+                            isAdmin &&
+                            (navigatingTo.startsWith('/admin') ||
+                                navigatingTo === '/home') ? (
+                                <AdminTableSkeleton />
+                            ) : (
+                                <ModuleSkeleton />
+                            )
+                        ) : (
+                            children
+                        )}
                     </div>
                 </main>
 

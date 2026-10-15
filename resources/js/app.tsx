@@ -1,5 +1,4 @@
 import { createInertiaApp } from '@inertiajs/react';
-import { PageLoader } from '@/components/page-loader';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
@@ -31,7 +30,6 @@ createInertiaApp({
     withApp(app) {
         return (
             <TooltipProvider delayDuration={0}>
-                <PageLoader />
                 {app}
                 <Toaster />
             </TooltipProvider>
