@@ -1,21 +1,34 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import {
-    Download, FileSpreadsheet, GraduationCap, Pencil, Plus, Search, Trash2, Upload, X,
+    Download, FileSpreadsheet, Pencil, Plus, Trash2, Upload, X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { AdminTitle } from '@/components/admin/admin-title';
+import {
+    adminButton,
+    adminButtonPrimary,
+    DataTable,
+    FilterBar,
+    MoreMenu,
+    rowClass,
+    SearchField,
+    SelectionAction,
+    SelectionBar,
+    TableCard,
+    TableEmpty,
+    TablePager,
+    theadRowClass,
+} from '@/components/admin/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 
 type Answer = 'A' | 'B' | 'C' | 'D';
@@ -208,11 +221,6 @@ return;
         router.get('/admin/hr-assessment/questions', cleaned, { preserveState: true, replace: true });
     };
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        applyFilters({ search });
-    };
-
     const confirmDelete = () => {
         if (!toDelete) {
             return;
@@ -249,152 +257,160 @@ fileRef.current.value = '';
         <>
             <Head title="Admin — Bank Soal HR Assessment" />
 
-            <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <AdminTitle eyebrow="Assessment" title="Bank Soal HR Assessment" description={`${questions.total} soal tersimpan dalam sistem`} />
-                    <div className="flex flex-wrap items-center gap-2">
-                        <a href="/admin/hr-assessment/questions/export">
-                            <Button size="sm" variant="outline" className="gap-1.5">
-                                <Download size={14} /> Export
-                            </Button>
-                        </a>
-                        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setImportOpen(true)}>
-                            <Upload size={14} /> Import
-                        </Button>
-                        <Button size="sm" className="gap-1.5" onClick={() => setFormTarget('new')}>
-                            <Plus size={14} /> Tambah Soal
-                        </Button>
+            <div className="flex flex-col gap-[18px] pb-10">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                    <AdminTitle
+                        eyebrow="Assessment"
+                        title="Bank Soal HR Assessment"
+                        description={questions.total + ' soal tersimpan'}
+                    />
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setImportOpen(true)}
+                            className={adminButton}
+                        >
+                            Impor Excel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setFormTarget('new')}
+                            className={adminButtonPrimary}
+                        >
+                            <Plus /> Tambah soal
+                        </button>
+                        <MoreMenu>
+                            <DropdownMenuItem asChild>
+                                <a href="/admin/hr-assessment/questions/export">
+                                    <Download /> Ekspor Excel
+                                </a>
+                            </DropdownMenuItem>
+                        </MoreMenu>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                    <form onSubmit={handleSearch} className="flex min-w-52 flex-1 gap-2">
-                        <div className="relative flex-1">
-                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Cari pertanyaan..."
-                                className="pl-8 text-sm"
-                            />
-                        </div>
-                        <Button type="submit" size="sm" variant="outline">Cari</Button>
-                    </form>
-
+                <FilterBar>
+                    <SearchField
+                        value={search}
+                        onChange={setSearch}
+                        onSubmit={() => applyFilters({ search })}
+                        placeholder="Cari pertanyaan…"
+                        label="Cari soal"
+                    />
                     {hasActiveFilter && (
-                        <Button size="sm" variant="ghost" className="gap-1.5 text-muted-foreground" onClick={clearFilters}>
-                            <X size={13} /> Reset
-                        </Button>
+                        <button
+                            type="button"
+                            onClick={clearFilters}
+                            className="h-10 px-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground"
+                        >
+                            Reset filter
+                        </button>
                     )}
-                </div>
+                </FilterBar>
 
-                <p className="text-xs text-muted-foreground">
-                    {questions.from !== null && questions.to !== null
-                        ? `Menampilkan ${questions.from}–${questions.to} dari ${questions.total} soal`
-                        : `${questions.total} soal`}
-                    {hasActiveFilter && ' (terfilter)'}
-                </p>
+                <SelectionBar
+                    count={selectedIds.size}
+                    onClear={() => setSelection({ key: pageKey, ids: new Set() })}
+                >
+                    <SelectionAction onClick={() => setBatchConfirmOpen(true)}>
+                        <Trash2 /> Hapus
+                    </SelectionAction>
+                </SelectionBar>
 
-                {questions.data.length > 0 && (
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3 py-2">
-                        <label className="flex items-center gap-2 text-sm">
-                            <Checkbox checked={allSelected} onCheckedChange={togglePage} aria-label="Pilih semua soal di halaman ini" />
-                            Pilih semua di halaman ini
-                        </label>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">{selectedIds.size} soal dipilih</span>
-                            <Button size="sm" variant="destructive" className="gap-1.5" disabled={selectedIds.size === 0} onClick={() => setBatchConfirmOpen(true)}>
-                                <Trash2 size={14} /> Hapus Terpilih
-                            </Button>
-                        </div>
-                    </div>
-                )}
-
-                <div className="rounded-lg border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                <TableHead className="w-10"><span className="sr-only">Pilih</span></TableHead>
-                                <TableHead className="w-14 text-center">ID</TableHead>
-                                <TableHead>Pertanyaan</TableHead>
-                                <TableHead className="w-20 text-center">Kunci</TableHead>
-                                <TableHead className="w-24 text-right">Aksi</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {questions.data.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={5}>
-                                        <div className="flex flex-col items-center gap-2 py-10 text-center">
-                                            <GraduationCap size={36} className="text-muted-foreground/30" />
-                                            <p className="text-sm text-muted-foreground">Tidak ada soal yang sesuai filter.</p>
-                                            {hasActiveFilter && (
-                                                <Button size="sm" variant="outline" onClick={clearFilters}>Reset filter</Button>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                questions.data.map((q) => (
-                                    <TableRow key={q.id}>
-                                        <TableCell><Checkbox checked={selectedIds.has(q.id)} onCheckedChange={() => toggleSelection(q.id)} aria-label={`Pilih soal ${q.id}`} /></TableCell>
-                                        <TableCell className="text-center text-xs text-muted-foreground">
+                <TableCard
+                    footer={
+                        <TablePager
+                            from={questions.from}
+                            to={questions.to}
+                            total={questions.total}
+                            prev={questions.prev_page_url}
+                            next={questions.next_page_url}
+                        />
+                    }
+                >
+                    {questions.data.length === 0 ? (
+                        <TableEmpty>Tidak ada soal yang sesuai filter.</TableEmpty>
+                    ) : (
+                        <DataTable className="min-w-[760px]">
+                            <thead>
+                                <tr className={theadRowClass}>
+                                    <th className="w-12">
+                                        <Checkbox
+                                            checked={
+                                                allSelected
+                                                    ? true
+                                                    : selectedIds.size > 0
+                                                      ? 'indeterminate'
+                                                      : false
+                                            }
+                                            onCheckedChange={togglePage}
+                                            aria-label="Pilih semua soal di halaman ini"
+                                        />
+                                    </th>
+                                    <th className="w-14">ID</th>
+                                    <th>Pertanyaan</th>
+                                    <th>Kunci</th>
+                                    <th>
+                                        <span className="sr-only">Aksi</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {questions.data.map((q) => (
+                                    <tr
+                                        key={q.id}
+                                        className={rowClass(selectedIds.has(q.id))}
+                                    >
+                                        <td>
+                                            <Checkbox
+                                                checked={selectedIds.has(q.id)}
+                                                onCheckedChange={() =>
+                                                    toggleSelection(q.id)
+                                                }
+                                                aria-label={'Pilih soal ' + q.id}
+                                            />
+                                        </td>
+                                        <td className="tabular text-muted-foreground">
                                             {q.id}
-                                        </TableCell>
-                                        <TableCell className="max-w-md">
-                                            <p className="line-clamp-2 text-sm">{q.question}</p>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <Badge variant="secondary" className="text-xs">{ANSWER_LETTER[q.jawaban_benar]}</Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <Button aria-label="Ubah"
-                                                    size="icon" variant="ghost"
-                                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                                    onClick={() => setFormTarget(q)}
-                                                >
-                                                    <Pencil size={14} />
-                                                </Button>
-                                                <Button aria-label="Hapus"
-                                                    size="icon" variant="ghost"
-                                                    className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                                                    onClick={() => setToDelete(q)}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-
-                {questions.last_page > 1 && (
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                        <p className="text-xs text-muted-foreground">
-                            Halaman {questions.current_page} dari {questions.last_page}
-                        </p>
-                        <div className="flex items-center gap-1">
-                            {questions.prev_page_url ? (
-                                <Link href={questions.prev_page_url}>
-                                    <Button variant="outline" size="sm" className="h-8 px-2 text-xs">← Sebelumnya</Button>
-                                </Link>
-                            ) : (
-                                <Button variant="outline" size="sm" className="h-8 px-2 text-xs" disabled>← Sebelumnya</Button>
-                            )}
-                            {questions.next_page_url ? (
-                                <Link href={questions.next_page_url}>
-                                    <Button variant="outline" size="sm" className="h-8 px-2 text-xs">Berikutnya →</Button>
-                                </Link>
-                            ) : (
-                                <Button variant="outline" size="sm" className="h-8 px-2 text-xs" disabled>Berikutnya →</Button>
-                            )}
-                        </div>
-                    </div>
-                )}
+                                        </td>
+                                        <td className="max-w-md">
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormTarget(q)}
+                                                className="line-clamp-2 text-left font-semibold hover:underline"
+                                            >
+                                                {q.question}
+                                            </button>
+                                        </td>
+                                        <td>
+                                            <Badge variant="ink">
+                                                {ANSWER_LETTER[q.jawaban_benar]}
+                                            </Badge>
+                                        </td>
+                                        <td className="text-right whitespace-nowrap">
+                                            <button
+                                                type="button"
+                                                aria-label="Ubah"
+                                                onClick={() => setFormTarget(q)}
+                                                className="inline-flex size-8 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                                            >
+                                                <Pencil className="size-4" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                aria-label="Hapus"
+                                                onClick={() => setToDelete(q)}
+                                                className="inline-flex size-8 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </DataTable>
+                    )}
+                </TableCard>
             </div>
 
             {formTarget !== null && <QuestionFormDialog question={formTarget} onClose={() => setFormTarget(null)} />}

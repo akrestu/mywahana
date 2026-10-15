@@ -1,296 +1,313 @@
-import { Head, useForm, router } from '@inertiajs/react';
-import { Check, MapPin, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Head, router, useForm } from '@inertiajs/react';
+import { Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { AdminTitle } from '@/components/admin/admin-title';
+import {
+    adminButtonPrimary,
+    DataTable,
+    rowClass,
+    TableCard,
+    TableEmpty,
+    theadRowClass,
+} from '@/components/admin/data-table';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
-type Site = { id: number; value: string; label: string; locations?: string[] | null };
+type Site = {
+    id: number;
+    value: string;
+    label: string;
+    locations?: string[] | null;
+};
 type Props = { sites: Site[] };
 
-function AddSiteForm() {
-    const { data, setData, post, processing, errors, reset } = useForm({ value: '', label: '', locations: '' });
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        post('/admin/sites', { onSuccess: () => reset() });
-    };
-
+function Field({
+    label,
+    hint,
+    error,
+    children,
+}: {
+    label: string;
+    hint?: string;
+    error?: string;
+    children: ReactNode;
+}) {
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                    <Plus size={16} className="text-primary" />
-                    Tambah Site Baru
-                </CardTitle>
-                <CardDescription>
-                    Kode site digunakan sebagai nilai internal dalam sistem.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-1.5">
-                        <Label>
-                            Kode Site <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                            value={data.value}
-                            onChange={(e) => setData('value', e.target.value)}
-                            placeholder="contoh: site_baru"
-                            className="font-mono"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Hanya huruf, angka, underscore, dan tanda minus.
-                        </p>
-                        {errors.value && <p className="text-sm text-destructive">{errors.value}</p>}
-                    </div>
-                    <div className="space-y-1.5">
-                        <Label>
-                            Nama Tampilan <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                            value={data.label}
-                            onChange={(e) => setData('label', e.target.value)}
-                            placeholder="contoh: WBK Site XYZ"
-                        />
-                        {errors.label && <p className="text-sm text-destructive">{errors.label}</p>}
-                    </div>
-                    <div className="space-y-1.5">
-                        <Label>Daftar Lokasi</Label>
-                        <Textarea
-                            value={data.locations}
-                            onChange={(e) => setData('locations', e.target.value)}
-                            placeholder={'Satu lokasi per baris\nContoh: Workshop\nArea Parkir'}
-                            rows={5}
-                        />
-                        <p className="text-xs text-muted-foreground">Lokasi ini akan menjadi pilihan pada form laporan untuk site tersebut.</p>
-                        {errors.locations && <p className="text-sm text-destructive">{errors.locations}</p>}
-                    </div>
-                    <Button type="submit" disabled={processing} className="w-full gap-2">
-                        <Plus size={15} />
-                        {processing ? 'Menyimpan...' : 'Tambah Site'}
-                    </Button>
-                </form>
-            </CardContent>
-        </Card>
+        <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
+            {label}
+            {children}
+            {hint && (
+                <span className="text-xs font-normal text-muted-foreground">
+                    {hint}
+                </span>
+            )}
+            <InputError message={error} />
+        </label>
     );
 }
 
-function SiteRow({ site, onDelete }: { site: Site; onDelete: (site: Site) => void }) {
-    const [editing, setEditing] = useState(false);
-    const { data, setData, put, processing, errors } = useForm({
-        value: site.value,
-        label: site.label,
-        locations: (site.locations ?? []).join('\n'),
+/** Right-hand add/edit panel, same pattern as the user panel (AUsers). */
+function SitePanel({
+    site,
+    onClose,
+    onDelete,
+}: {
+    site: Site | null;
+    onClose: () => void;
+    onDelete: (s: Site) => void;
+}) {
+    const form = useForm({
+        value: site?.value ?? '',
+        label: site?.label ?? '',
+        locations: (site?.locations ?? []).join('\n'),
     });
+    const { data, setData, errors, processing } = form;
 
-    const handleSave = (e: React.FormEvent) => {
+    const submit = (e: FormEvent) => {
         e.preventDefault();
-        put(`/admin/sites/${site.id}`, { onSuccess: () => setEditing(false) });
-    };
+        const opts = { preserveScroll: true, onSuccess: onClose };
 
-    const handleCancel = () => {
-        setData({ value: site.value, label: site.label, locations: (site.locations ?? []).join('\n') });
-        setEditing(false);
+        if (site) {
+            form.put(`/admin/sites/${site.id}`, opts);
+        } else {
+            form.post('/admin/sites', opts);
+        }
     };
-
-    if (editing) {
-        return (
-            <tr className="bg-muted/30">
-                <td colSpan={3} className="px-4 py-3">
-                    <form onSubmit={handleSave}>
-                        <div className="flex flex-wrap items-start gap-3">
-                            <div className="min-w-32 flex-1 space-y-1">
-                                <Label className="text-xs text-muted-foreground">Kode Site</Label>
-                                <Input
-                                    value={data.value}
-                                    onChange={(e) => setData('value', e.target.value)}
-                                    className="h-8 font-mono text-sm"
-                                    placeholder="kode_site"
-                                />
-                                {errors.value && <p className="text-xs text-destructive">{errors.value}</p>}
-                            </div>
-                            <div className="min-w-40 flex-[2] space-y-1">
-                                <Label className="text-xs text-muted-foreground">Nama Tampilan</Label>
-                                <Input
-                                    value={data.label}
-                                    onChange={(e) => setData('label', e.target.value)}
-                                    className="h-8 text-sm"
-                                    placeholder="Nama Site"
-                                    autoFocus
-                                />
-                                {errors.label && <p className="text-xs text-destructive">{errors.label}</p>}
-                            </div>
-                            <div className="min-w-48 flex-[2] space-y-1">
-                                <Label className="text-xs text-muted-foreground">Daftar Lokasi</Label>
-                                <Textarea
-                                    value={data.locations}
-                                    onChange={(e) => setData('locations', e.target.value)}
-                                    className="min-h-20 text-sm"
-                                    placeholder="Satu lokasi per baris"
-                                />
-                                {errors.locations && <p className="text-xs text-destructive">{errors.locations}</p>}
-                            </div>
-                            <div className="flex items-end gap-1.5 pt-5">
-                                <Button type="submit" size="sm" disabled={processing} className="h-8 gap-1.5">
-                                    <Check size={13} /> Simpan
-                                </Button>
-                                <Button type="button" size="sm" variant="ghost" className="h-8 gap-1.5" onClick={handleCancel}>
-                                    <X size={13} /> Batal
-                                </Button>
-                            </div>
-                        </div>
-                    </form>
-                </td>
-            </tr>
-        );
-    }
 
     return (
-        <tr className="group hover:bg-muted/30 transition-colors">
-            <td className="px-4 py-3">
-                <div className="flex items-center gap-2.5">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                        <MapPin size={14} className="text-primary" />
-                    </div>
-                    <span className="font-medium text-sm">{site.label}</span>
-                    <span className="text-xs text-muted-foreground">{site.locations?.length ?? 0} lokasi</span>
-                </div>
-            </td>
-            <td className="px-4 py-3">
-                <Badge variant="outline" className="font-mono text-xs font-normal">
-                    {site.value}
-                </Badge>
-            </td>
-            <td className="px-4 py-3 text-right">
-                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button aria-label="Ubah"
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => setEditing(true)}
-                    >
-                        <Pencil size={14} />
-                    </Button>
-                    <Button aria-label="Hapus"
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        <aside
+            aria-label={site ? 'Edit site' : 'Tambah site'}
+            className="flex w-full flex-col gap-3.5 self-start rounded-lg border border-border bg-card p-5 shadow-[0_20px_48px_oklch(0.191_0_0/0.08)] lg:sticky lg:top-4 lg:max-w-[360px] lg:flex-[1_1_300px]"
+        >
+            <div className="flex items-center justify-between">
+                <h2 className="text-[17px] font-bold">
+                    {site ? 'Edit site' : 'Tambah site'}
+                </h2>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Tutup panel"
+                    className="flex size-9 items-center justify-center rounded-full bg-background hover:bg-muted"
+                >
+                    <X className="size-4" />
+                </button>
+            </div>
+
+            <form onSubmit={submit} className="flex flex-col gap-3.5">
+                <Field
+                    label="Kode site"
+                    hint="Huruf, angka, underscore, dan tanda minus."
+                    error={errors.value}
+                >
+                    <Input
+                        value={data.value}
+                        onChange={(e) => setData('value', e.target.value)}
+                        placeholder="site_baru"
+                        className="h-11 rounded-[14px] font-mono"
+                        required
+                    />
+                </Field>
+                <Field label="Nama tampilan" error={errors.label}>
+                    <Input
+                        value={data.label}
+                        onChange={(e) => setData('label', e.target.value)}
+                        placeholder="WBK Site XYZ"
+                        className="h-11 rounded-[14px]"
+                        required
+                    />
+                </Field>
+                <Field
+                    label="Daftar lokasi"
+                    hint="Satu lokasi per baris. Muncul sebagai pilihan di form laporan site ini."
+                    error={errors.locations}
+                >
+                    <Textarea
+                        value={data.locations}
+                        onChange={(e) => setData('locations', e.target.value)}
+                        rows={6}
+                        placeholder={'Workshop\nArea parkir'}
+                    />
+                </Field>
+
+                <Button
+                    type="submit"
+                    className="mt-1 h-11"
+                    disabled={processing}
+                >
+                    {processing ? 'Menyimpan…' : 'Simpan'}
+                </Button>
+
+                {site && (
+                    <button
+                        type="button"
                         onClick={() => onDelete(site)}
+                        className="inline-flex items-center gap-1.5 self-start text-[13px] font-semibold text-destructive hover:underline"
                     >
-                        <Trash2 size={14} />
-                    </Button>
-                </div>
-            </td>
-        </tr>
+                        <Trash2 className="size-4" /> Hapus site
+                    </button>
+                )}
+            </form>
+        </aside>
     );
 }
 
 export default function AdminSites({ sites }: Props) {
     const [toDelete, setToDelete] = useState<Site | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [panel, setPanel] = useState<Site | 'new' | null>(null);
 
     const confirmDelete = () => {
         if (!toDelete) {
-return;
-}
+            return;
+        }
 
         setDeleting(true);
         router.delete(`/admin/sites/${toDelete.id}`, {
+            onSuccess: () => setPanel(null),
             onFinish: () => {
- setDeleting(false); setToDelete(null); 
-},
+                setDeleting(false);
+                setToDelete(null);
+            },
         });
     };
+
+    const editingId = panel && panel !== 'new' ? panel.id : null;
 
     return (
         <>
             <Head title="Kelola Site" />
 
-            <div className="space-y-4">
-                {/* Header */}
-                <AdminTitle eyebrow="Manajemen" title="Kelola Site" description="Tambah, ubah, atau hapus daftar lokasi/site dalam sistem." />
-
-                {/* Layout: form (kiri) + tabel (kanan) */}
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-                    {/* Form tambah — fixed width di desktop */}
-                    <div className="w-full lg:w-72 shrink-0">
-                        <AddSiteForm />
+            <div className="flex flex-col gap-5 pb-10 lg:flex-row lg:items-start">
+                <div className="flex min-w-0 flex-col gap-4 lg:flex-[999_1_560px]">
+                    <div className="flex flex-wrap items-end justify-between gap-3">
+                        <AdminTitle
+                            eyebrow="Manajemen"
+                            title="Site"
+                            description={`${sites.length} site terdaftar`}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setPanel('new')}
+                            className={adminButtonPrimary}
+                        >
+                            <Plus /> Tambah site
+                        </button>
                     </div>
 
-                    {/* Tabel site */}
-                    <div className="min-w-0 flex-1">
-                        <Card>
-                            <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                    <CardTitle className="text-base">Daftar Site</CardTitle>
-                                    <Badge variant="secondary" className="text-xs">
-                                        {sites.length} site
-                                    </Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                {sites.length === 0 ? (
-                                    <div className="flex flex-col items-center gap-2 py-12 text-center">
-                                        <MapPin size={32} className="text-muted-foreground/30" />
-                                        <p className="text-sm text-muted-foreground">Belum ada site. Tambahkan site pertama.</p>
-                                    </div>
-                                ) : (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm">
-                                            <thead className="border-b bg-muted/50">
-                                                <tr>
-                                                    <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                                        Nama Site
-                                                    </th>
-                                                    <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                                        Kode
-                                                    </th>
-                                                    <th className="w-24 px-4 py-2.5" />
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y">
-                                                {sites.map((site) => (
-                                                    <SiteRow key={site.id} site={site} onDelete={setToDelete} />
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
+                    <TableCard>
+                        {sites.length === 0 ? (
+                            <TableEmpty>
+                                Belum ada site. Tambahkan site pertama.
+                            </TableEmpty>
+                        ) : (
+                            <DataTable className="min-w-[560px]">
+                                <thead>
+                                    <tr className={theadRowClass}>
+                                        <th>Nama site</th>
+                                        <th>Kode</th>
+                                        <th>Lokasi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {sites.map((site) => (
+                                        <tr
+                                            key={site.id}
+                                            onClick={() => setPanel(site)}
+                                            className={cn(
+                                                'cursor-pointer',
+                                                rowClass(editingId === site.id),
+                                            )}
+                                        >
+                                            <td>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setPanel(site);
+                                                    }}
+                                                    className="text-left font-bold hover:underline"
+                                                >
+                                                    {site.label}
+                                                </button>
+                                            </td>
+                                            <td>
+                                                <Badge
+                                                    variant="neutral"
+                                                    className="font-mono"
+                                                >
+                                                    {site.value}
+                                                </Badge>
+                                            </td>
+                                            <td className="tabular text-muted-foreground">
+                                                {site.locations?.length ?? 0}{' '}
+                                                lokasi
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </DataTable>
+                        )}
+                    </TableCard>
                 </div>
+
+                {panel && (
+                    <SitePanel
+                        key={panel === 'new' ? 'new' : panel.id}
+                        site={panel === 'new' ? null : panel}
+                        onClose={() => setPanel(null)}
+                        onDelete={setToDelete}
+                    />
+                )}
             </div>
 
-            {/* Dialog konfirmasi hapus */}
-            <Dialog open={!!toDelete} onOpenChange={(open) => !open && setToDelete(null)}>
+            <Dialog
+                open={!!toDelete}
+                onOpenChange={(open) => !open && setToDelete(null)}
+            >
                 <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
-                        <DialogTitle>Hapus Site?</DialogTitle>
+                        <DialogTitle>Hapus site?</DialogTitle>
                         <DialogDescription className="space-y-1">
                             <span className="block">
-                                Anda akan menghapus site <strong>{toDelete?.label}</strong>{' '}
-                                <span className="font-mono text-xs">({toDelete?.value})</span>.
+                                Site <strong>{toDelete?.label}</strong>{' '}
+                                <span className="font-mono text-xs">
+                                    ({toDelete?.value})
+                                </span>{' '}
+                                akan dihapus.
                             </span>
                             <span className="block text-warning">
-                                Karyawan yang terdaftar di site ini tidak akan ikut terhapus, namun field site mereka akan kosong.
+                                Karyawan di site ini tidak ikut terhapus, namun
+                                field site mereka akan kosong.
                             </span>
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setToDelete(null)} disabled={deleting}>
+                        <Button
+                            variant="ghost"
+                            onClick={() => setToDelete(null)}
+                            disabled={deleting}
+                        >
                             Batal
                         </Button>
-                        <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
-                            {deleting ? 'Menghapus...' : 'Ya, Hapus'}
+                        <Button
+                            variant="destructive"
+                            onClick={confirmDelete}
+                            disabled={deleting}
+                        >
+                            {deleting ? 'Menghapus…' : 'Hapus'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

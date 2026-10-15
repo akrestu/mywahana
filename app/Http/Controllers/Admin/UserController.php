@@ -9,6 +9,8 @@ use App\Imports\UsersImport;
 use App\Models\Site;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -67,8 +69,22 @@ class UserController extends Controller
             $query->where('participation_level', $request->participation_level);
         }
 
+        $users = $query->with('sites:id,value')->paginate(20)->withQueryString();
+        // Last activity comes from the database session store (one query per page).
+        $lastActive = DB::table('sessions')
+            ->whereIn('user_id', $users->pluck('id'))
+            ->groupBy('user_id')
+            ->pluck(DB::raw('MAX(last_activity)'), 'user_id');
+        $users->through(fn (User $u) => [
+            ...$u->only('id', 'name', 'nik', 'email', 'jabatan', 'departemen', 'site', 'is_admin', 'participation_level', 'two_factor_confirmed_at'),
+            'site_ids' => $u->sites->pluck('value')->all(),
+            'last_active_at' => isset($lastActive[$u->id])
+                ? Carbon::createFromTimestamp($lastActive[$u->id])->toIso8601String()
+                : null,
+        ]);
+
         return Inertia::render('admin/users', [
-            'users' => $query->paginate(20)->withQueryString(),
+            'users' => $users,
             'filters' => $request->only('search', 'site', 'is_admin', 'participation_level'),
             'sites' => $adminSite
                 ? Site::where('value', $adminSite)->get(['value', 'label'])
@@ -188,7 +204,8 @@ class UserController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data pengguna berhasil diperbarui.']);
 
-        return redirect()->route('admin.users');
+        // The inline edit panel on the user list stays on the filtered page.
+        return $request->boolean('stay') ? back() : redirect()->route('admin.users');
     }
 
     public function destroyUser(Request $request, User $user)

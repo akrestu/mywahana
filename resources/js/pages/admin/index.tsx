@@ -1,15 +1,15 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import {
-    AlertTriangle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp,
-    Download, FileText, Minus, SlidersHorizontal, TrendingUp, Users,
+    AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight,
+    Download, FileText, Minus, TrendingUp, Users,
 } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Fragment } from 'react';
 import type { Overview } from '@/components/admin/admin-overview';
 import { AdminOverview } from '@/components/admin/admin-overview';
+import { chipClass } from '@/components/admin/data-table';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -171,7 +171,6 @@ function FilterBar({ filter, sites, jabatanOptions, adminSite }: {
     filter: Filter; sites: SiteOption[]; jabatanOptions: string[]; adminSite?: string | null | undefined;
 }) {
     const { url } = usePage();
-    const [open, setOpen] = useState(false);
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
@@ -191,133 +190,70 @@ function FilterBar({ filter, sites, jabatanOptions, adminSite }: {
         filter.jabatan !== 'all'    && { label: filter.jabatan, prefix: '' },
     ].filter(Boolean) as { label: string; prefix: string }[];
 
-    const activeLabel = `${BULAN_NAMES[filter.bulan - 1]} ${filter.tahun}` +
-        (activeFilters.length ? ` · ${activeFilters.length} filter aktif` : '');
+    const chip = (on: boolean) => chipClass(on);
 
     return (
-        <Collapsible open={open} onOpenChange={setOpen}>
-            {/* Header toggle — always visible */}
-            <CollapsibleTrigger asChild>
-                <button className="flex w-full items-center justify-between rounded-xl border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/30">
-                    <div className="flex items-center gap-2 min-w-0">
-                        <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <div className="min-w-0">
-                            <p className="text-sm font-semibold leading-tight">Filter Data</p>
-                            <p className="text-[11px] text-muted-foreground truncate mt-0.5">{activeLabel}</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                        {activeFilters.length > 0 && (
-                            <span className="rounded-full bg-primary text-primary-foreground text-[11px] font-bold px-1.5 py-0.5 leading-none">
-                                {activeFilters.length}
-                            </span>
-                        )}
-                        {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                    </div>
-                </button>
-            </CollapsibleTrigger>
-
-            {/* Active filter chips — visible when collapsed */}
-            {!open && activeFilters.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 px-1 pt-2">
-                    {activeFilters.map((f, i) => (
-                        <span key={i} className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
-                            {f.prefix} {f.label}
-                        </span>
+        <div role="group" aria-label="Filter data" className="flex flex-wrap items-center gap-2">
+            <Select value={filter.site} onValueChange={v => apply({ site: v })}>
+                <SelectTrigger className={chip(filter.site !== 'all')} aria-label="Site"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Semua site</SelectItem>
+                    {sites.map(s => (
+                        <SelectItem key={s.value} value={s.value}>
+                            {s.label}{adminSite === s.value ? ' (site Anda)' : ''}
+                        </SelectItem>
                     ))}
-                </div>
+                </SelectContent>
+            </Select>
+            <Select value={String(filter.bulan)} onValueChange={v => apply({ bulan: +v })}>
+                <SelectTrigger className={chip(true)} aria-label="Bulan"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                    {BULAN_NAMES.map((name, i) => (
+                        <SelectItem key={i + 1} value={String(i + 1)}>{name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <Select value={String(filter.tahun)} onValueChange={v => apply({ tahun: +v })}>
+                <SelectTrigger className={chip(true)} aria-label="Tahun"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                    {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                </SelectContent>
+            </Select>
+            <Select value={filter.departemen} onValueChange={v => apply({ departemen: v })}>
+                <SelectTrigger className={chip(filter.departemen !== 'all')} aria-label="Departemen"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Departemen: semua</SelectItem>
+                    {DEPT_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+            </Select>
+            <Select value={filter.level} onValueChange={v => apply({ level: v })}>
+                <SelectTrigger className={chip(filter.level !== 'all')} aria-label="Level"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Level: semua</SelectItem>
+                    <SelectItem value="nonstaff">Non-staff</SelectItem>
+                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="srstaff">Sr. Staff</SelectItem>
+                </SelectContent>
+            </Select>
+            {jabatanOptions.length > 0 && (
+                <Select value={filter.jabatan} onValueChange={v => apply({ jabatan: v })}>
+                    <SelectTrigger className={chip(filter.jabatan !== 'all')} aria-label="Jabatan"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Jabatan: semua</SelectItem>
+                        {jabatanOptions.map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}
+                    </SelectContent>
+                </Select>
             )}
-
-            {/* Collapsible content */}
-            <CollapsibleContent>
-                <div className="rounded-xl border bg-card mt-1 px-4 py-3 space-y-3">
-
-                    {/* Periode */}
-                    <div className="space-y-1">
-                        <p className="text-[11px] font-medium text-muted-foreground">Periode</p>
-                        <div className="flex gap-2">
-                            <Select value={String(filter.bulan)} onValueChange={v => apply({ bulan: +v })}>
-                                <SelectTrigger className="h-9 flex-1 text-sm"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {BULAN_NAMES.map((name, i) => (
-                                        <SelectItem key={i + 1} value={String(i + 1)}>{name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select value={String(filter.tahun)} onValueChange={v => apply({ tahun: +v })}>
-                                <SelectTrigger className="h-9 w-24 text-sm"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    {/* Site — otomatis terisi dari site admin, bisa diubah jika perlu */}
-                    <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                            <p className="text-[11px] font-medium text-muted-foreground">Site / Lokasi</p>
-                            {adminSite && (
-                                <span className="text-[11px] text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
-                                    otomatis dari akun Anda
-                                </span>
-                            )}
-                        </div>
-                        <Select value={filter.site} onValueChange={v => apply({ site: v })}>
-                            <SelectTrigger className="h-9 w-full text-sm"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Site</SelectItem>
-                                {sites.map(s => (
-                                    <SelectItem key={s.value} value={s.value}>
-                                        {s.label}{adminSite === s.value ? ' (site Anda)' : ''}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Departemen & Level */}
-                    <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                            <p className="text-[11px] font-medium text-muted-foreground">Departemen</p>
-                            <Select value={filter.departemen} onValueChange={v => apply({ departemen: v })}>
-                                <SelectTrigger className="h-9 w-full text-sm"><SelectValue placeholder="Semua" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Semua Dept.</SelectItem>
-                                    {DEPT_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-[11px] font-medium text-muted-foreground">User Role</p>
-                            <Select value={filter.level} onValueChange={v => apply({ level: v })}>
-                                <SelectTrigger className="h-9 w-full text-sm"><SelectValue placeholder="Semua" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Semua Role</SelectItem>
-                                    <SelectItem value="nonstaff">Non-Staff</SelectItem>
-                                    <SelectItem value="staff">Staff</SelectItem>
-                                    <SelectItem value="srstaff">Sr. Staff</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    {/* Jabatan */}
-                    {jabatanOptions.length > 0 && (
-                        <div className="space-y-1">
-                            <p className="text-[11px] font-medium text-muted-foreground">Jabatan / Posisi</p>
-                            <Select value={filter.jabatan} onValueChange={v => apply({ jabatan: v })}>
-                                <SelectTrigger className="h-9 w-full text-sm"><SelectValue placeholder="Semua Jabatan" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Semua Jabatan</SelectItem>
-                                    {jabatanOptions.map(j => <SelectItem key={j} value={j}>{j}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
-                </div>
-            </CollapsibleContent>
-        </Collapsible>
+            {activeFilters.length > 0 && (
+                <button
+                    type="button"
+                    onClick={() => apply({ site: 'all', departemen: 'all', level: 'all', jabatan: 'all' })}
+                    className="h-10 px-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground"
+                >
+                    Reset filter
+                </button>
+            )}
+        </div>
     );
 }
 
@@ -490,7 +426,7 @@ return null;
             {/* Section header */}
             <div className="flex items-center justify-between gap-2">
                 <div>
-                    <h2 className="text-sm font-bold">Rekap capaian karyawan</h2>
+                    <h2 className="text-base font-bold">Rekap capaian karyawan</h2>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
                         {bulanLabel} {filter.tahun} · {employees.length} karyawan · {deptGroups.length} departemen
                     </p>
@@ -522,22 +458,22 @@ return null;
                 ))}
             </div>
 
-            <div ref={exportRef} className="overflow-x-auto rounded-xl border bg-card">
+            <div ref={exportRef} className="overflow-x-auto rounded-lg border border-border bg-card">
                 <table className="min-w-full border-separate border-spacing-0">
                     <thead>
-                        <tr>
-                            <th className="sticky left-0 top-0 z-20 bg-muted/95 backdrop-blur-sm px-2 py-1.5 text-left border-b border-r border-border min-w-[140px]">
+                        <tr className="border-b border-border text-[11px] font-bold tracking-[0.08em] text-muted-foreground uppercase">
+                            <th className="sticky left-0 top-0 z-20 bg-background px-4 py-3 text-left border-b border-r border-border min-w-[140px]">
                                 <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Karyawan</span>
                             </th>
                             {ACTIVITIES.map(act => (
-                                <th key={act.key} className="sticky top-0 z-10 bg-muted/95 backdrop-blur-sm px-1 py-1.5 text-center border-b border-border min-w-[56px]">
+                                <th key={act.key} className="sticky top-0 z-10 bg-background px-2 py-3 text-center border-b border-border min-w-[64px]">
                                     <div className="flex flex-col items-center gap-0.5">
                                         <span className="text-xs leading-none">{act.icon}</span>
                                         <span className="text-[11px] font-medium text-muted-foreground leading-tight">{act.label}</span>
                                     </div>
                                 </th>
                             ))}
-                            <th className="sticky top-0 z-10 bg-muted/95 backdrop-blur-sm px-1.5 py-1.5 text-center border-b border-l border-border min-w-[44px]">
+                            <th className="sticky top-0 z-10 bg-background px-3 py-3 text-center border-b border-l border-border min-w-[44px]">
                                 <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Skor</span>
                             </th>
                         </tr>
@@ -558,7 +494,7 @@ return null;
                                 <Fragment key={emp.id}>
                                     {showDeptHeader && (
                                         <tr>
-                                            <td colSpan={ACTIVITIES.length + 2} className={`${deptColor.bg} border-b border-t border-border/50 px-2 py-1`}>
+                                            <td colSpan={ACTIVITIES.length + 2} className={`${deptColor.bg} border-b border-t border-border/50 px-4 py-1.5`}>
                                                 <span className={`text-[11px] font-semibold ${deptColor.text}`}>
                                                     {dept}
                                                 </span>
@@ -566,8 +502,8 @@ return null;
                                         </tr>
                                     )}
                                     <tr>
-                                        <td className={`sticky left-0 z-10 ${rowBg} border-b border-r border-border/40 px-2 py-1`}>
-                                            <p className="font-medium text-[11px] leading-tight truncate max-w-[130px]">{emp.name}</p>
+                                        <td className={`sticky left-0 z-10 ${rowBg} border-b border-r border-border/40 px-4 py-2.5`}>
+                                            <p className="font-semibold text-[13px] leading-tight truncate max-w-[170px]">{emp.name}</p>
                                             <div className="flex items-center gap-1 mt-0.5">
                                                 <span className={`inline-flex rounded-full px-1 text-[11px] font-medium leading-tight ${levelCls}`}>
                                                     {LEVEL_LABELS[emp.level] ?? emp.level}
@@ -582,7 +518,7 @@ return null;
                                                 <ActivityCell summary={summary} />
                                             </td>
                                         ))}
-                                        <td className={`${rowBg} border-b border-l border-border/40 px-1 py-1 text-center`}>
+                                        <td className={`${rowBg} border-b border-l border-border/40 px-3 py-2.5 text-center`}>
                                             <ScoreBadge pct={score} />
                                         </td>
                                     </tr>
@@ -727,7 +663,7 @@ function StatTile({ label, value, sub, tone, onClick }: {
         <Comp
             type={onClick ? 'button' : undefined}
             onClick={onClick}
-            className={`flex min-w-0 flex-col gap-1.5 rounded-lg bg-card p-4 text-left ${
+            className={`flex min-w-0 flex-col gap-1.5 rounded-[18px] border border-border bg-card p-4 text-left ${
                 onClick ? 'cursor-pointer transition-shadow hover:shadow-[0_8px_24px_oklch(0.191_0_0/0.08)]' : ''
             }`}
         >
@@ -824,8 +760,8 @@ export default function AdminIndex({
                 {/* ① PAGE TITLE + EXPORT */}
                 <div className="flex items-start justify-between gap-2">
                     <div>
-                        <p className="text-xs font-semibold text-muted-foreground capitalize">{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}{overview ? ` · ${overview.employees.toLocaleString('id-ID')} karyawan` : ''}</p>
-                        <h1 className="text-[28px] font-extrabold tracking-tight">Ringkasan lintas modul</h1>
+                        <p className="text-[13px] text-muted-foreground capitalize">{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}{overview ? ` · ${overview.employees.toLocaleString('id-ID')} karyawan` : ''}</p>
+                        <h1 className="mt-1 text-[30px] leading-tight font-extrabold tracking-tight">Ringkasan lintas modul</h1>
                         <p className="text-xs text-muted-foreground mt-0.5">
                             {BULAN_NAMES[filter.bulan - 1]} {filter.tahun}
                             {filter.site !== 'all' && <span> · {sites.find(s => s.value === filter.site)?.label ?? filter.site}</span>}
@@ -833,6 +769,8 @@ export default function AdminIndex({
                     </div>
                     <ExportButtons targetRef={exportRef} filename={exportFilename} />
                 </div>
+
+                <FilterBar filter={filter} sites={sites} jabatanOptions={jabatan_options} adminSite={admin_site} />
 
                 {/* ② RINGKASAN — stat cards */}
                 <StatCardsRow
@@ -869,9 +807,6 @@ export default function AdminIndex({
                 )}
 
                 {overview && <AdminOverview overview={overview} />}
-
-                {/* ③ COLLAPSIBLE FILTER */}
-                <FilterBar filter={filter} sites={sites} jabatanOptions={jabatan_options} adminSite={admin_site} />
 
                 {/* ④ TABLE */}
                 <EmployeeRecapTable recap={employee_recap} filter={filter} exportRef={exportRef} />

@@ -1,27 +1,41 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import {
-    ChevronRight,
     Download,
     FileSpreadsheet,
-    Pencil,
     Plus,
-    Search,
-    ShieldCheck,
     Trash2,
     Upload,
     Users,
     X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
+import { AdminTitle } from '@/components/admin/admin-title';
+import {
+    adminButton,
+    adminButtonPrimary,
+    chipClass,
+    DataTable,
+    FilterBar,
+    MoreMenu,
+    rowClass,
+    SearchField,
+    TableCard,
+    TablePager,
+    theadRowClass,
+} from '@/components/admin/data-table';
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogDescription,
 } from '@/components/ui/dialog';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -30,13 +44,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
 type UserRecord = {
@@ -45,24 +52,22 @@ type UserRecord = {
     nik: string | null;
     email: string | null;
     jabatan: string | null;
+    departemen?: string | null;
     site: string | null;
+    site_ids: string[];
     participation_level: string | null;
     is_admin: boolean;
-    departemen?: string | null;
     two_factor_confirmed_at?: string | null;
+    last_active_at?: string | null;
 };
 
 type PaginatedUsers = {
     data: UserRecord[];
     total: number;
-    current_page: number;
-    last_page: number;
-    per_page: number;
     from: number | null;
     to: number | null;
     next_page_url: string | null;
     prev_page_url: string | null;
-    links: { url: string | null; label: string; active: boolean }[];
 };
 
 type Filters = {
@@ -88,6 +93,8 @@ type Props = {
     level_counts?: LevelCounts;
 };
 
+type Level = 'nonstaff' | 'staff' | 'srstaff';
+
 const LEVEL: Record<string, { label: string; cls: string }> = {
     nonstaff: { label: 'Non-staff', cls: 'bg-muted text-foreground' },
     staff: { label: 'Staff', cls: 'bg-accent-soft text-foreground' },
@@ -95,13 +102,404 @@ const LEVEL: Record<string, { label: string; cls: string }> = {
     admin: { label: 'Admin', cls: 'bg-primary text-accent' },
 };
 
-function getInitials(name: string): string {
-    return name
+const DEPARTEMEN = [
+    'Production',
+    'Maintenance',
+    'Supply Chain',
+    'Engineering',
+    'HSE',
+    'HRGA',
+    'Management',
+] as const;
+
+/** Compact relative time for the "Aktif" column, e.g. "2 jam lalu". */
+function sinceLabel(iso?: string | null) {
+    if (!iso) {
+        return 'Belum pernah';
+    }
+
+    const min = Math.max(
+        0,
+        Math.round((Date.now() - new Date(iso).getTime()) / 60000),
+    );
+
+    if (min < 2) {
+        return 'Baru saja';
+    }
+
+    if (min < 60) {
+        return min + ' mnt lalu';
+    }
+
+    const h = Math.round(min / 60);
+
+    if (h < 24) {
+        return h + ' jam lalu';
+    }
+
+    const d = Math.round(h / 24);
+
+    return d < 30
+        ? d + ' hari lalu'
+        : new Date(iso).toLocaleDateString('id-ID', {
+              day: 'numeric',
+              month: 'short',
+          });
+}
+
+const initials = (name: string) =>
+    name
         .split(' ')
         .slice(0, 2)
         .map((w) => w[0])
         .join('')
         .toUpperCase();
+
+/** Small labelled field wrapper for the edit panel (AUsers spacing). */
+function Field({
+    label,
+    error,
+    children,
+}: {
+    label: string;
+    error?: string;
+    children: ReactNode;
+}) {
+    return (
+        <label className="flex flex-col gap-1.5 text-[13px] font-semibold">
+            {label}
+            {children}
+            <InputError message={error} />
+        </label>
+    );
+}
+
+type PanelFields = {
+    name: string;
+    nik: string;
+    email: string;
+    password: string;
+    password_confirmation: string;
+    jabatan: string;
+    departemen: string;
+    site: string;
+    site_ids: string[];
+    is_admin: boolean;
+    participation_level: Level;
+    stay: boolean;
+};
+
+/** Right-hand edit/create panel from AUsers.html. */
+function UserPanel({
+    user,
+    sites,
+    adminSite,
+    onClose,
+    onDelete,
+}: {
+    user: UserRecord | null;
+    sites: SiteOption[];
+    adminSite: string | null;
+    onClose: () => void;
+    onDelete: (u: UserRecord) => void;
+}) {
+    const isEdit = !!user;
+    const [showPassword, setShowPassword] = useState(!isEdit);
+    const form = useForm<PanelFields>({
+        name: user?.name ?? '',
+        nik: user?.nik ?? '',
+        email: user?.email ?? '',
+        password: '',
+        password_confirmation: '',
+        jabatan: user?.jabatan ?? '',
+        departemen: user?.departemen ?? '',
+        site: user?.site ?? adminSite ?? '',
+        site_ids: user?.site_ids ?? [],
+        is_admin: user?.is_admin ?? false,
+        participation_level: (user?.participation_level as Level) ?? 'nonstaff',
+        stay: true,
+    });
+    const { data, setData, errors, processing } = form;
+
+    const submit = (e: FormEvent) => {
+        e.preventDefault();
+        const opts = { preserveScroll: true, onSuccess: onClose };
+
+        if (user) {
+            form.put(`/admin/users/${user.id}`, opts);
+        } else {
+            form.post('/admin/users', opts);
+        }
+    };
+
+    return (
+        <aside
+            aria-label={isEdit ? 'Edit pengguna' : 'Tambah pengguna'}
+            className="flex w-full flex-col gap-3.5 self-start rounded-lg border border-border bg-card p-5 shadow-[0_20px_48px_oklch(0.191_0_0/0.08)] lg:sticky lg:top-4 lg:max-w-[360px] lg:flex-[1_1_300px]"
+        >
+            <div className="flex items-center justify-between">
+                <h2 className="text-[17px] font-bold">
+                    {isEdit ? 'Edit pengguna' : 'Tambah pengguna'}
+                </h2>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Tutup panel"
+                    className="flex size-9 items-center justify-center rounded-full bg-background hover:bg-muted"
+                >
+                    <X className="size-4" />
+                </button>
+            </div>
+
+            {user && (
+                <div className="flex items-center gap-3">
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-accent-soft font-extrabold">
+                        {initials(user.name)}
+                    </span>
+                    <span className="min-w-0">
+                        <span className="block truncate font-bold">
+                            {user.name}
+                        </span>
+                        <span className="tabular block text-xs text-muted-foreground">
+                            NIK {user.nik ?? '—'}
+                        </span>
+                    </span>
+                </div>
+            )}
+
+            <form onSubmit={submit} className="flex flex-col gap-3.5">
+                <Field label="Nama lengkap" error={errors.name}>
+                    <Input
+                        value={data.name}
+                        onChange={(e) => setData('name', e.target.value)}
+                        className="h-11 rounded-[14px]"
+                        required
+                    />
+                </Field>
+                <Field label="NIK" error={errors.nik}>
+                    <Input
+                        value={data.nik}
+                        onChange={(e) => setData('nik', e.target.value)}
+                        className="tabular h-11 rounded-[14px]"
+                        required
+                    />
+                </Field>
+                <Field label="Jabatan" error={errors.jabatan}>
+                    <Input
+                        value={data.jabatan}
+                        onChange={(e) => setData('jabatan', e.target.value)}
+                        className="h-11 rounded-[14px]"
+                    />
+                </Field>
+                <Field label="Departemen" error={errors.departemen}>
+                    <Select
+                        value={data.departemen || 'none'}
+                        onValueChange={(v) =>
+                            setData('departemen', v === 'none' ? '' : v)
+                        }
+                    >
+                        <SelectTrigger className="h-11 w-full rounded-[14px] border-0 bg-input">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">
+                                — Belum dipilih —
+                            </SelectItem>
+                            {DEPARTEMEN.map((d) => (
+                                <SelectItem key={d} value={d}>
+                                    {d}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </Field>
+
+                <div className="flex flex-col gap-1.5 text-[13px] font-semibold">
+                    Level partisipasi
+                    <div
+                        role="radiogroup"
+                        aria-label="Level partisipasi"
+                        className="flex rounded-full bg-muted p-1"
+                    >
+                        {(['nonstaff', 'staff', 'srstaff'] as const).map(
+                            (lv) => {
+                                const on = data.participation_level === lv;
+
+                                return (
+                                    <button
+                                        key={lv}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={on}
+                                        onClick={() =>
+                                            setData('participation_level', lv)
+                                        }
+                                        className={cn(
+                                            'h-9 flex-1 rounded-full text-xs transition-colors',
+                                            on
+                                                ? 'bg-card font-bold shadow-[0_1px_2px_oklch(0.191_0_0/0.08)]'
+                                                : 'font-medium text-muted-foreground hover:text-foreground',
+                                        )}
+                                    >
+                                        {LEVEL[lv].label}
+                                    </button>
+                                );
+                            },
+                        )}
+                    </div>
+                    <InputError message={errors.participation_level} />
+                </div>
+
+                {!adminSite && (
+                    <Field label="Site" error={errors.site}>
+                        <Select
+                            value={data.site || 'none'}
+                            onValueChange={(v) =>
+                                setData('site', v === 'none' ? '' : v)
+                            }
+                        >
+                            <SelectTrigger className="h-11 w-full rounded-[14px] border-0 bg-input">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">
+                                    — Belum dipilih —
+                                </SelectItem>
+                                {sites.map((s) => (
+                                    <SelectItem key={s.value} value={s.value}>
+                                        {s.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                )}
+
+                {!adminSite && sites.length > 1 && (
+                    <fieldset className="flex flex-col gap-2 text-[13px]">
+                        <legend className="mb-1.5 font-semibold">
+                            Site tambahan
+                        </legend>
+                        {sites.map((s) => {
+                            const checked = data.site_ids.includes(s.value);
+
+                            return (
+                                <label
+                                    key={s.value}
+                                    className="flex items-center gap-2.5"
+                                >
+                                    <Checkbox
+                                        checked={checked}
+                                        onCheckedChange={() =>
+                                            setData(
+                                                'site_ids',
+                                                checked
+                                                    ? data.site_ids.filter(
+                                                          (v) => v !== s.value,
+                                                      )
+                                                    : [
+                                                          ...data.site_ids,
+                                                          s.value,
+                                                      ],
+                                            )
+                                        }
+                                    />
+                                    {s.label}
+                                </label>
+                            );
+                        })}
+                        <InputError message={errors.site_ids} />
+                    </fieldset>
+                )}
+
+                <Field label="Email" error={errors.email}>
+                    <Input
+                        type="email"
+                        value={data.email}
+                        onChange={(e) => setData('email', e.target.value)}
+                        placeholder="Opsional"
+                        className="h-11 rounded-[14px]"
+                    />
+                </Field>
+
+                {!adminSite && (
+                    <label className="flex min-h-11 items-center gap-2.5 text-[13px] font-semibold">
+                        <Checkbox
+                            checked={data.is_admin}
+                            onCheckedChange={(v) => setData('is_admin', !!v)}
+                        />
+                        Akses admin
+                    </label>
+                )}
+
+                {showPassword && (
+                    <>
+                        <Field
+                            label={isEdit ? 'Kata sandi baru' : 'Kata sandi'}
+                            error={errors.password}
+                        >
+                            <Input
+                                type="password"
+                                value={data.password}
+                                onChange={(e) =>
+                                    setData('password', e.target.value)
+                                }
+                                placeholder="Minimal 8 karakter"
+                                className="h-11 rounded-[14px]"
+                                required={!isEdit}
+                                autoComplete="new-password"
+                            />
+                        </Field>
+                        <Field label="Ulangi kata sandi">
+                            <Input
+                                type="password"
+                                value={data.password_confirmation}
+                                onChange={(e) =>
+                                    setData(
+                                        'password_confirmation',
+                                        e.target.value,
+                                    )
+                                }
+                                className="h-11 rounded-[14px]"
+                                required={!isEdit}
+                                autoComplete="new-password"
+                            />
+                        </Field>
+                    </>
+                )}
+
+                <div className="mt-1 flex gap-2">
+                    {isEdit && !showPassword && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="h-11 flex-1"
+                            onClick={() => setShowPassword(true)}
+                        >
+                            Reset kata sandi
+                        </Button>
+                    )}
+                    <Button
+                        type="submit"
+                        className="h-11 flex-1"
+                        disabled={processing}
+                    >
+                        {processing ? 'Menyimpan…' : 'Simpan'}
+                    </Button>
+                </div>
+
+                {user && (
+                    <button
+                        type="button"
+                        onClick={() => onDelete(user)}
+                        className="inline-flex items-center gap-1.5 self-start text-[13px] font-semibold text-destructive hover:underline"
+                    >
+                        <Trash2 className="size-4" /> Hapus pengguna
+                    </button>
+                )}
+            </form>
+        </aside>
+    );
 }
 
 export default function AdminUsers({
@@ -118,25 +516,8 @@ export default function AdminUsers({
     const [toDelete, setToDelete] = useState<UserRecord | null>(null);
     const [deleting, setDeleting] = useState(false);
     const [importOpen, setImportOpen] = useState(false);
-    const [editing, setEditing] = useState<UserRecord | null>(null);
-    const [savingLevel, setSavingLevel] = useState(false);
-
-    const changeLevel = (
-        user: UserRecord,
-        level: 'nonstaff' | 'staff' | 'srstaff',
-    ) => {
-        setSavingLevel(true);
-        router.patch(
-            `/admin/users/${user.id}/level`,
-            { participation_level: level },
-            {
-                preserveScroll: true,
-                onSuccess: () =>
-                    setEditing({ ...user, participation_level: level }),
-                onFinish: () => setSavingLevel(false),
-            },
-        );
-    };
+    // null = closed, 'new' = create mode, record = edit mode.
+    const [panel, setPanel] = useState<UserRecord | 'new' | null>(null);
     const fileRef = useRef<HTMLInputElement>(null);
 
     const { data, setData, post, processing, errors } = useForm<{
@@ -156,11 +537,6 @@ export default function AdminUsers({
         });
     };
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        applyFilters({ search });
-    };
-
     const confirmDelete = () => {
         if (!toDelete) {
             return;
@@ -168,6 +544,7 @@ export default function AdminUsers({
 
         setDeleting(true);
         router.delete(`/admin/users/${toDelete.id}`, {
+            onSuccess: () => setPanel(null),
             onFinish: () => {
                 setDeleting(false);
                 setToDelete(null);
@@ -175,45 +552,29 @@ export default function AdminUsers({
         });
     };
 
-    const handleImport = (e: React.FormEvent) => {
+    const handleImport = (e: FormEvent) => {
         e.preventDefault();
         post('/admin/users/import', { onSuccess: () => setImportOpen(false) });
     };
 
-    const exportUrl = () => {
+    const exportUrl = (() => {
         const params = new URLSearchParams();
 
-        if (filters.search) {
-            params.set('search', filters.search);
-        }
-
-        if (filters.site) {
-            params.set('site', filters.site);
-        }
-
-        if (filters.is_admin) {
-            params.set('is_admin', filters.is_admin);
-        }
-
-        if (filters.participation_level) {
-            params.set('participation_level', filters.participation_level);
+        for (const key of [
+            'search',
+            'site',
+            'is_admin',
+            'participation_level',
+        ] as const) {
+            if (filters[key]) {
+                params.set(key, filters[key]!);
+            }
         }
 
         const qs = params.toString();
 
         return `/admin/users/export${qs ? '?' + qs : ''}`;
-    };
-
-    const hasActiveFilter = !!(
-        filters.site ||
-        filters.is_admin ||
-        filters.participation_level ||
-        filters.search
-    );
-    const clearFilters = () => {
-        setSearch('');
-        router.get('/admin/users', {}, { preserveState: false, replace: true });
-    };
+    })();
 
     const tabs = [
         {
@@ -223,27 +584,13 @@ export default function AdminUsers({
             active: !filters.participation_level && !filters.is_admin,
             apply: { participation_level: undefined, is_admin: undefined },
         },
-        {
-            key: 'nonstaff',
-            label: 'Non-staff',
-            count: level_counts?.nonstaff,
-            active: filters.participation_level === 'nonstaff',
-            apply: { participation_level: 'nonstaff', is_admin: undefined },
-        },
-        {
-            key: 'staff',
-            label: 'Staff',
-            count: level_counts?.staff,
-            active: filters.participation_level === 'staff',
-            apply: { participation_level: 'staff', is_admin: undefined },
-        },
-        {
-            key: 'srstaff',
-            label: 'Sr. Staff',
-            count: level_counts?.srstaff,
-            active: filters.participation_level === 'srstaff',
-            apply: { participation_level: 'srstaff', is_admin: undefined },
-        },
+        ...(['nonstaff', 'staff', 'srstaff'] as const).map((lv) => ({
+            key: lv,
+            label: LEVEL[lv].label,
+            count: level_counts?.[lv],
+            active: filters.participation_level === lv,
+            apply: { participation_level: lv, is_admin: undefined },
+        })),
         {
             key: 'admin',
             label: 'Admin',
@@ -253,155 +600,143 @@ export default function AdminUsers({
         },
     ];
 
+    const editingId = panel && panel !== 'new' ? panel.id : null;
+
     return (
         <>
             <Head title="Manajemen Pengguna" />
 
-            <div className="flex flex-col gap-4 pb-6">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <p className="text-xs font-semibold text-muted-foreground">
-                            Manajemen
-                        </p>
-                        <h1 className="text-[28px] font-extrabold tracking-tight">
-                            Pengguna
-                        </h1>
-                        {admin_site && (
-                            <p className="text-xs text-muted-foreground">
-                                Hanya pengguna {siteLabel(admin_site)}
-                            </p>
-                        )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setImportOpen(true)}
-                        >
-                            <Upload /> Impor Excel
-                        </Button>
-                        <Button asChild variant="outline" size="sm">
-                            <a href={exportUrl()}>
-                                <Download /> Ekspor
-                            </a>
-                        </Button>
-                        <Button asChild size="sm">
-                            <Link href="/admin/users/create">
-                                <Plus /> Tambah pengguna
-                            </Link>
-                        </Button>
-                    </div>
-                </div>
-
-                <div
-                    className="flex [scrollbar-width:none] gap-2 overflow-x-auto pb-1"
-                    role="group"
-                    aria-label="Filter level"
-                >
-                    {tabs.map((t) => (
-                        <button
-                            key={t.key}
-                            type="button"
-                            aria-pressed={t.active}
-                            onClick={() => applyFilters(t.apply)}
-                            className={cn(
-                                'flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[13px] font-semibold whitespace-nowrap transition-colors',
-                                t.active
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-card hover:bg-muted',
-                            )}
-                        >
-                            {t.label}
-                            {t.count != null && (
-                                <span
-                                    className={cn(
-                                        'tabular text-xs',
-                                        t.active
-                                            ? 'text-primary-foreground/70'
-                                            : 'text-muted-foreground',
-                                    )}
-                                >
-                                    {t.count.toLocaleString('id-ID')}
-                                </span>
-                            )}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="flex flex-col gap-2 rounded-lg bg-card p-3 sm:flex-row">
-                    <form onSubmit={handleSearch} className="relative flex-1">
-                        <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Cari nama atau NIK…"
-                            className="pl-10"
-                            aria-label="Cari pengguna"
-                        />
-                    </form>
-                    {!admin_site && (
-                        <Select
-                            value={filters.site ?? 'all'}
-                            onValueChange={(v) =>
-                                applyFilters({
-                                    site: v === 'all' ? undefined : v,
-                                })
+            <div className="flex flex-col gap-5 pb-10 lg:flex-row lg:items-start">
+                <div className="flex min-w-0 flex-col gap-4 lg:flex-[999_1_560px]">
+                    <div className="flex flex-wrap items-end justify-between gap-3">
+                        <AdminTitle
+                            eyebrow="Manajemen"
+                            title="Pengguna"
+                            description={
+                                admin_site
+                                    ? `Hanya pengguna ${siteLabel(admin_site)}`
+                                    : undefined
                             }
-                        >
-                            <SelectTrigger
-                                className="h-11 rounded-full sm:w-48"
-                                aria-label="Site"
+                        />
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setImportOpen(true)}
+                                className={adminButton}
                             >
-                                <SelectValue placeholder="Semua site" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua site</SelectItem>
-                                {sites.map((s) => (
-                                    <SelectItem key={s.value} value={s.value}>
-                                        {s.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
-                    {hasActiveFilter && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="self-center"
-                            onClick={clearFilters}
-                        >
-                            <X /> Reset
-                        </Button>
-                    )}
-                </div>
-
-                <div className="overflow-hidden rounded-lg bg-card">
-                    {users.data.length === 0 ? (
-                        <div className="flex flex-col items-center gap-2 px-4 py-14 text-center">
-                            <Users className="size-8 text-muted-foreground" />
-                            <p className="font-bold">Tidak ada pengguna</p>
-                            <p className="text-sm text-muted-foreground">
-                                Coba ubah kata kunci atau filter.
-                            </p>
+                                Impor Excel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPanel('new')}
+                                className={adminButtonPrimary}
+                            >
+                                <Plus /> Tambah pengguna
+                            </button>
+                            <MoreMenu>
+                                <DropdownMenuItem asChild>
+                                    <a href={exportUrl}>
+                                        <Download /> Ekspor Excel
+                                    </a>
+                                </DropdownMenuItem>
+                            </MoreMenu>
                         </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[760px] border-collapse text-sm">
+                    </div>
+
+                    <div
+                        role="group"
+                        aria-label="Filter level"
+                        className="flex flex-wrap gap-2"
+                    >
+                        {tabs.map((t) => (
+                            <button
+                                key={t.key}
+                                type="button"
+                                aria-pressed={t.active}
+                                onClick={() => applyFilters(t.apply)}
+                                className={cn(
+                                    'flex h-9 items-center rounded-full px-3.5 text-[13px] font-semibold whitespace-nowrap transition-colors',
+                                    t.active
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'border border-border bg-card hover:bg-muted',
+                                )}
+                            >
+                                {t.label}
+                                {t.count != null &&
+                                    ` · ${t.count.toLocaleString('id-ID')}`}
+                            </button>
+                        ))}
+                    </div>
+
+                    <FilterBar>
+                        <SearchField
+                            value={search}
+                            onChange={setSearch}
+                            onSubmit={() => applyFilters({ search })}
+                            placeholder="Cari nama atau NIK…"
+                            label="Cari pengguna"
+                        />
+                        {!admin_site && (
+                            <Select
+                                value={filters.site ?? 'all'}
+                                onValueChange={(v) =>
+                                    applyFilters({
+                                        site: v === 'all' ? undefined : v,
+                                    })
+                                }
+                            >
+                                <SelectTrigger
+                                    className={chipClass(!!filters.site)}
+                                    aria-label="Site"
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        Site: semua
+                                    </SelectItem>
+                                    {sites.map((s) => (
+                                        <SelectItem
+                                            key={s.value}
+                                            value={s.value}
+                                        >
+                                            {s.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    </FilterBar>
+
+                    <TableCard
+                        footer={
+                            <TablePager
+                                from={users.from}
+                                to={users.to}
+                                total={users.total}
+                                prev={users.prev_page_url}
+                                next={users.next_page_url}
+                            />
+                        }
+                    >
+                        {users.data.length === 0 ? (
+                            <div className="flex flex-col items-center gap-2 px-4 py-14 text-center">
+                                <Users className="size-8 text-muted-foreground" />
+                                <p className="font-bold">Tidak ada pengguna</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Coba ubah kata kunci atau filter.
+                                </p>
+                            </div>
+                        ) : (
+                            <DataTable className="min-w-[720px]">
                                 <thead>
-                                    <tr className="border-b border-border text-left text-[11px] font-bold tracking-[0.08em] text-muted-foreground uppercase">
-                                        <th className="px-4 py-3">Nama</th>
-                                        <th className="px-3 py-3">
-                                            Jabatan · Dept
-                                        </th>
-                                        <th className="px-3 py-3">Level</th>
-                                        <th className="px-3 py-3">Site</th>
-                                        <th className="px-3 py-3">2FA</th>
-                                        <th className="px-3 py-3 text-right">
-                                            <span className="sr-only">
-                                                Aksi
-                                            </span>
-                                        </th>
+                                    <tr className={theadRowClass}>
+                                        <th>Nama</th>
+                                        <th>Jabatan · Dept</th>
+                                        <th>Level</th>
+                                        <th>Site</th>
+                                        <th>2FA</th>
+                                        <th>Aktif</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -417,257 +752,95 @@ export default function AdminUsers({
                                         return (
                                             <tr
                                                 key={u.id}
-                                                onClick={() => setEditing(u)}
+                                                onClick={() => setPanel(u)}
                                                 className={cn(
-                                                    'cursor-pointer border-b border-border/60 transition-colors last:border-0',
-                                                    editing?.id === u.id
-                                                        ? 'bg-accent-soft'
-                                                        : 'hover:bg-muted/50',
+                                                    'cursor-pointer',
+                                                    rowClass(
+                                                        editingId === u.id,
+                                                    ),
                                                 )}
                                             >
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-extrabold">
-                                                            {getInitials(
-                                                                u.name,
-                                                            )}
+                                                <td>
+                                                    <div className="flex items-center gap-2.5">
+                                                        <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold">
+                                                            {initials(u.name)}
                                                         </span>
                                                         <span className="min-w-0">
-                                                            <span className="block max-w-[200px] truncate font-semibold">
+                                                            <button
+                                                                type="button"
+                                                                onClick={(
+                                                                    e,
+                                                                ) => {
+                                                                    e.stopPropagation();
+                                                                    setPanel(u);
+                                                                }}
+                                                                className="block max-w-[220px] truncate text-left font-bold hover:underline"
+                                                            >
                                                                 {u.name}
-                                                            </span>
+                                                            </button>
                                                             <span className="tabular block text-xs text-muted-foreground">
                                                                 {u.nik ?? '—'}
                                                             </span>
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-3 py-3">
-                                                    <p className="max-w-[200px] truncate">
+                                                <td>
+                                                    <span className="block max-w-[220px] truncate">
                                                         {u.jabatan ?? '—'}
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
+                                                    </span>
+                                                    <span className="block text-xs text-muted-foreground">
                                                         {u.departemen ?? '—'}
-                                                    </p>
+                                                    </span>
                                                 </td>
-                                                <td className="px-3 py-3">
+                                                <td>
                                                     <span
                                                         className={cn(
-                                                            'rounded-full px-2.5 py-1 text-xs font-bold',
+                                                            'rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap',
                                                             level.cls,
                                                         )}
                                                     >
                                                         {level.label}
                                                     </span>
                                                 </td>
-                                                <td className="px-3 py-3 whitespace-nowrap">
+                                                <td className="whitespace-nowrap">
                                                     {siteLabel(u.site)}
                                                 </td>
-                                                <td className="px-3 py-3">
+                                                <td>
                                                     {u.two_factor_confirmed_at ? (
-                                                        <span className="flex items-center gap-1 text-xs font-semibold text-success">
-                                                            <ShieldCheck className="size-3.5" />{' '}
-                                                            Aktif
+                                                        <span className="text-xs font-semibold text-success">
+                                                            ✓ Aktif
                                                         </span>
                                                     ) : (
-                                                        <span className="text-xs text-muted-foreground">
+                                                        <span className="text-xs font-semibold text-muted-foreground">
                                                             Belum
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="px-3 py-3 text-right">
-                                                    <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                                                <td className="text-xs whitespace-nowrap text-muted-foreground">
+                                                    {sinceLabel(
+                                                        u.last_active_at,
+                                                    )}
                                                 </td>
                                             </tr>
                                         );
                                     })}
                                 </tbody>
-                            </table>
-                        </div>
-                    )}
-                    <div className="flex items-center justify-between gap-3 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground">
-                        <span className="tabular">
-                            {users.from ?? 0}–{users.to ?? 0} dari{' '}
-                            {users.total.toLocaleString('id-ID')}
-                        </span>
-                        <div className="flex gap-2">
-                            {users.prev_page_url ? (
-                                <Button asChild variant="outline" size="sm">
-                                    <Link href={users.prev_page_url}>
-                                        Sebelumnya
-                                    </Link>
-                                </Button>
-                            ) : (
-                                <Button variant="outline" size="sm" disabled>
-                                    Sebelumnya
-                                </Button>
-                            )}
-                            {users.next_page_url ? (
-                                <Button asChild variant="outline" size="sm">
-                                    <Link href={users.next_page_url}>
-                                        Berikutnya
-                                    </Link>
-                                </Button>
-                            ) : (
-                                <Button variant="outline" size="sm" disabled>
-                                    Berikutnya
-                                </Button>
-                            )}
-                        </div>
-                    </div>
+                            </DataTable>
+                        )}
+                    </TableCard>
                 </div>
+
+                {panel && (
+                    <UserPanel
+                        key={panel === 'new' ? 'new' : panel.id}
+                        user={panel === 'new' ? null : panel}
+                        sites={sites}
+                        adminSite={admin_site}
+                        onClose={() => setPanel(null)}
+                        onDelete={(u) => setToDelete(u)}
+                    />
+                )}
             </div>
-
-            <Sheet
-                open={!!editing}
-                onOpenChange={(open) => !open && setEditing(null)}
-            >
-                <SheetContent
-                    side="right"
-                    className="w-full gap-0 border-0 p-0 sm:max-w-md"
-                >
-                    {editing && (
-                        <>
-                            <SheetHeader className="px-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-2">
-                                <SheetTitle className="text-left text-xl font-extrabold">
-                                    Pengguna
-                                </SheetTitle>
-                                <SheetDescription className="text-left">
-                                    Ubah level langsung di sini, atau buka form
-                                    lengkap.
-                                </SheetDescription>
-                            </SheetHeader>
-                            <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 pb-5">
-                                <div className="flex items-center gap-3 rounded-lg bg-muted p-4">
-                                    <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-extrabold text-accent-foreground">
-                                        {getInitials(editing.name)}
-                                    </span>
-                                    <span className="min-w-0">
-                                        <span className="block truncate font-bold">
-                                            {editing.name}
-                                        </span>
-                                        <span className="tabular block text-xs text-muted-foreground">
-                                            NIK {editing.nik ?? '—'}
-                                        </span>
-                                    </span>
-                                </div>
-
-                                <dl className="overflow-hidden rounded-lg border border-border">
-                                    {[
-                                        {
-                                            label: 'Jabatan',
-                                            value: editing.jabatan,
-                                        },
-                                        {
-                                            label: 'Departemen',
-                                            value: editing.departemen,
-                                        },
-                                        {
-                                            label: 'Site',
-                                            value: siteLabel(editing.site),
-                                        },
-                                        {
-                                            label: 'Email',
-                                            value: editing.email,
-                                        },
-                                        {
-                                            label: 'Akses admin',
-                                            value: editing.is_admin
-                                                ? 'Ya'
-                                                : 'Tidak',
-                                        },
-                                        {
-                                            label: '2FA',
-                                            value: editing.two_factor_confirmed_at
-                                                ? 'Aktif'
-                                                : 'Belum',
-                                        },
-                                    ].map((r) => (
-                                        <div
-                                            key={r.label}
-                                            className="flex justify-between gap-4 border-b border-border/60 px-4 py-3 text-sm last:border-0"
-                                        >
-                                            <dt className="text-muted-foreground">
-                                                {r.label}
-                                            </dt>
-                                            <dd className="truncate text-right font-semibold">
-                                                {r.value || '—'}
-                                            </dd>
-                                        </div>
-                                    ))}
-                                </dl>
-
-                                <div
-                                    role="radiogroup"
-                                    aria-label="Level partisipasi"
-                                    className="flex flex-col gap-2"
-                                >
-                                    <span className="text-[13px] font-semibold">
-                                        Level partisipasi
-                                    </span>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {(
-                                            [
-                                                'nonstaff',
-                                                'staff',
-                                                'srstaff',
-                                            ] as const
-                                        ).map((lv) => {
-                                            const on =
-                                                (editing.participation_level ??
-                                                    'nonstaff') === lv;
-
-                                            return (
-                                                <button
-                                                    key={lv}
-                                                    type="button"
-                                                    role="radio"
-                                                    aria-checked={on}
-                                                    disabled={savingLevel}
-                                                    onClick={() =>
-                                                        changeLevel(editing, lv)
-                                                    }
-                                                    className={cn(
-                                                        'h-11 rounded-full text-[13px] font-bold transition-colors disabled:opacity-60',
-                                                        on
-                                                            ? 'bg-primary text-primary-foreground'
-                                                            : 'border border-border bg-card hover:bg-muted',
-                                                    )}
-                                                >
-                                                    {LEVEL[lv].label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        Menentukan program & target K3 yang
-                                        wajib diikuti.
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex gap-2 border-t border-border/60 px-5 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-                                <Button
-                                    variant="outline"
-                                    className="text-destructive hover:text-destructive"
-                                    onClick={() => {
-                                        setToDelete(editing);
-                                        setEditing(null);
-                                    }}
-                                >
-                                    <Trash2 /> Hapus
-                                </Button>
-                                <Button asChild className="flex-1">
-                                    <Link
-                                        href={`/admin/users/${editing.id}/edit`}
-                                    >
-                                        <Pencil /> Edit lengkap
-                                    </Link>
-                                </Button>
-                            </div>
-                        </>
-                    )}
-                </SheetContent>
-            </Sheet>
 
             {/* ── Dialog: Konfirmasi Hapus ── */}
             <Dialog
@@ -676,11 +849,11 @@ export default function AdminUsers({
             >
                 <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
-                        <DialogTitle>Hapus Pengguna?</DialogTitle>
+                        <DialogTitle>Hapus pengguna?</DialogTitle>
                         <DialogDescription className="space-y-1">
                             <span className="block">
                                 Anda akan menghapus akun{' '}
-                                <strong>{toDelete?.name}</strong> (NIK:{' '}
+                                <strong>{toDelete?.name}</strong> (NIK{' '}
                                 {toDelete?.nik ?? '—'}).
                             </span>
                             <span className="block text-destructive">
@@ -692,7 +865,7 @@ export default function AdminUsers({
                     </DialogHeader>
                     <DialogFooter className="gap-2">
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => setToDelete(null)}
                             disabled={deleting}
                         >
@@ -703,13 +876,13 @@ export default function AdminUsers({
                             onClick={confirmDelete}
                             disabled={deleting}
                         >
-                            {deleting ? 'Menghapus...' : 'Ya, Hapus'}
+                            {deleting ? 'Menghapus…' : 'Hapus'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* ── Dialog: Import Excel ── */}
+            {/* ── Dialog: Impor Excel ── */}
             <Dialog
                 open={importOpen}
                 onOpenChange={(open) => {
@@ -720,92 +893,48 @@ export default function AdminUsers({
             >
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <FileSpreadsheet
-                                size={18}
-                                className="text-primary"
-                            />
-                            Import Pengguna dari Excel
-                        </DialogTitle>
+                        <DialogTitle>Impor pengguna dari Excel</DialogTitle>
+                        <DialogDescription>
+                            Unduh template, isi data pengguna, lalu unggah
+                            filenya.
+                        </DialogDescription>
                     </DialogHeader>
 
-                    {/* Steps */}
-                    <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3">
-                        {[
-                            { n: 1, label: 'Download template' },
-                            { n: 2, label: 'Isi data pengguna' },
-                            { n: 3, label: 'Upload file' },
-                        ].map((step, i) => (
-                            <div
-                                key={step.n}
-                                className="flex flex-1 items-center gap-1.5"
-                            >
-                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
-                                    {step.n}
-                                </div>
-                                <span className="text-xs leading-tight text-muted-foreground">
-                                    {step.label}
-                                </span>
-                                {i < 2 && (
-                                    <div className="ml-auto h-px w-3 shrink-0 bg-border" />
-                                )}
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Template download */}
-                    <div className="space-y-2">
-                        <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                            Langkah 1 — Download template
-                        </p>
-                        <a
-                            href="/admin/users/import-template"
-                            className="flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-3 transition-colors hover:bg-muted"
-                        >
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-background">
-                                <Download size={16} className="text-primary" />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-sm font-medium">
-                                    Download Template Excel
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    Format sudah disesuaikan dengan sistem
-                                </p>
-                            </div>
-                        </a>
-                    </div>
-
-                    <div className="relative flex items-center gap-3">
-                        <div className="h-px flex-1 bg-border" />
-                        <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                            Langkah 3 — Upload file
+                    <a
+                        href="/admin/users/import-template"
+                        className="flex items-center gap-3 rounded-md bg-muted px-4 py-3 transition-colors hover:bg-border/60"
+                    >
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-card">
+                            <Download className="size-4" />
                         </span>
-                        <div className="h-px flex-1 bg-border" />
-                    </div>
+                        <span className="min-w-0">
+                            <span className="block text-sm font-bold">
+                                Unduh template Excel
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                                Format sudah disesuaikan dengan sistem
+                            </span>
+                        </span>
+                    </a>
 
                     <form onSubmit={handleImport} className="space-y-3">
                         <div
-                            className={`relative overflow-hidden rounded-lg border-2 border-dashed transition-colors ${data.file ? 'border-primary/50 bg-primary/5' : 'border-muted-foreground/25 hover:border-muted-foreground/40'}`}
+                            className={cn(
+                                'relative overflow-hidden rounded-lg border-2 border-dashed transition-colors',
+                                data.file
+                                    ? 'border-foreground bg-accent-soft'
+                                    : 'border-border hover:border-muted-foreground/40',
+                            )}
                         >
                             {data.file ? (
                                 <div className="flex items-center gap-3 px-4 py-3">
-                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                                        <FileSpreadsheet
-                                            size={16}
-                                            className="text-primary"
-                                        />
-                                    </div>
+                                    <FileSpreadsheet className="size-5 shrink-0" />
                                     <div className="min-w-0 flex-1">
                                         <p
-                                            className="text-sm font-medium"
+                                            className="truncate text-sm font-semibold"
                                             title={data.file.name}
                                         >
-                                            {data.file.name.length > 30
-                                                ? data.file.name.slice(0, 13) +
-                                                  '…' +
-                                                  data.file.name.slice(-12)
-                                                : data.file.name}
+                                            {data.file.name}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
                                             {(data.file.size / 1024).toFixed(1)}{' '}
@@ -814,6 +943,7 @@ export default function AdminUsers({
                                     </div>
                                     <button
                                         type="button"
+                                        aria-label="Hapus file"
                                         onClick={() => {
                                             setData('file', null);
 
@@ -821,22 +951,19 @@ export default function AdminUsers({
                                                 fileRef.current.value = '';
                                             }
                                         }}
-                                        className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                        className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                                     >
-                                        <X size={14} />
+                                        <X className="size-4" />
                                     </button>
                                 </div>
                             ) : (
                                 <label className="flex cursor-pointer flex-col items-center gap-1.5 px-4 py-6 text-center">
-                                    <Upload
-                                        size={20}
-                                        className="text-muted-foreground/50"
-                                    />
-                                    <span className="text-sm font-medium">
+                                    <Upload className="size-5 text-muted-foreground" />
+                                    <span className="text-sm font-semibold">
                                         Pilih file Excel
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                        Format: .xlsx atau .xls
+                                        Format .xlsx atau .xls
                                     </span>
                                     <input
                                         ref={fileRef}
@@ -853,16 +980,12 @@ export default function AdminUsers({
                                 </label>
                             )}
                         </div>
-                        {errors.file && (
-                            <p className="text-sm text-destructive">
-                                {errors.file}
-                            </p>
-                        )}
+                        <InputError message={errors.file} />
 
                         <DialogFooter className="gap-2 pt-1">
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="ghost"
                                 onClick={() => setImportOpen(false)}
                                 disabled={processing}
                             >
@@ -871,18 +994,8 @@ export default function AdminUsers({
                             <Button
                                 type="submit"
                                 disabled={processing || !data.file}
-                                className="gap-2"
                             >
-                                {processing ? (
-                                    <>
-                                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                        Mengupload...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Upload size={14} /> Upload & Import
-                                    </>
-                                )}
+                                {processing ? 'Mengunggah…' : 'Unggah & impor'}
                             </Button>
                         </DialogFooter>
                     </form>

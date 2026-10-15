@@ -1,19 +1,43 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { BookOpen, CalendarDays, Clock, Download, Lock, MapPin, Search, Trash2, Users } from 'lucide-react';
+import { Download, Lock, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminTitle } from '@/components/admin/admin-title';
-import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
+import {
+    adminButton,
+    chipClass,
+    DataTable,
+    FilterBar,
+    MoreMenu,
+    rowClass,
+    SearchField,
+    SelectionAction,
+    SelectionBar,
+    TableCard,
+    TableEmpty,
+    TablePager,
+    theadRowClass,
+} from '@/components/admin/data-table';
 import DateRangeFilter from '@/components/admin/DateRangeFilter';
 import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-    Dialog, DialogContent, DialogDescription,
-    DialogFooter, DialogHeader, DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 type JsaRecord = {
     id: number;
@@ -26,437 +50,511 @@ type JsaRecord = {
     status: 'selesai' | 'menunggu_konfirmasi' | 'dikonfirmasi' | 'ditolak';
     peserta: { nama: string }[];
     catatan?: string | null;
-    user: { name: string; nik?: string | null; jabatan?: string | null; site?: string | null };
+    user: {
+        name: string;
+        nik?: string | null;
+        jabatan?: string | null;
+        site?: string | null;
+    };
     team_leader?: { name: string; jabatan?: string | null } | null;
 };
 
-type Paginated = { data: JsaRecord[]; total: number; next_page_url: string | null; prev_page_url: string | null };
-type Summary = { total: number; selesai: number; dikonfirmasi: number; menunggu_konfirmasi: number; ditolak: number };
-type Filters = { site?: string; status?: string; shift?: string; search?: string; periode?: string; date_from?: string; date_to?: string };
+type Paginated = {
+    data: JsaRecord[];
+    from: number | null;
+    to: number | null;
+    total: number;
+    next_page_url: string | null;
+    prev_page_url: string | null;
+};
+type Summary = {
+    total: number;
+    selesai: number;
+    dikonfirmasi: number;
+    menunggu_konfirmasi: number;
+    ditolak: number;
+};
+type Filters = {
+    site?: string;
+    status?: string;
+    shift?: string;
+    search?: string;
+    periode?: string;
+    date_from?: string;
+    date_to?: string;
+};
 type SiteOption = { value: string; label: string };
-type Props = { records: Paginated; filters: Filters; summary: Summary; sites: SiteOption[] };
+type Props = {
+    records: Paginated;
+    filters: Filters;
+    summary: Summary;
+    sites: SiteOption[];
+};
 
 const PERIODE_OPTIONS = [
-    { value: 'hari_ini',   label: 'Hari Ini' },
-    { value: 'minggu_ini', label: 'Minggu Ini' },
-    { value: 'bulan_ini',  label: 'Bulan Ini' },
+    { value: 'hari_ini', label: 'Hari ini' },
+    { value: 'minggu_ini', label: 'Minggu ini' },
+    { value: 'bulan_ini', label: 'Bulan ini' },
 ];
 
-function StatusBadge({ status }: { status: JsaRecord['status'] }) {
-    if (status === 'selesai')              {
-return <Badge className="bg-success-soft text-success border-success/60 hover:bg-success-soft">Selesai</Badge>;
-}
+const STATUS: Record<
+    JsaRecord['status'],
+    { label: string; variant: 'success' | 'warning' | 'danger' }
+> = {
+    selesai: { label: 'Selesai', variant: 'success' },
+    dikonfirmasi: { label: 'Dikonfirmasi', variant: 'success' },
+    menunggu_konfirmasi: { label: 'Menunggu', variant: 'warning' },
+    ditolak: { label: 'Ditolak', variant: 'danger' },
+};
 
-    if (status === 'dikonfirmasi')         {
-return <Badge className="bg-success-soft text-success border-success/60 hover:bg-success-soft">Dikonfirmasi</Badge>;
-}
-
-    if (status === 'ditolak')              {
-return <Badge className="bg-destructive-soft text-destructive border-destructive/60 hover:bg-destructive-soft">Ditolak</Badge>;
-}
-
-    return <Badge className="bg-warning-soft text-warning border-warning/60 hover:bg-warning-soft">Menunggu Konfirmasi</Badge>;
-}
-
-function barColor(status: JsaRecord['status']) {
-    if (status === 'selesai' || status === 'dikonfirmasi') {
-return 'border-l-green-500';
-}
-
-    if (status === 'ditolak') {
-return 'border-l-red-500';
-}
-
-    return 'border-l-yellow-500';
-}
-
-export default function AdminKomunikasiJsa({ records, filters, summary, sites }: Props) {
+export default function AdminKomunikasiJsa({
+    records,
+    filters,
+    summary,
+    sites,
+}: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [toDelete, setToDelete] = useState<JsaRecord | null>(null);
     const [deleting, setDeleting] = useState(false);
-    const [selectMode, setSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [batchDeleting, setBatchDeleting] = useState(false);
     const [showBatchConfirm, setShowBatchConfirm] = useState(false);
     const [showDeleteRange, setShowDeleteRange] = useState(false);
 
     const toggleSelect = (id: number) => {
-        setSelectedIds(prev => {
+        setSelectedIds((prev) => {
             const next = new Set(prev);
 
             if (next.has(id)) {
-next.delete(id);
-} else {
-next.add(id);
-}
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
 
             return next;
         });
     };
-    const toggleSelectAll = () => {
-        if (selectedIds.size === records.data.length) {
-setSelectedIds(new Set());
-} else {
-setSelectedIds(new Set(records.data.map(r => r.id)));
-}
-    };
-    const exitSelectMode = () => {
- setSelectMode(false); setSelectedIds(new Set()); 
-};
+    const allSelected =
+        records.data.length > 0 && selectedIds.size === records.data.length;
+    const toggleSelectAll = () =>
+        setSelectedIds(
+            allSelected ? new Set() : new Set(records.data.map((r) => r.id)),
+        );
+    const clearSelection = () => setSelectedIds(new Set());
 
     const handleBatchDelete = () => {
         setBatchDeleting(true);
         router.delete('/admin/komunikasi-jsa/batch', {
             data: { ids: Array.from(selectedIds) },
             onFinish: () => {
- setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); 
-},
+                setBatchDeleting(false);
+                setShowBatchConfirm(false);
+                clearSelection();
+            },
         });
     };
 
     const applyFilters = (newFilters: Partial<Filters>) => {
         const merged = { ...filters, ...newFilters, search };
-        Object.keys(merged).forEach(k => {
-            if ((merged as Record<string, unknown>)[k] === 'all') {
-delete (merged as Record<string, unknown>)[k];
-}
-        });
-        router.get('/admin/komunikasi-jsa', merged, { preserveState: true, replace: true });
-    };
+        Object.keys(merged).forEach((k) => {
+            const v = (merged as Record<string, unknown>)[k];
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        applyFilters({ search });
+            if (v === 'all' || v === undefined) {
+                delete (merged as Record<string, unknown>)[k];
+            }
+        });
+        router.get('/admin/komunikasi-jsa', merged, {
+            preserveState: true,
+            replace: true,
+        });
     };
 
     const confirmDelete = () => {
         if (!toDelete) {
-return;
-}
+            return;
+        }
 
         setDeleting(true);
         router.delete(`/admin/komunikasi-jsa/${toDelete.id}`, {
             onFinish: () => {
- setDeleting(false); setToDelete(null); 
-},
+                setDeleting(false);
+                setToDelete(null);
+            },
         });
     };
 
     const exportUrl = `/admin/komunikasi-jsa/export${(() => {
         const p = new URLSearchParams();
 
-        if (filters.search)  {
-p.set('search', filters.search);
-}
-
-        if (filters.site)    {
-p.set('site', filters.site);
-}
-
-        if (filters.status)  {
-p.set('status', filters.status);
-}
-
-        if (filters.shift)   {
-p.set('shift', filters.shift);
-}
-
-        if (filters.periode) {
-p.set('periode', filters.periode);
-}
-
-        if (filters.date_from) {
-p.set('date_from', filters.date_from);
-}
-
-        if (filters.date_to) {
-p.set('date_to', filters.date_to);
-}
+        for (const key of [
+            'search',
+            'site',
+            'status',
+            'shift',
+            'periode',
+            'date_from',
+            'date_to',
+        ] as const) {
+            if (filters[key]) {
+                p.set(key, filters[key]!);
+            }
+        }
 
         const qs = p.toString();
 
         return qs ? '?' + qs : '';
     })()}`;
 
-    const hasPending = summary.menunggu_konfirmasi > 0;
-    const allSelected = records.data.length > 0 && selectedIds.size === records.data.length;
+    const siteLabel = (v?: string | null) =>
+        v ? (sites.find((s) => s.value === v)?.label ?? v.toUpperCase()) : '—';
 
     return (
         <>
             <Head title="Admin — Komunikasi JSA/SOP/IK" />
 
-            <div className="space-y-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <AdminTitle eyebrow="K3 / Safety" title="Komunikasi JSA/SOP/IK" description="WBK-HSE-FO-026 · Semua data karyawan" />
-                    <div className="flex flex-wrap gap-2">
-                        {selectMode ? (
-                            <>
-                                <Button size="sm" variant="outline" onClick={toggleSelectAll}>
-                                    {selectedIds.size === records.data.length ? 'Batal Semua' : 'Pilih Semua'}
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={exitSelectMode}>Selesai</Button>
-                            </>
-                        ) : (
-                            <>
-                                <Button size="sm" variant="outline" onClick={() => setSelectMode(true)}>Pilih</Button>
-                                <a href={exportUrl}>
-                                    <Button size="sm" variant="outline" className="gap-1">
-                                        <Download size={14} /> Export Excel
-                                    </Button>
-                                </a>
-                                <Button
-                                    size="sm" variant="outline"
-                                    className="gap-1 text-destructive hover:text-destructive"
-                                    onClick={() => setShowDeleteRange(true)}
-                                >
-                                    <Lock size={14} /> Hapus Data (Rentang Tanggal)
-                                </Button>
-                            </>
-                        )}
+            <div className="flex flex-col gap-[18px] pb-10">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                    <AdminTitle
+                        eyebrow="K3 / Safety · WBK-HSE-FO-026"
+                        title="Komunikasi JSA/SOP/IK"
+                    />
+                    <div className="flex gap-2">
+                        <a href={exportUrl} className={adminButton}>
+                            <Download /> Ekspor Excel
+                        </a>
+                        <MoreMenu>
+                            <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => setShowDeleteRange(true)}
+                            >
+                                <Lock /> Hapus rentang tanggal
+                            </DropdownMenuItem>
+                        </MoreMenu>
                     </div>
                 </div>
 
-                {/* Banner Ringkasan */}
-                <div className={`rounded-lg p-3 ${hasPending ? 'bg-warning-soft border border-warning/30' : 'bg-success-soft border border-success/30'}`}>
-                    <div className="flex flex-wrap gap-x-5 gap-y-1">
-                        <span className="text-sm">
-                            <span className={`font-bold text-base ${hasPending ? 'text-warning' : 'text-success'}`}>{summary.menunggu_konfirmasi}</span>
-                            <span className="ml-1 text-muted-foreground">Menunggu Konfirmasi</span>
-                        </span>
-                        <span className="text-sm">
-                            <span className="font-bold text-base text-success">{summary.selesai + summary.dikonfirmasi}</span>
-                            <span className="ml-1 text-muted-foreground">Selesai / Dikonfirmasi</span>
-                        </span>
-                        <span className="text-sm">
-                            <span className="font-bold text-base text-destructive">{summary.ditolak}</span>
-                            <span className="ml-1 text-muted-foreground">Ditolak</span>
-                        </span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">Total {summary.total} form dalam filter ini</p>
-                </div>
-
-                {/* Filter Periode */}
-                <div className="flex gap-2 flex-wrap">
-                    {PERIODE_OPTIONS.map(opt => (
-                        <Button
-                            key={opt.value}
-                            size="sm"
-                            variant={filters.periode === opt.value ? 'default' : 'outline'}
-                            onClick={() => applyFilters({ periode: filters.periode === opt.value ? undefined : opt.value })}
+                <FilterBar>
+                    <SearchField
+                        value={search}
+                        onChange={setSearch}
+                        onSubmit={() => applyFilters({ search })}
+                        placeholder="Cari nama, NIK, lokasi, judul…"
+                        label="Cari form JSA"
+                    />
+                    <Select
+                        value={filters.site ?? 'all'}
+                        onValueChange={(v) => applyFilters({ site: v })}
+                    >
+                        <SelectTrigger
+                            className={chipClass(!!filters.site)}
+                            aria-label="Site"
                         >
-                            {opt.label}
-                        </Button>
-                    ))}
-                    {filters.periode && (
-                        <Button size="sm" variant="ghost" onClick={() => applyFilters({ periode: undefined })}>
-                            Semua Waktu
-                        </Button>
-                    )}
-                </div>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Site: semua</SelectItem>
+                            {sites.map((s) => (
+                                <SelectItem key={s.value} value={s.value}>
+                                    {s.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        value={filters.periode ?? 'all'}
+                        onValueChange={(v) => applyFilters({ periode: v })}
+                    >
+                        <SelectTrigger
+                            className={chipClass(!!filters.periode)}
+                            aria-label="Periode"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Periode: semua</SelectItem>
+                            {PERIODE_OPTIONS.map((o) => (
+                                <SelectItem key={o.value} value={o.value}>
+                                    {o.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        value={filters.status ?? 'all'}
+                        onValueChange={(v) => applyFilters({ status: v })}
+                    >
+                        <SelectTrigger
+                            className={chipClass(!!filters.status)}
+                            aria-label="Status"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                Status: semua · {summary.total}
+                            </SelectItem>
+                            <SelectItem value="menunggu_konfirmasi">
+                                Menunggu · {summary.menunggu_konfirmasi}
+                            </SelectItem>
+                            <SelectItem value="selesai">
+                                Selesai · {summary.selesai}
+                            </SelectItem>
+                            <SelectItem value="dikonfirmasi">
+                                Dikonfirmasi · {summary.dikonfirmasi}
+                            </SelectItem>
+                            <SelectItem value="ditolak">
+                                Ditolak · {summary.ditolak}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        value={filters.shift ?? 'all'}
+                        onValueChange={(v) => applyFilters({ shift: v })}
+                    >
+                        <SelectTrigger
+                            className={chipClass(!!filters.shift)}
+                            aria-label="Shift"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Shift: semua</SelectItem>
+                            <SelectItem value="siang">Shift I · Siang</SelectItem>
+                            <SelectItem value="malam">Shift II · Malam</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <DateRangeFilter
+                        dateFrom={filters.date_from}
+                        dateTo={filters.date_to}
+                        onChange={(v) => applyFilters(v)}
+                    />
+                </FilterBar>
 
-                <DateRangeFilter
-                    dateFrom={filters.date_from}
-                    dateTo={filters.date_to}
-                    onChange={(v) => applyFilters(v)}
-                />
+                <SelectionBar count={selectedIds.size} onClear={clearSelection}>
+                    <SelectionAction
+                        onClick={() => setShowBatchConfirm(true)}
+                        disabled={batchDeleting}
+                    >
+                        <Trash2 /> Hapus
+                    </SelectionAction>
+                </SelectionBar>
 
-                {/* Filter Pencarian & Dropdown */}
-                <div className="space-y-2">
-                    <form onSubmit={handleSearch} className="flex gap-2">
-                        <Input
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="Cari nama, NIK, lokasi, atau judul JSA..."
-                            className="text-sm"
+                <TableCard
+                    footer={
+                        <TablePager
+                            from={records.from}
+                            to={records.to}
+                            total={records.total}
+                            prev={records.prev_page_url}
+                            next={records.next_page_url}
                         />
-                        <Button type="submit" size="sm" variant="outline" className="shrink-0">
-                            <Search size={15} />
-                        </Button>
-                    </form>
-                    <div className="grid grid-cols-3 gap-2">
-                        <Select value={filters.site ?? 'all'} onValueChange={v => applyFilters({ site: v === 'all' ? undefined : v })}>
-                            <SelectTrigger className="text-sm"><SelectValue placeholder="Semua Site" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Site</SelectItem>
-                                {sites.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Select value={filters.status ?? 'all'} onValueChange={v => applyFilters({ status: v === 'all' ? undefined : v })}>
-                            <SelectTrigger className="text-sm"><SelectValue placeholder="Semua Status" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Status</SelectItem>
-                                <SelectItem value="selesai">Selesai</SelectItem>
-                                <SelectItem value="dikonfirmasi">Dikonfirmasi</SelectItem>
-                                <SelectItem value="menunggu_konfirmasi">⏳ Menunggu Konfirmasi</SelectItem>
-                                <SelectItem value="ditolak">Ditolak</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select value={filters.shift ?? 'all'} onValueChange={v => applyFilters({ shift: v === 'all' ? undefined : v })}>
-                            <SelectTrigger className="text-sm"><SelectValue placeholder="Semua Shift" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Shift</SelectItem>
-                                <SelectItem value="siang">Siang</SelectItem>
-                                <SelectItem value="malam">Malam</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Menampilkan {records.data.length} dari {records.total} form</p>
-                </div>
-
-                {records.data.length === 0 ? (
-                    <p className="py-10 text-center text-sm text-muted-foreground">Tidak ada data yang sesuai filter.</p>
-                ) : (
-                    <div className="overflow-x-auto rounded-lg border">
-                        <table className="w-full min-w-[760px] border-collapse text-xs">
+                    }
+                >
+                    {records.data.length === 0 ? (
+                        <TableEmpty>
+                            Tidak ada form yang sesuai filter.
+                        </TableEmpty>
+                    ) : (
+                        <DataTable className="min-w-[980px]">
                             <thead>
-                                <tr className="bg-muted/50 text-left">
-                                    {selectMode && (
-                                        <th className="w-8 px-2 py-2">
-                                            <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
-                                        </th>
-                                    )}
-                                    <th className="px-3 py-2 font-semibold">Dokumen</th>
-                                    <th className="px-2 py-2 font-semibold">Karyawan</th>
-                                    <th className="px-2 py-2 font-semibold">Lokasi</th>
-                                    <th className="px-2 py-2 text-center font-semibold">Peserta</th>
-                                    <th className="px-2 py-2 text-center font-semibold">Durasi</th>
-                                    <th className="px-2 py-2 font-semibold">Tanggal</th>
-                                    {!selectMode && <th className="px-2 py-2 text-right font-semibold">Aksi</th>}
+                                <tr className={theadRowClass}>
+                                    <th className="w-12">
+                                        <Checkbox
+                                            checked={
+                                                allSelected
+                                                    ? true
+                                                    : selectedIds.size > 0
+                                                      ? 'indeterminate'
+                                                      : false
+                                            }
+                                            onCheckedChange={toggleSelectAll}
+                                            aria-label="Pilih semua di halaman ini"
+                                        />
+                                    </th>
+                                    <th>Tanggal</th>
+                                    <th>Dokumen</th>
+                                    <th>Pelapor</th>
+                                    <th>Site</th>
+                                    <th>Lokasi</th>
+                                    <th>Shift</th>
+                                    <th>Peserta</th>
+                                    <th>Durasi</th>
+                                    <th>Status</th>
+                                    <th>
+                                        <span className="sr-only">Aksi</span>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {records.data.map((record, idx) => (
-                                    <tr key={record.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/10'}>
-                                        {selectMode && (
-                                            <td className="px-2 py-2">
+                                {records.data.map((record) => {
+                                    const selected = selectedIds.has(record.id);
+                                    const status =
+                                        STATUS[record.status] ??
+                                        STATUS.menunggu_konfirmasi;
+
+                                    return (
+                                        <tr
+                                            key={record.id}
+                                            className={rowClass(selected)}
+                                        >
+                                            <td>
                                                 <Checkbox
-                                                    checked={selectedIds.has(record.id)}
-                                                    onCheckedChange={() => toggleSelect(record.id)}
+                                                    checked={selected}
+                                                    onCheckedChange={() =>
+                                                        toggleSelect(record.id)
+                                                    }
+                                                    aria-label={`Pilih form ${record.judul_dokumen}`}
                                                 />
                                             </td>
-                                        )}
-                                        <td className={`px-3 py-2 border-l-4 ${barColor(record.status)}`}>
-                                            <div className="mb-1 flex flex-wrap items-center gap-1">
-                                                <StatusBadge status={record.status} />
-                                                <Badge variant="outline" className="text-[11px] capitalize">{record.shift}</Badge>
-                                            </div>
-                                            <p className="flex items-center gap-1 truncate max-w-[180px] font-medium">
-                                                <BookOpen size={11} className="shrink-0 text-muted-foreground" />
-                                                {record.judul_dokumen}
-                                            </p>
-                                        </td>
-                                        <td className="px-2 py-2 text-muted-foreground">
-                                            <p className="truncate max-w-[140px] font-medium text-foreground">{record.user.name}</p>
-                                            <p className="text-[11px]">
-                                                {record.user.nik ?? '—'}{record.user.site && ` · ${record.user.site}`}
-                                            </p>
-                                        </td>
-                                        <td className="px-2 py-2 text-muted-foreground">
-                                            <p className="flex items-center gap-1 truncate max-w-[140px]">
-                                                <MapPin size={11} className="shrink-0" />{record.lokasi}
-                                            </p>
-                                            {record.team_leader && <p className="text-[11px]">TL: {record.team_leader.name}</p>}
-                                        </td>
-                                        <td className="px-2 py-2 text-center text-muted-foreground">
-                                            <span className="inline-flex items-center gap-1"><Users size={11} />{record.peserta.length}</span>
-                                        </td>
-                                        <td className="px-2 py-2 text-center text-muted-foreground">
-                                            <span className="inline-flex items-center gap-1"><Clock size={11} />{record.durasi}m</span>
-                                        </td>
-                                        <td className="px-2 py-2 text-muted-foreground">
-                                            <span className="inline-flex items-center gap-1">
-                                                <CalendarDays size={11} />
-                                                {new Date(record.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                            </span>
-                                        </td>
-                                        {!selectMode && (
-                                            <td className="px-2 py-2 text-right">
-                                                <div className="flex justify-end gap-1">
-                                                    <Link href={`/sap/komunikasi-jsa/${record.id}`}>
-                                                        <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]">Detail</Button>
-                                                    </Link>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                        onClick={() => setToDelete(record)}
-                                                    >
-                                                        <Trash2 size={13} />
-                                                    </Button>
-                                                </div>
+                                            <td className="tabular whitespace-nowrap text-muted-foreground">
+                                                {new Date(
+                                                    record.tanggal,
+                                                ).toLocaleDateString('id-ID', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                })}
                                             </td>
-                                        )}
-                                    </tr>
-                                ))}
+                                            <td className="max-w-[200px] truncate font-bold">
+                                                <Link
+                                                    href={`/sap/komunikasi-jsa/${record.id}`}
+                                                    className="hover:underline"
+                                                >
+                                                    {record.judul_dokumen}
+                                                </Link>
+                                            </td>
+                                            <td>
+                                                <span className="block max-w-[160px] truncate font-semibold">
+                                                    {record.user.name}
+                                                </span>
+                                                {record.team_leader && (
+                                                    <span className="block max-w-[160px] truncate text-xs text-muted-foreground">
+                                                        TL {record.team_leader.name}
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="whitespace-nowrap">
+                                                {siteLabel(record.user.site)}
+                                            </td>
+                                            <td className="max-w-[160px] truncate">
+                                                {record.lokasi}
+                                            </td>
+                                            <td className="whitespace-nowrap">
+                                                {record.shift === 'siang'
+                                                    ? 'Shift I'
+                                                    : 'Shift II'}
+                                            </td>
+                                            <td className="tabular">
+                                                {record.peserta.length}
+                                            </td>
+                                            <td className="tabular whitespace-nowrap">
+                                                {record.durasi} mnt
+                                            </td>
+                                            <td>
+                                                <Badge variant={status.variant}>
+                                                    {status.label}
+                                                </Badge>
+                                            </td>
+                                            <td className="text-right">
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex size-8 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
+                                                    aria-label={`Hapus form ${record.judul_dokumen}`}
+                                                    onClick={() =>
+                                                        setToDelete(record)
+                                                    }
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
-                        </table>
-                    </div>
-                )}
-
-                {(records.prev_page_url || records.next_page_url) && (
-                    <div className="flex justify-between gap-2 pt-2">
-                        {records.prev_page_url
-                            ? <Link href={records.prev_page_url}><Button variant="outline">← Sebelumnya</Button></Link>
-                            : <div />}
-                        {records.next_page_url && (
-                            <Link href={records.next_page_url}><Button variant="outline">Berikutnya →</Button></Link>
-                        )}
-                    </div>
-                )}
+                        </DataTable>
+                    )}
+                </TableCard>
             </div>
 
-            {/* Dialog konfirmasi hapus */}
-            <Dialog open={!!toDelete} onOpenChange={open => !open && setToDelete(null)}>
+            <Dialog
+                open={!!toDelete}
+                onOpenChange={(open) => !open && setToDelete(null)}
+            >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Hapus Form Komunikasi JSA</DialogTitle>
+                        <DialogTitle>Hapus form komunikasi JSA?</DialogTitle>
                         <DialogDescription>
-                            Hapus form dari <strong>{toDelete?.user.name}</strong> tanggal{' '}
+                            Form dari <strong>{toDelete?.user.name}</strong>{' '}
+                            tanggal{' '}
                             <strong>
-                                {toDelete && new Date(toDelete.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                {toDelete &&
+                                    new Date(
+                                        toDelete.tanggal,
+                                    ).toLocaleDateString('id-ID', {
+                                        day: 'numeric',
+                                        month: 'long',
+                                        year: 'numeric',
+                                    })}
                             </strong>{' '}
-                            ({toDelete?.judul_dokumen})? Tindakan ini tidak dapat dibatalkan.
+                            ({toDelete?.judul_dokumen}) akan dihapus permanen.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setToDelete(null)} disabled={deleting}>Batal</Button>
-                        <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
-                            {deleting ? 'Menghapus...' : 'Ya, Hapus'}
+                        <Button
+                            variant="ghost"
+                            onClick={() => setToDelete(null)}
+                            disabled={deleting}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={confirmDelete}
+                            disabled={deleting}
+                        >
+                            {deleting ? 'Menghapus…' : 'Hapus'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={showBatchConfirm} onOpenChange={(open) => !open && setShowBatchConfirm(false)}>
+            <Dialog
+                open={showBatchConfirm}
+                onOpenChange={(open) => !open && setShowBatchConfirm(false)}
+            >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Hapus {selectedIds.size} Form Komunikasi JSA</DialogTitle>
+                        <DialogTitle>
+                            Hapus {selectedIds.size} form komunikasi JSA?
+                        </DialogTitle>
                         <DialogDescription>
-                            Yakin ingin menghapus <strong>{selectedIds.size}</strong> data yang dipilih?
-                            Tindakan ini tidak dapat dibatalkan.
+                            Data yang dipilih akan dihapus permanen. Tindakan
+                            ini tidak dapat dibatalkan.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setShowBatchConfirm(false)} disabled={batchDeleting}>Batal</Button>
-                        <Button variant="destructive" onClick={handleBatchDelete} disabled={batchDeleting}>
-                            {batchDeleting ? 'Menghapus...' : 'Ya, Hapus Semua'}
+                        <Button
+                            variant="ghost"
+                            onClick={() => setShowBatchConfirm(false)}
+                            disabled={batchDeleting}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleBatchDelete}
+                            disabled={batchDeleting}
+                        >
+                            {batchDeleting ? 'Menghapus…' : 'Hapus semua'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-
-            <BatchDeleteBar
-                count={selectedIds.size}
-                onDelete={() => setShowBatchConfirm(true)}
-                onCancel={exitSelectMode}
-                deleting={batchDeleting}
-            />
 
             <DeleteRangeDialog
                 open={showDeleteRange}
                 onOpenChange={setShowDeleteRange}
                 endpoint="/admin/komunikasi-jsa/delete-range"
-                title="Hapus Data Komunikasi JSA"
+                title="Hapus data komunikasi JSA"
                 description="Ini akan menghapus permanen seluruh form Komunikasi JSA/SOP/IK yang disubmit pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
             />
         </>

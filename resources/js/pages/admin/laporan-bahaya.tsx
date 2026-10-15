@@ -4,12 +4,26 @@ import {
     ChevronsUpDown,
     Download,
     Lock,
-    Search,
     Trash2,
     UserPen,
 } from 'lucide-react';
 import { useState } from 'react';
-import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
+import { AdminTitle } from '@/components/admin/admin-title';
+import {
+    adminButton,
+    chipClass,
+    DataTable,
+    FilterBar,
+    MoreMenu,
+    rowClass,
+    SearchField,
+    SelectionAction,
+    SelectionBar,
+    TableCard,
+    TableEmpty,
+    TablePager,
+    theadRowClass,
+} from '@/components/admin/data-table';
 import DateRangeFilter from '@/components/admin/DateRangeFilter';
 import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
 import { RiskBadge } from '@/components/risk-badge';
@@ -32,7 +46,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import {
     Popover,
     PopoverContent,
@@ -58,6 +72,7 @@ type LaporanRecord = {
     id: number;
     tanggal: string;
     lokasi: string;
+    kategori?: 'KTA' | 'TTA' | null;
     tingkat_risiko: 'AA' | 'A' | 'B' | 'C';
     nilai_risiko: number;
     status_tindakan: 'pending' | 'continue' | 'progress' | 'close';
@@ -68,6 +83,8 @@ type LaporanRecord = {
 
 type PaginatedRecords = {
     data: LaporanRecord[];
+    from: number | null;
+    to: number | null;
     total: number;
     next_page_url: string | null;
     prev_page_url: string | null;
@@ -100,9 +117,9 @@ type Props = {
 };
 
 const PERIODE_OPTIONS = [
-    { value: 'hari_ini', label: 'Hari Ini' },
-    { value: 'minggu_ini', label: 'Minggu Ini' },
-    { value: 'bulan_ini', label: 'Bulan Ini' },
+    { value: 'hari_ini', label: 'Hari ini' },
+    { value: 'minggu_ini', label: 'Minggu ini' },
+    { value: 'bulan_ini', label: 'Bulan ini' },
 ];
 
 export default function AdminLaporanBahaya({
@@ -173,11 +190,6 @@ export default function AdminLaporanBahaya({
         });
     };
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        applyFilters({ search });
-    };
-
     const handleStatusUpdate = (id: number, status: string) => {
         setUpdatingId(id);
         router.patch(
@@ -233,32 +245,18 @@ export default function AdminLaporanBahaya({
     const exportUrl = `/admin/laporan-bahaya/export${(() => {
         const p = new URLSearchParams();
 
-        if (filters.search) {
-            p.set('search', filters.search);
-        }
-
-        if (filters.site) {
-            p.set('site', filters.site);
-        }
-
-        if (filters.tingkat_risiko) {
-            p.set('tingkat_risiko', filters.tingkat_risiko);
-        }
-
-        if (filters.status_tindakan) {
-            p.set('status_tindakan', filters.status_tindakan);
-        }
-
-        if (filters.periode) {
-            p.set('periode', filters.periode);
-        }
-
-        if (filters.date_from) {
-            p.set('date_from', filters.date_from);
-        }
-
-        if (filters.date_to) {
-            p.set('date_to', filters.date_to);
+        for (const key of [
+            'search',
+            'site',
+            'tingkat_risiko',
+            'status_tindakan',
+            'periode',
+            'date_from',
+            'date_to',
+        ] as const) {
+            if (filters[key]) {
+                p.set(key, filters[key]!);
+            }
         }
 
         const qs = p.toString();
@@ -270,433 +268,329 @@ export default function AdminLaporanBahaya({
         records.data.length > 0 && selectedIds.size === records.data.length;
     const someSelected = selectedIds.size > 0 && !allSelected;
 
-    const chips = [
-        {
-            key: 'all',
-            label: 'Semua',
-            count: summary.total,
-            active: !filters.status_tindakan && !filters.tingkat_risiko,
-            apply: { status_tindakan: undefined, tingkat_risiko: undefined },
-        },
-        {
-            key: 'pending',
-            label: 'Menunggu',
-            count: summary.pending,
-            active: filters.status_tindakan === 'pending',
-            apply: { status_tindakan: 'pending', tingkat_risiko: undefined },
-        },
-        {
-            key: 'AA',
-            label: 'Ekstrem · AA',
-            count: summary.aa,
-            active: filters.tingkat_risiko === 'AA',
-            apply: { tingkat_risiko: 'AA', status_tindakan: undefined },
-        },
-        {
-            key: 'A',
-            label: 'Tinggi · A',
-            count: summary.a,
-            active: filters.tingkat_risiko === 'A',
-            apply: { tingkat_risiko: 'A', status_tindakan: undefined },
-        },
-        {
-            key: 'B',
-            label: 'Sedang · B',
-            count: summary.b,
-            active: filters.tingkat_risiko === 'B',
-            apply: { tingkat_risiko: 'B', status_tindakan: undefined },
-        },
-        {
-            key: 'C',
-            label: 'Rendah · C',
-            count: summary.c,
-            active: filters.tingkat_risiko === 'C',
-            apply: { tingkat_risiko: 'C', status_tindakan: undefined },
-        },
-    ];
-
     const nomor = (r: LaporanRecord) =>
         `LB-${(r.user.site ?? '').toUpperCase()}-${String(r.id).padStart(4, '0')}`;
+    const siteLabel = (v?: string | null) =>
+        v ? (sites.find((s) => s.value === v)?.label ?? v.toUpperCase()) : '—';
 
     return (
         <>
             <Head title="Admin — Laporan Bahaya" />
 
-            <div className="flex flex-col gap-4 pb-24">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <p className="text-xs font-semibold text-muted-foreground">
-                            K3 / Safety
-                        </p>
-                        <h1 className="text-[28px] font-extrabold tracking-tight">
-                            Laporan Bahaya
-                        </h1>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <Button asChild variant="outline" size="sm">
-                            <a href={exportUrl}>
-                                <Download /> Ekspor Excel
-                            </a>
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setShowDeleteRange(true)}
-                        >
-                            <Lock /> Hapus rentang tanggal
-                        </Button>
+            <div className="flex flex-col gap-[18px] pb-10">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                    <AdminTitle eyebrow="K3 / Safety" title="Laporan Bahaya" />
+                    <div className="flex gap-2">
+                        <a href={exportUrl} className={adminButton}>
+                            <Download /> Ekspor Excel
+                        </a>
+                        <MoreMenu>
+                            <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => setShowDeleteRange(true)}
+                            >
+                                <Lock /> Hapus rentang tanggal
+                            </DropdownMenuItem>
+                        </MoreMenu>
                     </div>
                 </div>
 
-                <div
-                    className="flex [scrollbar-width:none] gap-2 overflow-x-auto pb-1"
-                    role="group"
-                    aria-label="Filter cepat"
+                <FilterBar>
+                    <SearchField
+                        value={search}
+                        onChange={setSearch}
+                        onSubmit={() => applyFilters({ search })}
+                        placeholder="Cari nama atau NIK pelapor…"
+                        label="Cari laporan"
+                    />
+                    <Select
+                        value={filters.site ?? 'all'}
+                        onValueChange={(v) =>
+                            applyFilters({ site: v === 'all' ? undefined : v })
+                        }
+                    >
+                        <SelectTrigger
+                            className={chipClass(!!filters.site)}
+                            aria-label="Site"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Site: semua</SelectItem>
+                            {sites.map((s) => (
+                                <SelectItem key={s.value} value={s.value}>
+                                    {s.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        value={filters.periode ?? 'all'}
+                        onValueChange={(v) =>
+                            applyFilters({
+                                periode: v === 'all' ? undefined : v,
+                            })
+                        }
+                    >
+                        <SelectTrigger
+                            className={chipClass(!!filters.periode)}
+                            aria-label="Periode"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Periode: semua</SelectItem>
+                            {PERIODE_OPTIONS.map((o) => (
+                                <SelectItem key={o.value} value={o.value}>
+                                    {o.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        value={filters.tingkat_risiko ?? 'all'}
+                        onValueChange={(v) =>
+                            applyFilters({
+                                tingkat_risiko: v === 'all' ? undefined : v,
+                            })
+                        }
+                    >
+                        <SelectTrigger
+                            className={chipClass(!!filters.tingkat_risiko)}
+                            aria-label="Risiko"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                Risiko: semua · {summary.total}
+                            </SelectItem>
+                            <SelectItem value="AA">
+                                Ekstrem · AA · {summary.aa}
+                            </SelectItem>
+                            <SelectItem value="A">
+                                Tinggi · A · {summary.a}
+                            </SelectItem>
+                            <SelectItem value="B">
+                                Sedang · B · {summary.b}
+                            </SelectItem>
+                            <SelectItem value="C">
+                                Rendah · C · {summary.c}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        value={filters.status_tindakan ?? 'all'}
+                        onValueChange={(v) =>
+                            applyFilters({
+                                status_tindakan: v === 'all' ? undefined : v,
+                            })
+                        }
+                    >
+                        <SelectTrigger
+                            className={chipClass(!!filters.status_tindakan)}
+                            aria-label="Status"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Status: semua</SelectItem>
+                            <SelectItem value="pending">
+                                Menunggu · {summary.pending}
+                            </SelectItem>
+                            <SelectItem value="continue">Berlanjut</SelectItem>
+                            <SelectItem value="progress">Diproses</SelectItem>
+                            <SelectItem value="close">Selesai</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <DateRangeFilter
+                        dateFrom={filters.date_from}
+                        dateTo={filters.date_to}
+                        onChange={(v) => applyFilters(v)}
+                    />
+                </FilterBar>
+
+                <SelectionBar count={selectedIds.size} onClear={exitSelectMode}>
+                    <SelectionAction
+                        onClick={() => setShowBatchConfirm(true)}
+                        disabled={batchDeleting}
+                    >
+                        <Trash2 /> Hapus
+                    </SelectionAction>
+                </SelectionBar>
+
+                <TableCard
+                    footer={
+                        <TablePager
+                            from={records.from}
+                            to={records.to}
+                            total={records.total}
+                            prev={records.prev_page_url}
+                            next={records.next_page_url}
+                        />
+                    }
                 >
-                    {chips.map((c) => (
-                        <button
-                            key={c.key}
-                            type="button"
-                            aria-pressed={c.active}
-                            onClick={() => applyFilters(c.apply)}
-                            className={cn(
-                                'flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[13px] font-semibold whitespace-nowrap transition-colors',
-                                c.active
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-card text-foreground hover:bg-muted',
-                            )}
-                        >
-                            {c.label}
-                            <span
-                                className={cn(
-                                    'tabular text-xs',
-                                    c.active
-                                        ? 'text-primary-foreground/70'
-                                        : 'text-muted-foreground',
-                                )}
-                            >
-                                {c.count}
-                            </span>
-                        </button>
-                    ))}
-                </div>
-
-                <div className="flex flex-col gap-2 rounded-lg bg-card p-3 lg:flex-row lg:items-center">
-                    <form onSubmit={handleSearch} className="relative flex-1">
-                        <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Cari nama atau NIK pelapor…"
-                            className="pl-10"
-                            aria-label="Cari pelapor"
-                        />
-                    </form>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:flex">
-                        <Select
-                            value={filters.site ?? 'all'}
-                            onValueChange={(v) =>
-                                applyFilters({
-                                    site: v === 'all' ? undefined : v,
-                                })
-                            }
-                        >
-                            <SelectTrigger
-                                className="h-11 rounded-full lg:w-40"
-                                aria-label="Site"
-                            >
-                                <SelectValue placeholder="Semua site" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua site</SelectItem>
-                                {sites.map((s) => (
-                                    <SelectItem key={s.value} value={s.value}>
-                                        {s.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            value={filters.status_tindakan ?? 'all'}
-                            onValueChange={(v) =>
-                                applyFilters({
-                                    status_tindakan:
-                                        v === 'all' ? undefined : v,
-                                })
-                            }
-                        >
-                            <SelectTrigger
-                                className="h-11 rounded-full lg:w-36"
-                                aria-label="Status"
-                            >
-                                <SelectValue placeholder="Semua status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">
-                                    Semua status
-                                </SelectItem>
-                                <SelectItem value="pending">
-                                    Menunggu
-                                </SelectItem>
-                                <SelectItem value="continue">
-                                    Berlanjut
-                                </SelectItem>
-                                <SelectItem value="progress">
-                                    Diproses
-                                </SelectItem>
-                                <SelectItem value="close">Selesai</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            value={filters.periode ?? 'all'}
-                            onValueChange={(v) =>
-                                applyFilters({
-                                    periode: v === 'all' ? undefined : v,
-                                })
-                            }
-                        >
-                            <SelectTrigger
-                                className="h-11 rounded-full lg:w-36"
-                                aria-label="Periode"
-                            >
-                                <SelectValue placeholder="Semua waktu" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua waktu</SelectItem>
-                                {PERIODE_OPTIONS.map((o) => (
-                                    <SelectItem key={o.value} value={o.value}>
-                                        {o.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <DateRangeFilter
-                            dateFrom={filters.date_from}
-                            dateTo={filters.date_to}
-                            onChange={(v) => applyFilters(v)}
-                        />
-                    </div>
-                </div>
-
-                <div className="overflow-hidden rounded-lg bg-card">
                     {records.data.length === 0 ? (
-                        <p className="px-4 py-14 text-center text-sm text-muted-foreground">
+                        <TableEmpty>
                             Tidak ada laporan yang sesuai filter.
-                        </p>
+                        </TableEmpty>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[960px] border-collapse text-sm">
-                                <thead className="sticky top-0 z-10 bg-card">
-                                    <tr className="border-b border-border text-left text-[11px] font-bold tracking-[0.08em] text-muted-foreground uppercase">
-                                        <th className="w-12 px-4 py-3">
-                                            <Checkbox
-                                                checked={
-                                                    allSelected
-                                                        ? true
-                                                        : someSelected
-                                                          ? 'indeterminate'
-                                                          : false
-                                                }
-                                                onCheckedChange={
-                                                    toggleSelectAll
-                                                }
-                                                aria-label="Pilih semua di halaman ini"
-                                            />
-                                        </th>
-                                        <th className="px-3 py-3">Nomor</th>
-                                        <th className="px-3 py-3">Tanggal</th>
-                                        <th className="px-3 py-3">Pelapor</th>
-                                        <th className="px-3 py-3">Lokasi</th>
-                                        <th className="px-3 py-3">Risiko</th>
-                                        <th className="px-3 py-3">PIC</th>
-                                        <th className="px-3 py-3">Status</th>
-                                        <th className="px-3 py-3 text-right">
-                                            <span className="sr-only">
-                                                Aksi
-                                            </span>
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {records.data.map((record) => {
-                                        const selected = selectedIds.has(
-                                            record.id,
-                                        );
+                        <DataTable className="min-w-[980px]">
+                            <thead>
+                                <tr className={theadRowClass}>
+                                    <th className="w-12">
+                                        <Checkbox
+                                            checked={
+                                                allSelected
+                                                    ? true
+                                                    : someSelected
+                                                      ? 'indeterminate'
+                                                      : false
+                                            }
+                                            onCheckedChange={toggleSelectAll}
+                                            aria-label="Pilih semua di halaman ini"
+                                        />
+                                    </th>
+                                    <th>Nomor</th>
+                                    <th>Tanggal</th>
+                                    <th>Pelapor</th>
+                                    <th>Site</th>
+                                    <th>Lokasi</th>
+                                    <th>Kat.</th>
+                                    <th>Risiko</th>
+                                    <th>PIC</th>
+                                    <th>Status</th>
+                                    <th>
+                                        <span className="sr-only">Aksi</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {records.data.map((record) => {
+                                    const selected = selectedIds.has(record.id);
 
-                                        return (
-                                            <tr
-                                                key={record.id}
-                                                className={cn(
-                                                    'border-b border-border/60 transition-colors last:border-0',
-                                                    selected
-                                                        ? 'bg-accent-soft'
-                                                        : 'hover:bg-muted/50',
-                                                )}
-                                            >
-                                                <td className="px-4 py-3">
-                                                    <Checkbox
-                                                        checked={selected}
-                                                        onCheckedChange={() =>
-                                                            toggleSelect(
-                                                                record.id,
-                                                            )
-                                                        }
-                                                        aria-label={`Pilih laporan ${nomor(record)}`}
-                                                    />
-                                                </td>
-                                                <td className="tabular px-3 py-3 font-semibold whitespace-nowrap">
-                                                    <Link
-                                                        href={`/laporan-bahaya/${record.id}?ref=admin`}
-                                                        className="hover:underline"
-                                                    >
-                                                        {nomor(record)}
-                                                    </Link>
-                                                </td>
-                                                <td className="tabular px-3 py-3 whitespace-nowrap text-muted-foreground">
-                                                    {new Date(
-                                                        record.tanggal,
-                                                    ).toLocaleDateString(
-                                                        'id-ID',
-                                                        {
-                                                            day: 'numeric',
-                                                            month: 'short',
-                                                        },
+                                    return (
+                                        <tr
+                                            key={record.id}
+                                            className={rowClass(selected)}
+                                        >
+                                            <td>
+                                                <Checkbox
+                                                    checked={selected}
+                                                    onCheckedChange={() =>
+                                                        toggleSelect(record.id)
+                                                    }
+                                                    aria-label={`Pilih laporan ${nomor(record)}`}
+                                                />
+                                            </td>
+                                            <td className="tabular font-bold whitespace-nowrap">
+                                                <Link
+                                                    href={`/laporan-bahaya/${record.id}?ref=admin`}
+                                                    className="hover:underline"
+                                                >
+                                                    {nomor(record)}
+                                                </Link>
+                                            </td>
+                                            <td className="tabular whitespace-nowrap text-muted-foreground">
+                                                {new Date(
+                                                    record.tanggal,
+                                                ).toLocaleDateString('id-ID', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                })}
+                                            </td>
+                                            <td className="max-w-[160px] truncate font-semibold">
+                                                {record.user.name}
+                                            </td>
+                                            <td className="whitespace-nowrap">
+                                                {siteLabel(record.user.site)}
+                                            </td>
+                                            <td className="max-w-[200px] truncate">
+                                                {record.lokasi}
+                                            </td>
+                                            <td>{record.kategori ?? '—'}</td>
+                                            <td>
+                                                <RiskBadge
+                                                    level={record.tingkat_risiko}
+                                                />
+                                            </td>
+                                            <td>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        openPicDialog(record)
+                                                    }
+                                                    className={cn(
+                                                        'flex max-w-[140px] items-center gap-1.5 py-1 text-left hover:underline',
+                                                        !record.pic &&
+                                                            'text-destructive',
                                                     )}
-                                                </td>
-                                                <td className="px-3 py-3">
-                                                    <p className="max-w-[160px] truncate font-semibold">
-                                                        {record.user.name}
-                                                    </p>
-                                                    <p className="tabular text-xs text-muted-foreground">
-                                                        {record.user.nik ?? '—'}
-                                                    </p>
-                                                </td>
-                                                <td className="max-w-[180px] truncate px-3 py-3">
-                                                    {record.lokasi}
-                                                </td>
-                                                <td className="px-3 py-3">
-                                                    <RiskBadge
-                                                        level={
-                                                            record.tingkat_risiko
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="px-3 py-3">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            openPicDialog(
-                                                                record,
-                                                            )
-                                                        }
-                                                        className={cn(
-                                                            'flex max-w-[140px] items-center gap-1.5 rounded-full px-2 py-1 text-left hover:bg-muted',
-                                                            !record.pic &&
-                                                                'text-destructive',
-                                                        )}
+                                                >
+                                                    <span className="truncate">
+                                                        {record.pic?.name ??
+                                                            'Belum ada'}
+                                                    </span>
+                                                    <UserPen className="size-3.5 shrink-0 opacity-60" />
+                                                </button>
+                                            </td>
+                                            <td>
+                                                <Select
+                                                    value={record.status_tindakan}
+                                                    onValueChange={(v) =>
+                                                        handleStatusUpdate(
+                                                            record.id,
+                                                            v,
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        updatingId === record.id
+                                                    }
+                                                >
+                                                    <SelectTrigger
+                                                        className="h-8 w-auto border-0 bg-transparent p-0 shadow-none [&>svg]:hidden"
+                                                        aria-label="Ubah status"
                                                     >
-                                                        <span className="truncate">
-                                                            {record.pic
-                                                                ? record.pic
-                                                                      .name
-                                                                : 'Belum ada'}
-                                                        </span>
-                                                        <UserPen className="size-3.5 shrink-0 opacity-60" />
-                                                    </button>
-                                                </td>
-                                                <td className="px-3 py-3">
-                                                    <Select
-                                                        value={
-                                                            record.status_tindakan
-                                                        }
-                                                        onValueChange={(v) =>
-                                                            handleStatusUpdate(
-                                                                record.id,
-                                                                v,
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            updatingId ===
-                                                            record.id
-                                                        }
-                                                    >
-                                                        <SelectTrigger
-                                                            className="h-9 w-[124px] rounded-full border-0 bg-transparent p-0 shadow-none [&>svg]:hidden"
-                                                            aria-label="Ubah status"
-                                                        >
-                                                            <TindakanBadge
-                                                                status={
-                                                                    record.status_tindakan
-                                                                }
-                                                            />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="pending">
-                                                                Menunggu
-                                                            </SelectItem>
-                                                            <SelectItem value="continue">
-                                                                Berlanjut
-                                                            </SelectItem>
-                                                            <SelectItem value="progress">
-                                                                Diproses
-                                                            </SelectItem>
-                                                            <SelectItem value="close">
-                                                                Selesai
-                                                            </SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </td>
-                                                <td className="px-3 py-3 text-right">
-                                                    <Button
-                                                        size="icon"
-                                                        variant="ghost"
-                                                        className="size-9 text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
-                                                        aria-label={`Hapus laporan ${nomor(record)}`}
-                                                        onClick={() =>
-                                                            setToDelete(record)
-                                                        }
-                                                    >
-                                                        <Trash2 className="size-4" />
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                                                        <TindakanBadge
+                                                            status={
+                                                                record.status_tindakan
+                                                            }
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="pending">
+                                                            Menunggu
+                                                        </SelectItem>
+                                                        <SelectItem value="continue">
+                                                            Berlanjut
+                                                        </SelectItem>
+                                                        <SelectItem value="progress">
+                                                            Diproses
+                                                        </SelectItem>
+                                                        <SelectItem value="close">
+                                                            Selesai
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </td>
+                                            <td className="text-right">
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex size-8 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
+                                                    aria-label={`Hapus laporan ${nomor(record)}`}
+                                                    onClick={() =>
+                                                        setToDelete(record)
+                                                    }
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </DataTable>
                     )}
-                    <div className="flex items-center justify-between gap-3 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground">
-                        <span className="tabular">
-                            {records.data.length} dari {records.total} laporan
-                        </span>
-                        <div className="flex gap-2">
-                            {records.prev_page_url ? (
-                                <Button asChild variant="outline" size="sm">
-                                    <Link href={records.prev_page_url}>
-                                        Sebelumnya
-                                    </Link>
-                                </Button>
-                            ) : (
-                                <Button variant="outline" size="sm" disabled>
-                                    Sebelumnya
-                                </Button>
-                            )}
-                            {records.next_page_url ? (
-                                <Button asChild variant="outline" size="sm">
-                                    <Link href={records.next_page_url}>
-                                        Berikutnya
-                                    </Link>
-                                </Button>
-                            ) : (
-                                <Button variant="outline" size="sm" disabled>
-                                    Berikutnya
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                </TableCard>
             </div>
 
             {/* Dialog konfirmasi hapus */}
@@ -706,7 +600,7 @@ export default function AdminLaporanBahaya({
             >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Hapus Laporan Bahaya</DialogTitle>
+                        <DialogTitle>Hapus laporan bahaya?</DialogTitle>
                         <DialogDescription>
                             Hapus laporan dari{' '}
                             <strong>{toDelete?.user.name}</strong> tanggal{' '}
@@ -726,7 +620,7 @@ export default function AdminLaporanBahaya({
                     </DialogHeader>
                     <DialogFooter className="gap-2">
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => setToDelete(null)}
                             disabled={deleting}
                         >
@@ -737,7 +631,7 @@ export default function AdminLaporanBahaya({
                             onClick={confirmDelete}
                             disabled={deleting}
                         >
-                            {deleting ? 'Menghapus...' : 'Ya, Hapus'}
+                            {deleting ? 'Menghapus…' : 'Hapus'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -751,18 +645,16 @@ export default function AdminLaporanBahaya({
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>
-                            Hapus {selectedIds.size} Laporan Bahaya
+                            Hapus {selectedIds.size} laporan bahaya?
                         </DialogTitle>
                         <DialogDescription>
-                            Yakin ingin menghapus{' '}
-                            <strong>{selectedIds.size}</strong> data laporan
-                            bahaya yang dipilih? Tindakan ini tidak dapat
-                            dibatalkan.
+                            Data yang dipilih akan dihapus permanen. Tindakan
+                            ini tidak dapat dibatalkan.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2">
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => setShowBatchConfirm(false)}
                             disabled={batchDeleting}
                         >
@@ -773,7 +665,7 @@ export default function AdminLaporanBahaya({
                             onClick={handleBatchDelete}
                             disabled={batchDeleting}
                         >
-                            {batchDeleting ? 'Menghapus...' : 'Ya, Hapus Semua'}
+                            {batchDeleting ? 'Menghapus…' : 'Hapus semua'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -801,27 +693,24 @@ export default function AdminLaporanBahaya({
                                     role="combobox"
                                     aria-expanded={picOpen}
                                     className={cn(
-                                        'flex h-11 w-full items-center justify-between rounded-lg border px-3 text-sm',
-                                        'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
-                                        picDialogValue
-                                            ? 'border-primary'
-                                            : 'border-input text-muted-foreground',
+                                        'flex h-[50px] w-full items-center justify-between rounded-md bg-input px-4 text-[15px]',
+                                        'focus-visible:outline-2 focus-visible:outline-ring',
+                                        !picDialogValue &&
+                                            'text-muted-foreground',
                                     )}
                                 >
                                     <span className="truncate text-left">
-                                        {picDialogValue
-                                            ? (() => {
-                                                  const p = pics.find(
-                                                      (p) =>
-                                                          String(p.id) ===
-                                                          picDialogValue,
-                                                  );
+                                        {(() => {
+                                            const p = pics.find(
+                                                (p) =>
+                                                    String(p.id) ===
+                                                    picDialogValue,
+                                            );
 
-                                                  return p
-                                                      ? `${p.name}${p.jabatan ? ` — ${p.jabatan}` : ''}`
-                                                      : 'Pilih PIC...';
-                                              })()
-                                            : 'Pilih PIC...'}
+                                            return p
+                                                ? `${p.name}${p.jabatan ? ` — ${p.jabatan}` : ''}`
+                                                : 'Pilih PIC…';
+                                        })()}
                                     </span>
                                     <ChevronsUpDown
                                         size={15}
@@ -835,7 +724,7 @@ export default function AdminLaporanBahaya({
                             >
                                 <Command>
                                     <CommandInput
-                                        placeholder="Cari nama PIC..."
+                                        placeholder="Cari nama PIC…"
                                         className="h-10 text-sm"
                                     />
                                     <CommandList>
@@ -861,7 +750,7 @@ export default function AdminLaporanBahaya({
                                                     className="py-2 text-sm"
                                                 >
                                                     <div>
-                                                        <p className="font-medium">
+                                                        <p className="font-semibold">
                                                             {pic.name}
                                                         </p>
                                                         {pic.jabatan && (
@@ -876,7 +765,7 @@ export default function AdminLaporanBahaya({
                                                             'ml-auto shrink-0',
                                                             picDialogValue ===
                                                                 String(pic.id)
-                                                                ? 'text-primary opacity-100'
+                                                                ? 'opacity-100'
                                                                 : 'opacity-0',
                                                         )}
                                                     />
@@ -890,31 +779,24 @@ export default function AdminLaporanBahaya({
                     </div>
                     <DialogFooter className="gap-2">
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => setPicDialogRecord(null)}
                             disabled={updatingPic}
                         >
                             Batal
                         </Button>
                         <Button onClick={savePic} disabled={updatingPic}>
-                            {updatingPic ? 'Menyimpan...' : 'Simpan'}
+                            {updatingPic ? 'Menyimpan…' : 'Simpan'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            <BatchDeleteBar
-                count={selectedIds.size}
-                onDelete={() => setShowBatchConfirm(true)}
-                onCancel={exitSelectMode}
-                deleting={batchDeleting}
-            />
-
             <DeleteRangeDialog
                 open={showDeleteRange}
                 onOpenChange={setShowDeleteRange}
                 endpoint="/admin/laporan-bahaya/delete-range"
-                title="Hapus Data Laporan Bahaya"
+                title="Hapus data laporan bahaya"
                 description="Ini akan menghapus permanen seluruh Laporan Bahaya yang disubmit pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
             />
         </>

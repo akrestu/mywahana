@@ -12,10 +12,8 @@ export function AdminTitle({
 }) {
     return (
         <div>
-            <p className="text-xs font-semibold text-muted-foreground">
-                {eyebrow}
-            </p>
-            <h1 className="text-[28px] font-extrabold tracking-tight">
+            <p className="text-[13px] text-muted-foreground">{eyebrow}</p>
+            <h1 className="mt-1 text-[30px] leading-tight font-extrabold tracking-tight">
                 {title}
             </h1>
             {description && (

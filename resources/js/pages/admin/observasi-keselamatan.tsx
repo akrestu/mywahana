@@ -1,21 +1,43 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { CheckCircle2, Clock, Download, Lock, Search, Trash2 } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { Download, Lock, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminTitle } from '@/components/admin/admin-title';
-import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
+import {
+    adminButton,
+    chipClass,
+    DataTable,
+    FilterBar,
+    MoreMenu,
+    rowClass,
+    SearchField,
+    SelectionAction,
+    SelectionBar,
+    TableCard,
+    TableEmpty,
+    TablePager,
+    theadRowClass,
+} from '@/components/admin/data-table';
 import DateRangeFilter from '@/components/admin/DateRangeFilter';
 import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-    Dialog, DialogContent, DialogDescription,
-    DialogFooter, DialogHeader, DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 type OKRecord = {
     id: number;
@@ -28,333 +50,424 @@ type OKRecord = {
     penanggung_jawab: { name: string } | null;
 };
 
-type Paginated = { data: OKRecord[]; total: number; next_page_url: string | null; prev_page_url: string | null };
-type Summary = { total: number; menunggu_konfirmasi: number; dikonfirmasi: number };
-type Filters = { site?: string; status?: string; search?: string; periode?: string; date_from?: string; date_to?: string };
+type Paginated = {
+    data: OKRecord[];
+    from: number | null;
+    to: number | null;
+    total: number;
+    next_page_url: string | null;
+    prev_page_url: string | null;
+};
+type Summary = {
+    total: number;
+    menunggu_konfirmasi: number;
+    dikonfirmasi: number;
+};
+type Filters = {
+    site?: string;
+    status?: string;
+    search?: string;
+    periode?: string;
+    date_from?: string;
+    date_to?: string;
+};
 type SiteOption = { value: string; label: string };
-type Props = { records: Paginated; filters: Filters; summary: Summary; sites: SiteOption[] };
+type Props = {
+    records: Paginated;
+    filters: Filters;
+    summary: Summary;
+    sites: SiteOption[];
+};
 
 const PERIODE_OPTIONS = [
-    { value: 'hari_ini',   label: 'Hari Ini' },
-    { value: 'minggu_ini', label: 'Minggu Ini' },
-    { value: 'bulan_ini',  label: 'Bulan Ini' },
+    { value: 'hari_ini', label: 'Hari ini' },
+    { value: 'minggu_ini', label: 'Minggu ini' },
+    { value: 'bulan_ini', label: 'Bulan ini' },
 ];
 
-export default function AdminObservasiKeselamatan({ records, filters, summary, sites }: Props) {
+export default function AdminObservasiKeselamatan({
+    records,
+    filters,
+    summary,
+    sites,
+}: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [toDelete, setToDelete] = useState<OKRecord | null>(null);
     const [deleting, setDeleting] = useState(false);
-    const [selectMode, setSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [batchDeleting, setBatchDeleting] = useState(false);
     const [showBatchConfirm, setShowBatchConfirm] = useState(false);
     const [showDeleteRange, setShowDeleteRange] = useState(false);
 
     const toggleSelect = (id: number) => {
-        setSelectedIds(prev => {
+        setSelectedIds((prev) => {
             const next = new Set(prev);
 
             if (next.has(id)) {
-next.delete(id);
-} else {
-next.add(id);
-}
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
 
             return next;
         });
     };
-    const toggleSelectAll = () => {
-        if (selectedIds.size === records.data.length) {
-setSelectedIds(new Set());
-} else {
-setSelectedIds(new Set(records.data.map(r => r.id)));
-}
-    };
-    const exitSelectMode = () => {
- setSelectMode(false); setSelectedIds(new Set()); 
-};
+    const allSelected =
+        records.data.length > 0 && selectedIds.size === records.data.length;
+    const toggleSelectAll = () =>
+        setSelectedIds(
+            allSelected ? new Set() : new Set(records.data.map((r) => r.id)),
+        );
+    const clearSelection = () => setSelectedIds(new Set());
 
     const handleBatchDelete = () => {
         setBatchDeleting(true);
         router.delete('/admin/observasi-keselamatan/batch', {
             data: { ids: Array.from(selectedIds) },
             onFinish: () => {
- setBatchDeleting(false); setShowBatchConfirm(false); exitSelectMode(); 
-},
+                setBatchDeleting(false);
+                setShowBatchConfirm(false);
+                clearSelection();
+            },
         });
     };
 
     const applyFilters = (newFilters: Partial<Filters>) => {
         const merged = { ...filters, ...newFilters, search };
         Object.keys(merged).forEach((k) => {
-            if ((merged as Record<string, unknown>)[k] === 'all') {
-delete (merged as Record<string, unknown>)[k];
-}
-        });
-        router.get('/admin/observasi-keselamatan', merged, { preserveState: true, replace: true });
-    };
+            const v = (merged as Record<string, unknown>)[k];
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        applyFilters({ search });
+            if (v === 'all' || v === undefined) {
+                delete (merged as Record<string, unknown>)[k];
+            }
+        });
+        router.get('/admin/observasi-keselamatan', merged, {
+            preserveState: true,
+            replace: true,
+        });
     };
 
     const handleDelete = () => {
         if (!toDelete) {
-return;
-}
+            return;
+        }
 
         setDeleting(true);
         router.delete(`/admin/observasi-keselamatan/${toDelete.id}`, {
             onFinish: () => {
- setDeleting(false); setToDelete(null); 
-},
+                setDeleting(false);
+                setToDelete(null);
+            },
         });
     };
 
     const exportUrl = `/admin/observasi-keselamatan/export?${new URLSearchParams(
-        Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) as Record<string, string>
+        Object.fromEntries(
+            Object.entries(filters).filter(([, v]) => v),
+        ) as Record<string, string>,
     ).toString()}`;
 
-    const allSelected = records.data.length > 0 && selectedIds.size === records.data.length;
+    const siteLabel = (v?: string | null) =>
+        v ? (sites.find((s) => s.value === v)?.label ?? v.toUpperCase()) : '—';
 
     return (
         <>
             <Head title="Monitoring Observasi Keselamatan" />
-            <div className="flex flex-col gap-6">
-                {/* Header */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <AdminTitle eyebrow="K3 / Safety" title="Observasi Keselamatan" description="Monitoring form OK seluruh site" />
-                    <div className="flex flex-wrap gap-2">
-                        {selectMode ? (
-                            <>
-                                <Button variant="outline" size="sm" onClick={toggleSelectAll}>
-                                    {selectedIds.size === records.data.length ? 'Batal Semua' : 'Pilih Semua'}
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={exitSelectMode}>Selesai</Button>
-                            </>
-                        ) : (
-                            <>
-                                <Button variant="outline" size="sm" onClick={() => setSelectMode(true)}>Pilih</Button>
-                                <a href={exportUrl} download>
-                                    <Button variant="outline" className="gap-2 h-9">
-                                        <Download size={16} /> Export
-                                    </Button>
-                                </a>
-                                <Button
-                                    variant="outline"
-                                    className="gap-2 h-9 text-destructive hover:text-destructive"
-                                    onClick={() => setShowDeleteRange(true)}
-                                >
-                                    <Lock size={16} /> Hapus Data
-                                </Button>
-                            </>
-                        )}
+            <div className="flex flex-col gap-[18px] pb-10">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                    <AdminTitle
+                        eyebrow="K3 / Safety"
+                        title="Observasi Keselamatan"
+                    />
+                    <div className="flex gap-2">
+                        <a href={exportUrl} download className={adminButton}>
+                            <Download /> Ekspor Excel
+                        </a>
+                        <MoreMenu>
+                            <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => setShowDeleteRange(true)}
+                            >
+                                <Lock /> Hapus rentang tanggal
+                            </DropdownMenuItem>
+                        </MoreMenu>
                     </div>
                 </div>
 
-                {/* Summary */}
-                <div className="grid grid-cols-3 gap-3">
-                    {[
-                        { label: 'Total', value: summary.total, color: 'text-foreground' },
-                        { label: 'Menunggu', value: summary.menunggu_konfirmasi, color: 'text-warning' },
-                        { label: 'Dikonfirmasi', value: summary.dikonfirmasi, color: 'text-success' },
-                    ].map(({ label, value, color }) => (
-                        <Card key={label} className="p-0">
-                            <CardContent className="flex flex-col items-center py-4 px-3 gap-1">
-                                <span className={cn('text-2xl font-bold', color)}>{value}</span>
-                                <span className="text-xs text-muted-foreground">{label}</span>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-
-                {/* Filters */}
-                <div className="flex flex-col gap-3">
-                    <form onSubmit={handleSearch} className="flex gap-2">
-                        <Input
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="Cari nama / NIK..."
-                            className="h-10"
-                        />
-                        <Button aria-label="Cari" type="submit" size="icon" className="h-10 w-10 shrink-0">
-                            <Search size={16} />
-                        </Button>
-                    </form>
-                    <div className="flex gap-2 flex-wrap">
-                        <Select value={filters.site ?? 'all'} onValueChange={v => applyFilters({ site: v })}>
-                            <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Semua site" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Site</SelectItem>
-                                {sites.map((s) => (
-                                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select value={filters.status ?? 'all'} onValueChange={v => applyFilters({ status: v })}>
-                            <SelectTrigger className="h-9 w-44"><SelectValue placeholder="Semua status" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Status</SelectItem>
-                                <SelectItem value="menunggu_konfirmasi">Menunggu Konfirmasi</SelectItem>
-                                <SelectItem value="dikonfirmasi">Dikonfirmasi</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select value={filters.periode ?? 'all'} onValueChange={v => applyFilters({ periode: v })}>
-                            <SelectTrigger className="h-9 w-36"><SelectValue placeholder="Periode" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Semua Periode</SelectItem>
-                                {PERIODE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <FilterBar>
+                    <SearchField
+                        value={search}
+                        onChange={setSearch}
+                        onSubmit={() => applyFilters({ search })}
+                        placeholder="Cari nama atau NIK…"
+                        label="Cari observasi"
+                    />
+                    <Select
+                        value={filters.site ?? 'all'}
+                        onValueChange={(v) => applyFilters({ site: v })}
+                    >
+                        <SelectTrigger
+                            className={chipClass(!!filters.site)}
+                            aria-label="Site"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Site: semua</SelectItem>
+                            {sites.map((s) => (
+                                <SelectItem key={s.value} value={s.value}>
+                                    {s.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        value={filters.periode ?? 'all'}
+                        onValueChange={(v) => applyFilters({ periode: v })}
+                    >
+                        <SelectTrigger
+                            className={chipClass(!!filters.periode)}
+                            aria-label="Periode"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Periode: semua</SelectItem>
+                            {PERIODE_OPTIONS.map((o) => (
+                                <SelectItem key={o.value} value={o.value}>
+                                    {o.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select
+                        value={filters.status ?? 'all'}
+                        onValueChange={(v) => applyFilters({ status: v })}
+                    >
+                        <SelectTrigger
+                            className={chipClass(!!filters.status)}
+                            aria-label="Status"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                Status: semua · {summary.total}
+                            </SelectItem>
+                            <SelectItem value="menunggu_konfirmasi">
+                                Menunggu · {summary.menunggu_konfirmasi}
+                            </SelectItem>
+                            <SelectItem value="dikonfirmasi">
+                                Dikonfirmasi · {summary.dikonfirmasi}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
                     <DateRangeFilter
                         dateFrom={filters.date_from}
                         dateTo={filters.date_to}
                         onChange={(v) => applyFilters(v)}
                     />
-                </div>
+                </FilterBar>
 
-                {/* Table */}
-                {records.data.length === 0 ? (
-                    <p className="py-10 text-center text-muted-foreground">Tidak ada data.</p>
-                ) : (
-                    <div className="overflow-x-auto rounded-lg border">
-                        <table className="w-full min-w-[640px] border-collapse text-xs">
+                <SelectionBar count={selectedIds.size} onClear={clearSelection}>
+                    <SelectionAction
+                        onClick={() => setShowBatchConfirm(true)}
+                        disabled={batchDeleting}
+                    >
+                        <Trash2 /> Hapus
+                    </SelectionAction>
+                </SelectionBar>
+
+                <TableCard
+                    footer={
+                        <TablePager
+                            from={records.from}
+                            to={records.to}
+                            total={records.total}
+                            prev={records.prev_page_url}
+                            next={records.next_page_url}
+                        />
+                    }
+                >
+                    {records.data.length === 0 ? (
+                        <TableEmpty>
+                            Tidak ada observasi yang sesuai filter.
+                        </TableEmpty>
+                    ) : (
+                        <DataTable className="min-w-[860px]">
                             <thead>
-                                <tr className="bg-muted/50 text-left">
-                                    {selectMode && (
-                                        <th className="w-8 px-2 py-2">
-                                            <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
-                                        </th>
-                                    )}
-                                    <th className="px-3 py-2 font-semibold">Karyawan</th>
-                                    <th className="px-2 py-2 font-semibold">Lokasi & Pekerjaan</th>
-                                    <th className="px-2 py-2 font-semibold">PJ</th>
-                                    <th className="px-2 py-2 text-center font-semibold">Status</th>
-                                    <th className="px-2 py-2 font-semibold">Tanggal</th>
-                                    {!selectMode && <th className="px-2 py-2 text-right font-semibold">Aksi</th>}
+                                <tr className={theadRowClass}>
+                                    <th className="w-12">
+                                        <Checkbox
+                                            checked={
+                                                allSelected
+                                                    ? true
+                                                    : selectedIds.size > 0
+                                                      ? 'indeterminate'
+                                                      : false
+                                            }
+                                            onCheckedChange={toggleSelectAll}
+                                            aria-label="Pilih semua di halaman ini"
+                                        />
+                                    </th>
+                                    <th>Tanggal</th>
+                                    <th>Pelapor</th>
+                                    <th>Site</th>
+                                    <th>Pekerjaan</th>
+                                    <th>Lokasi</th>
+                                    <th>PJ</th>
+                                    <th>Status</th>
+                                    <th>
+                                        <span className="sr-only">Aksi</span>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {records.data.map((record, idx) => (
-                                    <tr key={record.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/10'}>
-                                        {selectMode && (
-                                            <td className="px-2 py-2">
+                                {records.data.map((record) => {
+                                    const selected = selectedIds.has(record.id);
+
+                                    return (
+                                        <tr
+                                            key={record.id}
+                                            className={rowClass(selected)}
+                                        >
+                                            <td>
                                                 <Checkbox
-                                                    checked={selectedIds.has(record.id)}
-                                                    onCheckedChange={() => toggleSelect(record.id)}
+                                                    checked={selected}
+                                                    onCheckedChange={() =>
+                                                        toggleSelect(record.id)
+                                                    }
+                                                    aria-label={`Pilih observasi ${record.user.name}`}
                                                 />
                                             </td>
-                                        )}
-                                        <td className={cn(
-                                            'px-3 py-2',
-                                            record.status === 'dikonfirmasi' ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-yellow-500',
-                                        )}>
-                                            <p className="truncate max-w-[160px] font-medium">{record.user.name}</p>
-                                            {record.user.site && <p className="text-[11px] text-muted-foreground">{record.user.site}</p>}
-                                        </td>
-                                        <td className="px-2 py-2 text-muted-foreground">
-                                            <p className="truncate max-w-[160px]">{record.lokasi_kerja}</p>
-                                            <p className="text-[11px]">{record.jenis_pekerjaan}</p>
-                                        </td>
-                                        <td className="px-2 py-2 text-muted-foreground">{record.penanggung_jawab?.name ?? '—'}</td>
-                                        <td className="px-2 py-2 text-center">
-                                            <Badge variant="outline" className={cn(
-                                                'gap-1 text-[11px]',
-                                                record.status === 'dikonfirmasi' ? 'border-success/60 text-success' : 'border-warning/60 text-warning',
-                                            )}>
-                                                {record.status === 'dikonfirmasi'
-                                                    ? <CheckCircle2 size={11} />
-                                                    : <Clock size={11} />}
-                                                {record.status === 'dikonfirmasi' ? 'Dikonfirmasi' : 'Menunggu'}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-2 py-2 text-muted-foreground">
-                                            {new Date(record.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                        </td>
-                                        {!selectMode && (
-                                            <td className="px-2 py-2 text-right">
-                                                <Button aria-label="Hapus"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-7 w-7 text-destructive hover:text-destructive"
-                                                    onClick={() => setToDelete(record)}
-                                                >
-                                                    <Trash2 size={13} />
-                                                </Button>
+                                            <td className="tabular whitespace-nowrap text-muted-foreground">
+                                                {new Date(
+                                                    record.tanggal,
+                                                ).toLocaleDateString('id-ID', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                })}
                                             </td>
-                                        )}
-                                    </tr>
-                                ))}
+                                            <td className="max-w-[170px] truncate font-semibold">
+                                                {record.user.name}
+                                            </td>
+                                            <td className="whitespace-nowrap">
+                                                {siteLabel(record.user.site)}
+                                            </td>
+                                            <td className="max-w-[180px] truncate">
+                                                {record.jenis_pekerjaan}
+                                            </td>
+                                            <td className="max-w-[180px] truncate">
+                                                {record.lokasi_kerja}
+                                            </td>
+                                            <td className="max-w-[150px] truncate">
+                                                {record.penanggung_jawab?.name ??
+                                                    '—'}
+                                            </td>
+                                            <td>
+                                                {record.status ===
+                                                'dikonfirmasi' ? (
+                                                    <Badge variant="success">
+                                                        Dikonfirmasi
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="warning">
+                                                        Menunggu
+                                                    </Badge>
+                                                )}
+                                            </td>
+                                            <td className="text-right">
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex size-8 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
+                                                    aria-label={`Hapus observasi ${record.user.name}`}
+                                                    onClick={() =>
+                                                        setToDelete(record)
+                                                    }
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
-                        </table>
-                    </div>
-                )}
-
-                {/* Pagination */}
-                {(records.prev_page_url || records.next_page_url) && (
-                    <div className="flex justify-between gap-3">
-                        {records.prev_page_url
-                            ? <Link href={records.prev_page_url}><Button variant="outline" className="h-10 px-5">← Sebelumnya</Button></Link>
-                            : <div />}
-                        {records.next_page_url && (
-                            <Link href={records.next_page_url}><Button variant="outline" className="h-10 px-5">Berikutnya →</Button></Link>
-                        )}
-                    </div>
-                )}
+                        </DataTable>
+                    )}
+                </TableCard>
             </div>
 
-            {/* Delete dialog */}
             <Dialog open={!!toDelete} onOpenChange={() => setToDelete(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Hapus Data</DialogTitle>
+                        <DialogTitle>Hapus observasi?</DialogTitle>
                         <DialogDescription>
-                            Yakin ingin menghapus data OK milik <strong>{toDelete?.user.name}</strong> tanggal{' '}
-                            {toDelete ? new Date(toDelete.tanggal).toLocaleDateString('id-ID') : ''}?
-                            Tindakan ini tidak dapat dibatalkan.
+                            Data observasi milik{' '}
+                            <strong>{toDelete?.user.name}</strong> tanggal{' '}
+                            {toDelete
+                                ? new Date(toDelete.tanggal).toLocaleDateString(
+                                      'id-ID',
+                                  )
+                                : ''}{' '}
+                            akan dihapus permanen.
                         </DialogDescription>
                     </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setToDelete(null)}>Batal</Button>
-                        <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-                            {deleting ? 'Menghapus...' : 'Hapus'}
+                    <DialogFooter className="gap-2">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setToDelete(null)}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDelete}
+                            disabled={deleting}
+                        >
+                            {deleting ? 'Menghapus…' : 'Hapus'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={showBatchConfirm} onOpenChange={(open) => !open && setShowBatchConfirm(false)}>
+            <Dialog
+                open={showBatchConfirm}
+                onOpenChange={(open) => !open && setShowBatchConfirm(false)}
+            >
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Hapus {selectedIds.size} Data Observasi Keselamatan</DialogTitle>
+                        <DialogTitle>
+                            Hapus {selectedIds.size} observasi?
+                        </DialogTitle>
                         <DialogDescription>
-                            Yakin ingin menghapus <strong>{selectedIds.size}</strong> data yang dipilih?
-                            Tindakan ini tidak dapat dibatalkan.
+                            Data yang dipilih akan dihapus permanen. Tindakan
+                            ini tidak dapat dibatalkan.
                         </DialogDescription>
                     </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowBatchConfirm(false)} disabled={batchDeleting}>Batal</Button>
-                        <Button variant="destructive" onClick={handleBatchDelete} disabled={batchDeleting}>
-                            {batchDeleting ? 'Menghapus...' : 'Ya, Hapus Semua'}
+                    <DialogFooter className="gap-2">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setShowBatchConfirm(false)}
+                            disabled={batchDeleting}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleBatchDelete}
+                            disabled={batchDeleting}
+                        >
+                            {batchDeleting ? 'Menghapus…' : 'Hapus semua'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-
-            <BatchDeleteBar
-                count={selectedIds.size}
-                onDelete={() => setShowBatchConfirm(true)}
-                onCancel={exitSelectMode}
-                deleting={batchDeleting}
-            />
 
             <DeleteRangeDialog
                 open={showDeleteRange}
                 onOpenChange={setShowDeleteRange}
                 endpoint="/admin/observasi-keselamatan/delete-range"
-                title="Hapus Data Observasi Keselamatan"
+                title="Hapus data observasi keselamatan"
                 description="Ini akan menghapus permanen seluruh data OK yang disubmit pada rentang tanggal yang dipilih (mengikuti batas site admin, di luar filter tampilan saat ini). Tindakan ini tidak dapat dibatalkan."
             />
         </>
