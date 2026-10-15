@@ -1,13 +1,16 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import { CheckCircle2, Download, Paperclip, Plus } from 'lucide-react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { Download, Paperclip, Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useRef, useState } from 'react';
 import {
     ModuleHeader,
     SectionLabel,
 } from '@/components/patterns/module-header';
-import { ResultScreen } from '@/components/patterns/result-screen';
 import { SignaturePad } from '@/components/patterns/signature-pad';
+import {
+    firstNameOf,
+    SubmittedScreen,
+} from '@/components/patterns/submitted-screen';
 import { RiskBadge } from '@/components/risk-badge';
 import { TindakanBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
@@ -147,57 +150,22 @@ export default function LaporanBahayaShow(props: Props) {
 
 function LaporanTerkirim({ record }: { record: LaporanRecord }) {
     const { auth } = usePage<{ auth: Auth }>().props;
-    const firstName = auth.user.name?.split(' ')[0] ?? auth.user.name;
     const nomor = `LB-${(record.site ?? '').toUpperCase()}-${String(record.id).padStart(4, '0')}`;
 
     return (
-        <>
-            <Head title="Laporan terkirim" />
-            <ResultScreen
-                icon={CheckCircle2}
-                tone="accent"
-                title="Laporan terkirim"
-                description={`Terima kasih, ${firstName}. Laporan Anda membantu rekan kerja pulang dengan selamat.`}
-                actions={
-                    <>
-                        <Button asChild size="lg">
-                            <Link href="/home">Kembali ke Beranda</Link>
-                        </Button>
-                        <Button asChild size="lg" variant="outline">
-                            <Link href={`/laporan-bahaya/${record.id}`}>
-                                Lihat laporan
-                            </Link>
-                        </Button>
-                    </>
-                }
-            >
-                <dl className="overflow-hidden rounded-lg bg-card">
-                    {[
-                        { label: 'Nomor', value: nomor },
-                        {
-                            label: 'Tingkat',
-                            value: `${riskLabels[record.tingkat_risiko]} · ${record.tingkat_risiko}`,
-                        },
-                        {
-                            label: 'PIC diberi tahu',
-                            value: record.pic?.name ?? '—',
-                        },
-                    ].map((row) => (
-                        <div
-                            key={row.label}
-                            className="flex justify-between gap-3 border-b border-border/60 px-4 py-3.5 text-sm last:border-0"
-                        >
-                            <dt className="text-muted-foreground">
-                                {row.label}
-                            </dt>
-                            <dd className="tabular text-right font-bold">
-                                {row.value}
-                            </dd>
-                        </div>
-                    ))}
-                </dl>
-            </ResultScreen>
-        </>
+        <SubmittedScreen
+            title="Laporan terkirim"
+            description={`Terima kasih, ${firstNameOf(auth.user.name)}. Laporan Anda membantu rekan kerja pulang dengan selamat.`}
+            rows={[
+                { label: 'Nomor', value: nomor },
+                {
+                    label: 'Tingkat',
+                    value: `${riskLabels[record.tingkat_risiko]} · ${record.tingkat_risiko}`,
+                },
+                { label: 'PIC diberi tahu', value: record.pic?.name ?? '—' },
+            ]}
+            detailHref={`/laporan-bahaya/${record.id}`}
+        />
     );
 }
 

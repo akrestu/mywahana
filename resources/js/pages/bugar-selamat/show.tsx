@@ -1,9 +1,17 @@
-import { Head, Link } from '@inertiajs/react';
-import { Check, Download, X } from 'lucide-react';
+import { Head } from '@inertiajs/react';
+import {
+    Check,
+    CheckCircle2,
+    Download,
+    OctagonX,
+    TriangleAlert,
+    X,
+} from 'lucide-react';
 import {
     ModuleHeader,
     SectionLabel,
 } from '@/components/patterns/module-header';
+import { SubmittedScreen } from '@/components/patterns/submitted-screen';
 import { KelayakanBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -242,92 +250,51 @@ const RESULT = {
     layak: {
         title: 'Layak bekerja',
         desc: 'Kondisi Anda prima. Selamat bekerja dan tetap utamakan keselamatan.',
-        mark: '✓',
-        screen: 'bg-success-soft text-foreground',
-        ring: 'bg-success text-on-solid',
-        topo: 'opacity-20',
+        icon: CheckCircle2,
+        tone: 'success',
     },
     catatan: {
         title: 'Bekerja dengan catatan',
         desc: 'Tetap waspada dan perhatikan kondisi fisik Anda. Sampaikan ke pengawas bila ada keluhan.',
-        mark: '!',
-        screen: 'bg-accent text-accent-foreground',
-        ring: 'bg-ink text-accent',
-        topo: 'opacity-25',
+        icon: TriangleAlert,
+        tone: 'warning',
     },
     dilarang: {
         title: 'Dilarang bekerja',
         desc: 'Kondisi Anda belum memenuhi syarat untuk bekerja. Segera lapor ke pengawas Anda.',
-        mark: '✕',
-        screen: 'bg-destructive text-on-solid',
-        ring: 'bg-white text-destructive',
-        topo: 'opacity-15 invert',
+        icon: OctagonX,
+        tone: 'danger',
     },
 } as const;
 
 function BugarResult({ record }: { record: BugarRecord }) {
     const r = RESULT[record.status_kelayakan] ?? RESULT.layak;
-    const shift = record.shift === 'Malam' ? 'SHIFT II' : 'SHIFT I';
 
     return (
-        <>
-            <Head title="Hasil Bugar Selamat" />
-            <section
-                aria-live="polite"
-                className={cn(
-                    'relative isolate -mx-4 -mt-4 flex min-h-[calc(100svh-4rem)] flex-col overflow-hidden lg:mx-0 lg:mt-0 lg:min-h-[640px] lg:rounded-[28px]',
-                    r.screen,
-                )}
-            >
-                <img
-                    src="/images/topo.png"
-                    alt=""
-                    aria-hidden
-                    className={cn(
-                        'pointer-events-none absolute -top-36 -left-64 -z-10 w-[900px] max-w-none',
-                        r.topo,
-                    )}
-                />
-                <div className="flex flex-1 flex-col items-center justify-center gap-[18px] p-6 text-center">
-                    <span
-                        className={cn(
-                            'flex size-28 animate-in items-center justify-center rounded-full text-5xl font-extrabold duration-500 zoom-in-75',
-                            r.ring,
-                        )}
-                        aria-hidden
-                    >
-                        {r.mark}
-                    </span>
-                    <p className="text-xs font-bold tracking-[0.12em]">
-                        HASIL · {shift} · HARI KE-{record.hari_ke}
-                    </p>
-                    <h1 className="text-[34px] leading-tight font-extrabold tracking-tight">
-                        {r.title}
-                    </h1>
-                    <p className="max-w-[300px] text-[15px] leading-relaxed">
-                        {r.desc}
-                    </p>
-                </div>
-                <div className="flex flex-col gap-2.5 px-4 pt-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-6">
-                    <Button
-                        asChild
-                        variant="outline"
-                        size="lg"
-                        className="border-current bg-transparent text-inherit hover:bg-black/5"
-                    >
-                        <Link href={`/bugar-selamat/${record.id}`}>
-                            Lihat detail
-                        </Link>
-                    </Button>
-                    <Button
-                        asChild
-                        size="lg"
-                        className="bg-ink text-white hover:bg-ink/90"
-                    >
-                        <Link href="/home">Kembali ke Beranda</Link>
-                    </Button>
-                </div>
-            </section>
-        </>
+        <SubmittedScreen
+            title={r.title}
+            description={r.desc}
+            icon={r.icon}
+            tone={r.tone}
+            rows={[
+                {
+                    label: 'Tanggal',
+                    value: new Date(record.tanggal).toLocaleDateString(
+                        'id-ID',
+                        { day: 'numeric', month: 'long', year: 'numeric' },
+                    ),
+                },
+                {
+                    label: 'Shift',
+                    value:
+                        record.shift === 'Malam'
+                            ? 'Shift II · Malam'
+                            : 'Shift I · Siang',
+                },
+                { label: 'Hari ke-', value: record.hari_ke },
+            ]}
+            detailHref={`/bugar-selamat/${record.id}`}
+            detailLabel="Lihat detail"
+        />
     );
 }

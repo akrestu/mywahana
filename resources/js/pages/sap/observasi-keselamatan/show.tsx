@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { CheckCircle2, Clock, Download, OctagonX } from 'lucide-react';
 import { ObservasiReview } from '@/components/observasi/observasi-review';
 import type { ObservasiRecord } from '@/components/observasi/observasi-review';
@@ -7,8 +7,13 @@ import {
     ModuleHeader,
     SectionLabel,
 } from '@/components/patterns/module-header';
+import {
+    firstNameOf,
+    SubmittedScreen,
+} from '@/components/patterns/submitted-screen';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import type { Auth } from '@/types';
 
 type Status = 'menunggu_konfirmasi' | 'dikonfirmasi' | 'ditolak';
 type Props = {
@@ -20,6 +25,7 @@ type Props = {
         pj_ditolak_at: string | null;
     };
     is_pj: boolean;
+    terkirim?: boolean;
 };
 
 const STATUS: Record<
@@ -50,7 +56,40 @@ const fmt = (d: string) =>
         year: 'numeric',
     });
 
-export default function ObservasiKeselamatanShow({ record, is_pj }: Props) {
+export default function ObservasiKeselamatanShow({
+    record,
+    is_pj,
+    terkirim = false,
+}: Props) {
+    if (terkirim) {
+        return <ObservasiTerkirim record={record} />;
+    }
+
+    return <ObservasiDetail record={record} is_pj={is_pj} />;
+}
+
+function ObservasiTerkirim({ record }: { record: Props['record'] }) {
+    const { auth } = usePage<{ auth: Auth }>().props;
+
+    return (
+        <SubmittedScreen
+            title="Observasi terkirim"
+            description={`Terima kasih, ${firstNameOf(auth.user.name)}. Observasi Anda membantu rekan kerja pulang dengan selamat.`}
+            rows={[
+                { label: 'Pekerjaan', value: record.jenis_pekerjaan },
+                { label: 'Lokasi', value: record.lokasi_kerja },
+                {
+                    label: 'PJ diberi tahu',
+                    value: record.penanggung_jawab?.name ?? '—',
+                },
+            ]}
+            detailHref={`/sap/observasi-keselamatan/${record.id}`}
+            detailLabel="Lihat observasi"
+        />
+    );
+}
+
+function ObservasiDetail({ record, is_pj }: Pick<Props, 'record' | 'is_pj'>) {
     const base = `/sap/observasi-keselamatan/${record.id}`;
     const status = STATUS[record.status] ?? STATUS.menunggu_konfirmasi;
     const StatusIcon = status.icon;

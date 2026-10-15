@@ -172,9 +172,7 @@ class InspeksiKantorController extends Controller
         // Kirim notifikasi ke peserta
         User::whereIn('id', $pesertaIds)->get()->each->notify(new InspeksiKantorDibuat($record, 'peserta'));
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Form Inspeksi Kantor berhasil disimpan.']);
-
-        return redirect()->route('sap.inspeksi-kantor.index');
+        return redirect()->route('sap.inspeksi-kantor.show', [$record, 'terkirim' => 1]);
     }
 
     public function show(Request $request, InspeksiKantor $inspeksiKantor)
@@ -193,6 +191,7 @@ class InspeksiKantorController extends Controller
         return Inertia::render('sap/inspeksi-kantor/show', [
             'record' => $inspeksiKantor,
             'is_ri' => $user->id === $inspeksiKantor->re_inspektor_id,
+            'terkirim' => $request->boolean('terkirim') && $request->user()->id === $inspeksiKantor->user_id,
         ]);
     }
 

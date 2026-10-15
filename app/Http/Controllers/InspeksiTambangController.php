@@ -156,9 +156,7 @@ class InspeksiTambangController extends Controller
 
         User::whereIn('id', $pesertaIds)->get()->each->notify(new InspeksiTambangDibuat($record, 'peserta'));
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Form Inspeksi Tambang berhasil disimpan.']);
-
-        return redirect()->route('sap.inspeksi-tambang.index');
+        return redirect()->route('sap.inspeksi-tambang.show', [$record, 'terkirim' => 1]);
     }
 
     public function show(Request $request, InspeksiTambang $inspeksiTambang)
@@ -177,6 +175,7 @@ class InspeksiTambangController extends Controller
         return Inertia::render('sap/inspeksi-tambang/show', [
             'record' => $inspeksiTambang,
             'is_ri' => $user->id === $inspeksiTambang->re_inspektor_id,
+            'terkirim' => $request->boolean('terkirim') && $request->user()->id === $inspeksiTambang->user_id,
         ]);
     }
 

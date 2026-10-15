@@ -136,9 +136,7 @@ class KomunikasiJsaController extends Controller
             $teamLeader->notify(new KomunikasiJsaKonfirmasi($form));
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Lembar Komunikasi JSA berhasil disimpan.']);
-
-        return redirect()->route('sap.komunikasi-jsa.index');
+        return redirect()->route('sap.komunikasi-jsa.show', [$form, 'terkirim' => 1]);
     }
 
     public function show(Request $request, KomunikasiJsa $komunikasiJsa)
@@ -155,6 +153,7 @@ class KomunikasiJsaController extends Controller
         return Inertia::render('sap/komunikasi-jsa/show', [
             'record' => $komunikasiJsa,
             'isTeamLeader' => $request->user()->id === $komunikasiJsa->team_leader_id,
+            'terkirim' => $request->boolean('terkirim') && $request->user()->id === $komunikasiJsa->user_id,
         ]);
     }
 

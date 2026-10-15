@@ -2,10 +2,15 @@ import { INSPEKSI } from '@/components/inspeksi/checklists';
 import { InspeksiDetail } from '@/components/inspeksi/inspeksi-detail';
 import type { InspeksiRecord } from '@/components/inspeksi/inspeksi-detail';
 
-type Props = { record: InspeksiRecord; is_ri: boolean };
+type Props = { record: InspeksiRecord; is_ri: boolean; terkirim?: boolean };
 
-export default function InspeksiKantorShow({ record, is_ri }: Props) {
+export default function InspeksiKantorShow({ record, is_ri, terkirim }: Props) {
     return (
-        <InspeksiDetail config={INSPEKSI.kantor} record={record} isRi={is_ri} />
+        <InspeksiDetail
+            config={INSPEKSI.kantor}
+            record={record}
+            isRi={is_ri}
+            terkirim={terkirim}
+        />
     );
 }

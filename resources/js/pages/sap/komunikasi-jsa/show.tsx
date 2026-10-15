@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { CheckCircle2, Clock, OctagonX } from 'lucide-react';
 import { JsaReview } from '@/components/jsa/jsa-review';
 import type { JsaRecord } from '@/components/jsa/jsa-review';
@@ -6,10 +6,19 @@ import {
     ModuleHeader,
     SectionLabel,
 } from '@/components/patterns/module-header';
+import {
+    firstNameOf,
+    SubmittedScreen,
+} from '@/components/patterns/submitted-screen';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import type { Auth } from '@/types';
 
-type Props = { record: JsaRecord; isTeamLeader: boolean };
+type Props = {
+    record: JsaRecord;
+    isTeamLeader: boolean;
+    terkirim?: boolean;
+};
 
 const STATUS: Record<
     JsaRecord['status'],
@@ -33,7 +42,46 @@ const STATUS: Record<
     ditolak: { label: 'Ditolak TL', variant: 'danger', icon: OctagonX },
 };
 
-export default function KomunikasiJsaShow({ record, isTeamLeader }: Props) {
+export default function KomunikasiJsaShow({
+    record,
+    isTeamLeader,
+    terkirim = false,
+}: Props) {
+    if (terkirim) {
+        return <JsaTerkirim record={record} />;
+    }
+
+    return <JsaDetail record={record} isTeamLeader={isTeamLeader} />;
+}
+
+function JsaTerkirim({ record }: { record: JsaRecord }) {
+    const { auth } = usePage<{ auth: Auth }>().props;
+
+    return (
+        <SubmittedScreen
+            title="JSA terkirim"
+            description={`Terima kasih, ${firstNameOf(auth.user.name)}. Komunikasi JSA membantu tim bekerja dengan aman.`}
+            rows={[
+                { label: 'Dokumen', value: record.judul_dokumen },
+                { label: 'Lokasi', value: record.lokasi },
+                {
+                    label: 'Team leader diberi tahu',
+                    value: record.team_leader?.name ?? '—',
+                },
+            ]}
+            detailHref={`/sap/komunikasi-jsa/${record.id}`}
+            detailLabel="Lihat JSA"
+        />
+    );
+}
+
+function JsaDetail({
+    record,
+    isTeamLeader,
+}: {
+    record: JsaRecord;
+    isTeamLeader: boolean;
+}) {
     const status = STATUS[record.status] ?? STATUS.menunggu_konfirmasi;
     const StatusIcon = status.icon;
     const signatures = [

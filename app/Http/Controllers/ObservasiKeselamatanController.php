@@ -173,9 +173,7 @@ class ObservasiKeselamatanController extends Controller
             $ok->penanggungJawab->notify(new ObservasiKeselamatanKonfirmasi($ok));
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Form Observasi Keselamatan berhasil disimpan.']);
-
-        return redirect()->route('sap.observasi-keselamatan.index');
+        return redirect()->route('sap.observasi-keselamatan.show', [$ok, 'terkirim' => 1]);
     }
 
     public function show(Request $request, ObservasiKeselamatan $observasiKeselamatan)
@@ -192,6 +190,7 @@ class ObservasiKeselamatanController extends Controller
         return Inertia::render('sap/observasi-keselamatan/show', [
             'record' => $observasiKeselamatan,
             'is_pj' => $request->user()->id === $observasiKeselamatan->penanggung_jawab_id,
+            'terkirim' => $request->boolean('terkirim') && $request->user()->id === $observasiKeselamatan->user_id,
         ]);
     }
 

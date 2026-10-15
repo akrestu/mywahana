@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import {
     CheckCircle2,
     Clock,
@@ -17,9 +17,14 @@ import {
 } from '@/components/patterns/module-header';
 import { RejectDialog } from '@/components/patterns/reject-dialog';
 import { SignaturePad } from '@/components/patterns/signature-pad';
+import {
+    firstNameOf,
+    SubmittedScreen,
+} from '@/components/patterns/submitted-screen';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import type { Auth } from '@/types';
 
 type UserInfo = { id: number; name: string; jabatan?: string | null };
 type TindakanRow = {
@@ -196,16 +201,57 @@ function InfoList({
     );
 }
 
+/** Confirmation shown to the inspector right after submitting the form. */
+function InspeksiTerkirim({
+    config,
+    record,
+}: {
+    config: InspeksiConfig;
+    record: InspeksiRecord;
+}) {
+    const { auth } = usePage<{ auth: Auth }>().props;
+    const level = record.risk_level ? LEVEL[record.risk_level] : null;
+
+    return (
+        <SubmittedScreen
+            title="Inspeksi terkirim"
+            description={`Terima kasih, ${firstNameOf(auth.user.name)}. Inspeksi Anda membantu menjaga area kerja tetap aman.`}
+            rows={[
+                { label: 'Jenis', value: config.title },
+                {
+                    label: 'Skor',
+                    value:
+                        record.persentase === null
+                            ? '—'
+                            : `${record.persentase}%${level ? ` · ${level.label}` : ''}`,
+                },
+                {
+                    label: 'Re-inspektor diberi tahu',
+                    value: record.re_inspektor?.name ?? '—',
+                },
+            ]}
+            detailHref={`/sap/inspeksi-${config.kind}/${record.id}`}
+            detailLabel="Lihat inspeksi"
+        />
+    );
+}
+
 /** Read-only inspection record with approval actions for the re-inspector. */
 export function InspeksiDetail({
     config,
     record,
     isRi,
+    terkirim = false,
 }: {
     config: InspeksiConfig;
     record: InspeksiRecord;
     isRi: boolean;
+    terkirim?: boolean;
 }) {
+    if (terkirim) {
+        return <InspeksiTerkirim config={config} record={record} />;
+    }
+
     const base = `/sap/inspeksi-${config.kind}`;
     const status = record.status ? STATUS[record.status] : null;
     const StatusIcon = status?.icon;

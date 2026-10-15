@@ -160,9 +160,7 @@ class InspeksiMessController extends Controller
 
         User::whereIn('id', $pesertaIds)->get()->each->notify(new InspeksiMessDibuat($record, 'peserta'));
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Form Inspeksi Mess berhasil disimpan.']);
-
-        return redirect()->route('sap.inspeksi-mess.index');
+        return redirect()->route('sap.inspeksi-mess.show', [$record, 'terkirim' => 1]);
     }
 
     public function show(Request $request, InspeksiMess $inspeksiMess)
@@ -181,6 +179,7 @@ class InspeksiMessController extends Controller
         return Inertia::render('sap/inspeksi-mess/show', [
             'record' => $inspeksiMess,
             'is_ri' => $user->id === $inspeksiMess->re_inspektor_id,
+            'terkirim' => $request->boolean('terkirim') && $request->user()->id === $inspeksiMess->user_id,
         ]);
     }
 
