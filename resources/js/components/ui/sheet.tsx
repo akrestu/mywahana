@@ -65,7 +65,7 @@ function SheetContent({
           side === "top" &&
             "data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top inset-x-0 top-0 h-auto border-b",
           side === "bottom" &&
-            "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto max-h-[90dvh] rounded-t-[28px] pt-2.5 dark:border-t pb-[env(safe-area-inset-bottom)]",
+            "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto max-h-[90dvh] rounded-t-[28px] pt-2.5 dark:border-t pb-[env(safe-area-inset-bottom)] ease-[cubic-bezier(0.32,0.72,0,1)] data-[state=open]:duration-300 data-[state=closed]:duration-200",
           className
         )}
         {...props}
@@ -74,7 +74,7 @@ function SheetContent({
           <div aria-hidden className="bg-border mx-auto h-[5px] w-10 shrink-0 rounded-full" />
         )}
         {children}
-        <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
+        <SheetPrimitive.Close className="ring-offset-background focus-visible:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none">
           <XIcon className="size-4" />
           <span className="sr-only">Tutup</span>
         </SheetPrimitive.Close>
