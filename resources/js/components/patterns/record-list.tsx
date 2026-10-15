@@ -1,5 +1,4 @@
 import { Link } from '@inertiajs/react';
-import { ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { EmptyState } from '@/components/patterns/empty-state';
 import { SectionLabel } from '@/components/patterns/module-header';
@@ -14,19 +13,18 @@ export type RecordRow = {
     subtitle: string;
     status: {
         label: string;
-        tone: 'success' | 'warning' | 'danger' | 'neutral';
+        tone: 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'ink';
     };
     action?: string;
 };
 
 const TONE = {
-    success: { chip: 'bg-success-soft text-success', bar: 'bg-success' },
-    warning: { chip: 'bg-warning-soft text-warning', bar: 'bg-warning' },
-    danger: {
-        chip: 'bg-destructive-soft text-destructive',
-        bar: 'bg-destructive',
-    },
-    neutral: { chip: 'bg-muted text-foreground', bar: 'bg-border' },
+    success: 'bg-success-soft text-success',
+    warning: 'bg-warning-soft text-warning',
+    danger: 'bg-destructive-soft text-destructive',
+    info: 'bg-info-soft text-info',
+    neutral: 'bg-muted text-foreground',
+    ink: 'bg-primary text-primary-foreground',
 };
 
 /** Month-grouped list of submissions with status chip and pager. */
@@ -68,8 +66,6 @@ export function RecordList({
                     <SectionLabel>{month}</SectionLabel>
                     <ul className="overflow-hidden rounded-lg bg-card">
                         {items.map((r) => {
-                            const tone = TONE[r.status.tone];
-
                             return (
                                 <li
                                     key={r.key}
@@ -79,13 +75,6 @@ export function RecordList({
                                         href={r.href}
                                         className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-muted"
                                     >
-                                        <span
-                                            aria-hidden
-                                            className={cn(
-                                                'h-12 w-1 shrink-0 rounded-full',
-                                                tone.bar,
-                                            )}
-                                        />
                                         <span className="min-w-0 flex-1">
                                             <span className="block truncate text-sm font-bold">
                                                 {r.title}
@@ -93,23 +82,20 @@ export function RecordList({
                                             <span className="block truncate text-xs text-muted-foreground">
                                                 {r.subtitle}
                                             </span>
-                                            <span className="mt-1.5 flex flex-wrap gap-1.5">
-                                                <span
-                                                    className={cn(
-                                                        'rounded-full px-2 py-0.5 text-[11px] font-bold',
-                                                        tone.chip,
-                                                    )}
-                                                >
-                                                    {r.status.label}
-                                                </span>
-                                            </span>
                                         </span>
                                         {r.action ? (
                                             <span className="shrink-0 rounded-full bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground">
                                                 {r.action}
                                             </span>
                                         ) : (
-                                            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                                            <span
+                                                className={cn(
+                                                    'shrink-0 rounded-full px-2.5 py-[5px] text-[11px] font-bold',
+                                                    TONE[r.status.tone],
+                                                )}
+                                            >
+                                                {r.status.label}
+                                            </span>
                                         )}
                                     </Link>
                                 </li>

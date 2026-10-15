@@ -1,8 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, GraduationCap, HeartPulse, Home, Inbox, LayoutGrid, MapPin, Mountain, Plus, Search, ShieldCheck, Target, User, UserCheck, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, FileQuestion, GraduationCap, HeartPulse, Home, Inbox, LayoutGrid, MapPin, Mountain, Plus, Search, ShieldCheck, Target, User, UserCheck, Users, Wrench } from 'lucide-react';
 import { useState  } from 'react';
 import type {ReactNode} from 'react';
-import AppLogo from '@/components/app-logo';
 import { AppearanceToggleButton } from '@/components/appearance-toggle-button';
 import { BottomNav, isFocusedFlow } from '@/components/bottom-nav';
 import { CommandPalette } from '@/components/command-palette';
@@ -453,25 +452,30 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
 
     const mainNavGroups = isAdmin
         ? [
-            { label: 'Dashboard', items: [
-                { title: 'Ringkasan Admin', href: '/home', icon: ShieldCheck },
+            { items: [
+                { title: 'Ringkasan', href: '/home', icon: ShieldCheck },
             ]},
-            { label: 'Monitoring', items: [
-                { title: 'Bugar Selamat',        href: '/admin/bugar-selamat',          icon: HeartPulse },
-                { title: 'Laporan Bahaya',        href: '/admin/laporan-bahaya',         icon: AlertTriangle },
-                { title: 'Observasi Keselamatan', href: '/admin/observasi-keselamatan',  icon: ClipboardCheck },
-                { title: 'Komunikasi JSA',        href: '/admin/komunikasi-jsa',         icon: BookOpen },
-                { title: 'Inspeksi Kantor',       href: '/admin/inspeksi-kantor',        icon: Building2 },
-                { title: 'Inspeksi Tambang',      href: '/admin/inspeksi-tambang',       icon: Mountain },
-                { title: 'Inspeksi Workshop',     href: '/admin/inspeksi-workshop',      icon: Wrench },
-                { title: 'Inspeksi Mess',         href: '/admin/inspeksi-mess',          icon: BedDouble },
-                { title: 'Assessment Safety',     href: '/admin/assessment',             icon: GraduationCap },
-                { title: 'Assessment HR',         href: '/admin/hr-assessment',          icon: UserCheck },
+            { label: 'K3 / Safety', items: [
+                { title: 'Bugar Selamat',     href: '/admin/bugar-selamat',         icon: HeartPulse },
+                { title: 'Laporan Bahaya',    href: '/admin/laporan-bahaya',        icon: AlertTriangle },
+                { title: 'Observasi',         href: '/admin/observasi-keselamatan', icon: ClipboardCheck },
+                { title: 'Komunikasi JSA',    href: '/admin/komunikasi-jsa',        icon: BookOpen },
+                { title: 'Inspeksi Kantor',   href: '/admin/inspeksi-kantor',       icon: Building2 },
+                { title: 'Inspeksi Tambang',  href: '/admin/inspeksi-tambang',      icon: Mountain },
+                { title: 'Inspeksi Workshop', href: '/admin/inspeksi-workshop',     icon: Wrench },
+                { title: 'Inspeksi Mess',     href: '/admin/inspeksi-mess',         icon: BedDouble },
+            ]},
+            { label: 'Assessment', items: [
+                { title: 'Safety',           href: '/admin/assessment',                    icon: GraduationCap },
+                { title: 'HR',               href: '/admin/hr-assessment',                 icon: UserCheck },
+                { title: 'Lembar penilaian', href: '/admin/assessment/feedback',           icon: ClipboardList },
+                { title: 'Bank soal Safety', href: '/admin/assessment/questions',          icon: FileQuestion },
+                { title: 'Bank soal HR',     href: '/admin/hr-assessment/questions',       icon: FileQuestion },
             ]},
             { label: 'Manajemen', items: [
-                { title: 'Kelola Pengguna', href: '/admin/users',    icon: Users },
-                { title: 'Kelola Site',     href: '/admin/sites',    icon: MapPin },
-                { title: 'Target Kinerja',  href: '/admin/targets',  icon: Target },
+                { title: 'Pengguna',       href: '/admin/users',   icon: Users },
+                { title: 'Site',           href: '/admin/sites',   icon: MapPin },
+                { title: 'Target kinerja', href: '/admin/targets', icon: Target },
             ]},
           ]
         : [
@@ -491,29 +495,35 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
     return (
         <SidebarProvider defaultOpen={sidebarOpen ?? true}>
             {/* ── Desktop sidebar (hidden on mobile) ── */}
-            <Sidebar collapsible="icon" variant="inset" className="hidden lg:flex">
-                <SidebarHeader className="border-b border-sidebar-border/50 pb-3">
+            <Sidebar collapsible="icon" className="hidden lg:flex">
+                <SidebarHeader className="px-3.5 pt-5 pb-2">
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton
                                 size="lg"
                                 asChild
-                                className="rounded-xl transition-colors hover:bg-sidebar-accent/50"
+                                className="gap-2.5 rounded-[12px] px-2 hover:bg-background"
                                 tooltip={{ children: 'MyWahana' }}
                             >
                                 <Link href={dashboardUrl} prefetch="mount">
-                                    <AppLogo />
+                                    <img src="/logo.png" alt="Logo PT.WBK" className="size-8 shrink-0 object-contain" />
+                                    <span className="text-[15px] font-extrabold">MyWahana</span>
+                                    {isAdmin && (
+                                        <span className="ml-auto rounded-full bg-primary px-[7px] py-[3px] text-[10px] font-bold text-accent group-data-[collapsible=icon]:hidden dark:text-primary-foreground">
+                                            ADMIN
+                                        </span>
+                                    )}
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarHeader>
 
-                <SidebarContent className="gap-1 px-2 py-2">
+                <SidebarContent className="gap-0 px-3.5 pb-4">
                     <NavMain groups={mainNavGroups} />
                 </SidebarContent>
 
-                <SidebarFooter className="gap-2 border-t border-sidebar-border/50 px-2 pt-3 pb-3">
+                <SidebarFooter className="gap-2 border-t border-sidebar-border px-3.5 pt-3 pb-4">
                     <NavUser />
                 </SidebarFooter>
             </Sidebar>

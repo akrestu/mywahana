@@ -144,7 +144,7 @@ export function TargetCard({
                     </span>
                 )}
             </div>
-            <div className="rounded-xl border bg-card">
+            <div className="rounded-lg bg-card">
                 <div className="p-2.5 pb-0">
                     <div
                         role="tablist"

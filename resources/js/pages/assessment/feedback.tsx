@@ -55,7 +55,7 @@ function ScaleRow({
     return (
         <div
             className={cn(
-                'space-y-2.5 rounded-xl border p-3.5 transition-colors',
+                'space-y-2.5 rounded-lg border p-3.5 transition-colors',
                 value === null ? 'bg-card' : 'border-info/30 bg-info-soft',
             )}
         >

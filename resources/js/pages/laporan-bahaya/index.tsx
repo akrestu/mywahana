@@ -33,9 +33,9 @@ type Props = {
 
 const TONE: Record<StatusTindakan, RecordRow['status']['tone']> = {
     pending: 'warning',
-    continue: 'warning',
-    progress: 'neutral',
-    close: 'success',
+    continue: 'neutral',
+    progress: 'info',
+    close: 'ink',
 };
 
 function toRows(page: Paginated, mode: 'my' | 'pic'): RecordRow[] {

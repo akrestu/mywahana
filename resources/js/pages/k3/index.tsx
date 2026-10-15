@@ -346,7 +346,7 @@ export default function K3Index({
                         </Link>
                     }
                 >
-                    Laporan bahaya terbaru
+                    Riwayat saya
                 </SectionLabel>
                 {riwayat.length > 0 ? (
                     <ul className="overflow-hidden rounded-lg bg-card">

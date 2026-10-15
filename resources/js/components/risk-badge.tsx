@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { riskLabels } from '@/lib/risk';
 import type { RiskLevel } from '@/lib/risk';
+import { cn } from '@/lib/utils';
 
 const variants: Record<RiskLevel, 'success' | 'warning' | 'danger'> = {
     AA: 'danger',
@@ -15,10 +16,9 @@ export function RiskBadge({ level }: { level: RiskLevel }) {
     return (
         <Badge
             variant={variants[key]}
-            className={key === 'AA' ? 'bg-risk-extreme text-white dark:text-[oklch(0.191_0_0)]' : undefined}
+            className={cn('font-extrabold', key === 'AA' && 'bg-risk-extreme text-white dark:text-[oklch(0.191_0_0)]')}
         >
-            <span className="font-bold tabular">{key}</span>
-            {riskLabels[key]}
+            {riskLabels[key]} · {key}
         </Badge>
     );
 }

@@ -76,7 +76,7 @@ export default function ErrorPage({ status, message }: Props) {
                     </p>
 
                     <div className="space-y-2">
-                        <h1 className="text-xl font-bold">{cfg.title}</h1>
+                        <h1 className="text-xl font-extrabold tracking-tight">{cfg.title}</h1>
                         <p className="text-sm leading-relaxed text-muted-foreground">
                             {message || cfg.desc}
                         </p>

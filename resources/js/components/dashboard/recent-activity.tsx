@@ -173,7 +173,7 @@ export function RecentActivity({
             <h2 id="riwayat-title" className="text-[15px] font-semibold">
                 Riwayat terakhir
             </h2>
-            <div className="overflow-hidden rounded-xl border bg-card">
+            <div className="overflow-hidden rounded-lg bg-card">
                 {items.length === 0 ? (
                     <p className="px-3.5 py-5 text-center text-sm text-muted-foreground">
                         Belum ada laporan yang Anda kirim.

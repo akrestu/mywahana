@@ -1,45 +1,33 @@
-import { CheckCircle2, CircleDot, Clock, Loader, OctagonX, TriangleAlert } from 'lucide-react';
-import type { ComponentType } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { kelayakanLabels, tindakanLabels } from '@/lib/status';
 import type { Kelayakan, StatusTindakan } from '@/lib/status';
 
-type Variant = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
-type Config = { variant: Variant; icon: ComponentType };
+type Variant = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'ink';
 
-const kelayakanConfig: Record<Kelayakan, Config> = {
-    layak: { variant: 'success', icon: CheckCircle2 },
-    catatan: { variant: 'warning', icon: TriangleAlert },
-    dilarang: { variant: 'danger', icon: OctagonX },
+// Text-only status chips, as in DSKomponen / ATabel.
+const kelayakanVariant: Record<Kelayakan, Variant> = {
+    layak: 'success',
+    catatan: 'warning',
+    dilarang: 'danger',
 };
 
-const tindakanConfig: Record<StatusTindakan, Config> = {
-    pending: { variant: 'warning', icon: Clock },
-    continue: { variant: 'info', icon: CircleDot },
-    progress: { variant: 'neutral', icon: Loader },
-    close: { variant: 'success', icon: CheckCircle2 },
+const tindakanVariant: Record<StatusTindakan, Variant> = {
+    pending: 'warning',
+    continue: 'neutral',
+    progress: 'info',
+    close: 'ink',
 };
 
 export function KelayakanBadge({ status }: { status: Kelayakan }) {
-    const key = status in kelayakanConfig ? status : 'layak';
-    const { variant, icon: Icon } = kelayakanConfig[key];
+    const key = status in kelayakanVariant ? status : 'layak';
 
     return (
-        <Badge variant={variant}>
-            <Icon />
-            {kelayakanLabels[key]}
-        </Badge>
+        <Badge variant={kelayakanVariant[key]}>{kelayakanLabels[key]}</Badge>
     );
 }
 
 export function TindakanBadge({ status }: { status: StatusTindakan }) {
-    const key = status in tindakanConfig ? status : 'pending';
-    const { variant, icon: Icon } = tindakanConfig[key];
+    const key = status in tindakanVariant ? status : 'pending';
 
-    return (
-        <Badge variant={variant}>
-            <Icon />
-            {tindakanLabels[key]}
-        </Badge>
-    );
+    return <Badge variant={tindakanVariant[key]}>{tindakanLabels[key]}</Badge>;
 }

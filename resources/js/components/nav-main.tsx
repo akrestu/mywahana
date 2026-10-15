@@ -1,29 +1,31 @@
 import { Link } from '@inertiajs/react';
 import type { InertiaLinkProps } from '@inertiajs/react';
-import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
     SidebarGroup,
     SidebarGroupLabel,
     SidebarMenu,
-    SidebarMenuBadge,
     SidebarMenuButton,
     SidebarMenuItem,
     useSidebar,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { cn } from '@/lib/utils';
 import type { NavItem } from '@/types';
 
 export type NavGroup = {
     label?: string;
     items: (NavItem & { badge?: number | string })[];
-    defaultOpen?: boolean;
 };
 
 type HrefType = NonNullable<InertiaLinkProps['href']>;
 
-export function NavMain({ groups, items }: { groups?: NavGroup[]; items?: NavItem[] }) {
+export function NavMain({
+    groups,
+    items,
+}: {
+    groups?: NavGroup[];
+    items?: NavItem[];
+}) {
     const { isCurrentUrl } = useCurrentUrl();
 
     // backward-compat: wrap flat items array into a single group
@@ -32,97 +34,82 @@ export function NavMain({ groups, items }: { groups?: NavGroup[]; items?: NavIte
     return (
         <>
             {resolvedGroups.map((group, i) => (
-                <NavGroup key={group.label ?? i} group={group} isActive={isCurrentUrl} />
+                <NavGroup
+                    key={group.label ?? i}
+                    group={group}
+                    isActive={isCurrentUrl}
+                />
             ))}
         </>
     );
 }
 
-function NavGroup({ group, isActive }: { group: NavGroup; isActive: (href: HrefType) => boolean }) {
-    const [open, setOpen] = useState(group.defaultOpen ?? true);
+/** Sidebar group per ADashboard: uppercase label, 40px rows, ink active state with accent dot. */
+function NavGroup({
+    group,
+    isActive,
+}: {
+    group: NavGroup;
+    isActive: (href: HrefType) => boolean;
+}) {
     const { isMobile, setOpenMobile } = useSidebar();
 
-    const handleLinkClick = () => {
-        if (isMobile) {
-            setOpenMobile(false);
-        }
-    };
-
-    const menu = (
-        <SidebarMenu className="gap-0.5">
-            {group.items.map((item) => {
-                const active = isActive(item.href);
-
-                return (
-                    <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={active}
-                            tooltip={{ children: item.title }}
-                            className={`relative h-9 gap-3 rounded-lg px-3 transition-all duration-150 ${
-                                active
-                                    ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-sm'
-                                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'
-                            }`}
-                        >
-                            <Link href={item.href} prefetch="mount" onClick={handleLinkClick} className="flex w-full items-center gap-3">
-                                {active && (
-                                    <span className="absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-sidebar-primary group-data-[collapsible=icon]:hidden" />
-                                )}
-                                {item.icon && (
-                                    <item.icon
-                                        className={`h-4 w-4 flex-shrink-0 transition-colors ${
-                                            active ? 'text-sidebar-primary' : 'text-sidebar-foreground/50'
-                                        }`}
-                                    />
-                                )}
-                                <span className="truncate text-sm">{item.title}</span>
-                            </Link>
-                        </SidebarMenuButton>
-                        {item.badge !== undefined && item.badge !== 0 && (
-                            <SidebarMenuBadge
-                                className={`flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[11px] font-bold tabular-nums ${
-                                    typeof item.badge === 'number' && item.badge > 0
-                                        ? 'bg-destructive text-white'
-                                        : 'bg-sidebar-accent text-sidebar-foreground'
-                                }`}
-                            >
-                                {typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge}
-                            </SidebarMenuBadge>
-                        )}
-                    </SidebarMenuItem>
-                );
-            })}
-        </SidebarMenu>
-    );
-
-    if (!group.label) {
-        return (
-            <SidebarGroup className="py-0">
-                {menu}
-            </SidebarGroup>
-        );
-    }
-
     return (
-        <Collapsible open={open} onOpenChange={setOpen} className="group/collapsible">
-            <SidebarGroup className="py-0">
-                <SidebarGroupLabel
-                    asChild
-                    className="h-7 cursor-pointer rounded-md text-xs font-semibold tracking-widest uppercase transition-colors select-none group-data-[collapsible=icon]:hidden hover:bg-sidebar-accent/50"
-                >
-                    <CollapsibleTrigger className="flex w-full items-center justify-between px-2">
-                        <span>{group.label}</span>
-                        <ChevronDown
-                            className={`h-3.5 w-3.5 text-sidebar-foreground/40 transition-transform duration-200 ${
-                                open ? 'rotate-0' : '-rotate-90'
-                            }`}
-                        />
-                    </CollapsibleTrigger>
+        <SidebarGroup className="p-0">
+            {group.label && (
+                <SidebarGroupLabel className="h-auto px-3 pt-3.5 pb-1 text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
+                    {group.label}
                 </SidebarGroupLabel>
+            )}
+            <SidebarMenu className="gap-0.5">
+                {group.items.map((item) => {
+                    const active = isActive(item.href);
+                    const badge =
+                        typeof item.badge === 'number' && item.badge > 99
+                            ? '99+'
+                            : item.badge;
 
-                <CollapsibleContent>{menu}</CollapsibleContent>
-            </SidebarGroup>
-        </Collapsible>
+                    return (
+                        <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton
+                                asChild
+                                isActive={active}
+                                tooltip={{ children: item.title }}
+                                className={cn(
+                                    'h-10 gap-2.5 rounded-[12px] px-3 text-sm transition-colors',
+                                    active
+                                        ? 'bg-primary font-semibold text-primary-foreground hover:bg-primary hover:text-primary-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground'
+                                        : 'font-medium text-sidebar-foreground hover:bg-background',
+                                )}
+                            >
+                                <Link
+                                    href={item.href}
+                                    prefetch="mount"
+                                    onClick={() => isMobile && setOpenMobile(false)}
+                                >
+                                    {active && (
+                                        <span
+                                            aria-hidden
+                                            className="size-1.5 shrink-0 rounded-full bg-accent group-data-[collapsible=icon]:hidden"
+                                        />
+                                    )}
+                                    {item.icon && (
+                                        <item.icon className="hidden size-4 shrink-0 group-data-[collapsible=icon]:block" />
+                                    )}
+                                    <span className="truncate">
+                                        {item.title}
+                                    </span>
+                                    {badge !== undefined && badge !== 0 && (
+                                        <span className="tabular ml-auto rounded-full bg-accent px-[7px] py-0.5 text-[11px] font-bold text-accent-foreground group-data-[collapsible=icon]:hidden">
+                                            {badge}
+                                        </span>
+                                    )}
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    );
+                })}
+            </SidebarMenu>
+        </SidebarGroup>
     );
 }

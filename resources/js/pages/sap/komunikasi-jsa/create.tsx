@@ -11,10 +11,11 @@ import {
     UserCheck,
     X,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
 import { ComboField } from '@/components/patterns/combo-field';
 import { ModuleHeader } from '@/components/patterns/module-header';
+import { SignaturePad } from '@/components/patterns/signature-pad';
 import { SiteCombobox } from '@/components/site-combobox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -67,120 +68,23 @@ const today = new Date().toLocaleDateString('en-CA', {
     timeZone: 'Asia/Jakarta',
 });
 
-function SignaturePad({
+/** Dialog signature step: shared pad plus explicit save / cancel. */
+function SignatureStep({
     onSave,
     onCancel,
 }: {
     onSave: (dataUrl: string) => void;
     onCancel: () => void;
 }) {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const drawing = useRef(false);
-    const lastPos = useRef<{ x: number; y: number } | null>(null);
-
-    function startDraw(e: MouseEvent | TouchEvent) {
-        e.preventDefault();
-        drawing.current = true;
-        lastPos.current = getPosNative(e);
-    }
-
-    function draw(e: MouseEvent | TouchEvent) {
-        e.preventDefault();
-
-        if (!drawing.current) {
-            return;
-        }
-
-        const canvas = canvasRef.current!;
-        const ctx = canvas.getContext('2d')!;
-        const pos = getPosNative(e);
-        ctx.strokeStyle = document.documentElement.classList.contains('dark')
-            ? '#e2e8f0'
-            : '#1e293b';
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(lastPos.current!.x, lastPos.current!.y);
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-        lastPos.current = pos;
-    }
-
-    function getPosNative(e: MouseEvent | TouchEvent) {
-        const canvas = canvasRef.current!;
-        const rect = canvas.getBoundingClientRect();
-
-        if ('touches' in e) {
-            return {
-                x: e.touches[0].clientX - rect.left,
-                y: e.touches[0].clientY - rect.top,
-            };
-        }
-
-        return {
-            x: (e as MouseEvent).clientX - rect.left,
-            y: (e as MouseEvent).clientY - rect.top,
-        };
-    }
-
-    function stopDraw() {
-        drawing.current = false;
-        lastPos.current = null;
-    }
-
-    function clear() {
-        const canvas = canvasRef.current!;
-        canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    function save() {
-        const canvas = canvasRef.current!;
-        onSave(canvas.toDataURL('image/png'));
-    }
-
-    useEffect(() => {
-        const canvas = canvasRef.current!;
-        canvas.addEventListener('mousedown', startDraw, { passive: false });
-        canvas.addEventListener('mousemove', draw, { passive: false });
-        canvas.addEventListener('mouseup', stopDraw);
-        canvas.addEventListener('mouseleave', stopDraw);
-        canvas.addEventListener('touchstart', startDraw, { passive: false });
-        canvas.addEventListener('touchmove', draw, { passive: false });
-        canvas.addEventListener('touchend', stopDraw);
-
-        return () => {
-            canvas.removeEventListener('mousedown', startDraw);
-            canvas.removeEventListener('mousemove', draw);
-            canvas.removeEventListener('mouseup', stopDraw);
-            canvas.removeEventListener('mouseleave', stopDraw);
-            canvas.removeEventListener('touchstart', startDraw);
-            canvas.removeEventListener('touchmove', draw);
-            canvas.removeEventListener('touchend', stopDraw);
-        };
-    }, []);
+    const [dataUrl, setDataUrl] = useState<string | null>(null);
 
     return (
         <div className="flex flex-col gap-3">
-            <canvas
-                ref={canvasRef}
-                width={320}
-                height={160}
-                className="w-full touch-none rounded-lg border bg-white dark:bg-muted/20"
-            />
+            <SignaturePad onDataUrl={setDataUrl} />
             <div className="flex gap-2">
                 <Button
                     type="button"
                     variant="outline"
-                    size="sm"
-                    onClick={clear}
-                    className="flex-1"
-                >
-                    Hapus
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
                     onClick={onCancel}
                     className="flex-1"
                 >
@@ -188,8 +92,8 @@ function SignaturePad({
                 </Button>
                 <Button
                     type="button"
-                    size="sm"
-                    onClick={save}
+                    onClick={() => dataUrl && onSave(dataUrl)}
+                    disabled={!dataUrl}
                     className="flex-1"
                 >
                     Simpan TTD
@@ -743,7 +647,10 @@ export default function KomunikasiJsaCreate({
 
                     <div className="flex flex-col gap-3">
                         {peserta.map((p, idx) => (
-                            <Card key={idx} className="overflow-hidden">
+                            <Card
+                                key={idx}
+                                className="overflow-hidden border-0"
+                            >
                                 <CardContent className="flex flex-col gap-3 pt-4 pb-4">
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm font-semibold text-muted-foreground">
@@ -1069,7 +976,7 @@ export default function KomunikasiJsaCreate({
                         </DialogTitle>
                     </DialogHeader>
                     {ttdDialogIdx !== null && (
-                        <SignaturePad
+                        <SignatureStep
                             onSave={handleTtdSave}
                             onCancel={() => setTtdDialogIdx(null)}
                         />
@@ -1160,7 +1067,7 @@ export default function KomunikasiJsaCreate({
                     <DialogHeader>
                         <DialogTitle>Tanda Tangan Supervisor</DialogTitle>
                     </DialogHeader>
-                    <SignaturePad
+                    <SignatureStep
                         onSave={(sig) => {
                             setSupervisorSig(sig);
                             setShowSupervisorSig(false);

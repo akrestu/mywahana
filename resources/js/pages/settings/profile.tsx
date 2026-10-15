@@ -163,7 +163,7 @@ return;
                 </div>
 
                 {/* Form Card */}
-                <Card className="shadow-sm">
+                <Card className="border-0">
                     <CardContent className="pt-5">
                         <Form
                             {...ProfileController.update.form()}
@@ -356,14 +356,14 @@ return;
                     </div>
                     <div className="p-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                         {badges.map((b) => (
-                            <div key={b.key} className="flex flex-col items-center gap-1 rounded-xl border bg-muted/30 px-3 py-3 text-center">
+                            <div key={b.key} className="flex flex-col items-center gap-1 rounded-lg bg-muted px-3 py-3 text-center">
                                 <span className="text-2xl">{b.icon}</span>
                                 <p className="text-xs font-semibold leading-tight">{b.nama}</p>
                                 <p className="text-[11px] text-muted-foreground leading-tight">{b.desc}</p>
                             </div>
                         ))}
                         {badges.length === 0 && (
-                            <div className="col-span-2 sm:col-span-3 rounded-xl border border-dashed py-6 text-center">
+                            <div className="col-span-2 sm:col-span-3 rounded-lg bg-muted py-6 text-center">
                                 <p className="text-sm text-muted-foreground">Belum ada badge</p>
                             </div>
                         )}
