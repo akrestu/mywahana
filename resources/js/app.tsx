@@ -27,20 +27,6 @@ createInertiaApp({
         }
     },
     strictMode: true,
-    defaults: {
-        // Fade between pages. Partial reloads (filters, polling) and visits
-        // that keep the current page's state stay instant.
-        visitOptions: (_href, options) => ({
-            // <Link> always passes viewTransition: false, so only an explicit
-            // true (or callback) is kept as is.
-            viewTransition:
-                options.viewTransition ||
-                ((options.method ?? 'get') === 'get' &&
-                    !options.preserveState &&
-                    !options.only?.length &&
-                    !options.except?.length),
-        }),
-    },
     withApp(app) {
         return (
             <TooltipProvider delayDuration={0}>

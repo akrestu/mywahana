@@ -278,34 +278,3 @@
         transition-duration: 120ms !important;
     }
 }
-
-/* Page transitions (Inertia visits with viewTransition). The old page fades
-   out, the new one fades in with a slight rise; the app chrome keeps its own
-   names so it stays still while the content changes. */
-[data-slot='sidebar-container'] {
-    view-transition-name: app-sidebar;
-}
-
-@keyframes page-fade-out {
-    to { opacity: 0; }
-}
-
-@keyframes page-fade-in {
-    from { opacity: 0; transform: translateY(6px); }
-}
-
-::view-transition-old(root) {
-    animation: page-fade-out 120ms ease-in both;
-}
-
-::view-transition-new(root) {
-    animation: page-fade-in 220ms cubic-bezier(0.2, 0, 0, 1) 100ms both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    ::view-transition-group(*),
-    ::view-transition-old(*),
-    ::view-transition-new(*) {
-        animation: none !important;
-    }
-}

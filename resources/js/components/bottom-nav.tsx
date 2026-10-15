@@ -109,7 +109,7 @@ export function BottomNav() {
             <nav
                 aria-label="Navigasi utama"
                 className={cn(
-                    'nav-glass fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 mx-auto grid h-16 max-w-md grid-cols-5 items-center rounded-full transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] [view-transition-name:bottom-nav] lg:hidden',
+                    'fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 mx-auto grid h-16 max-w-md grid-cols-5 items-center nav-glass rounded-full transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] lg:hidden',
                     visible ? 'translate-y-0' : 'translate-y-[calc(100%+2rem)]',
                 )}
             >
