@@ -64,7 +64,7 @@ return (
                         {items.map((rec, idx) => (
                             <div key={rec.id}>
                                 <Link href={`${base}/${rec.id}`}>
-                                    <div className="flex cursor-pointer items-center gap-4 px-4 py-4 transition-colors hover:bg-accent">
+                                    <div className="flex cursor-pointer items-center gap-4 px-4 py-4 transition-colors hover:bg-muted">
                                         <div className={cn('h-14 w-1.5 shrink-0 rounded-full', rec.status === 'selesai' ? 'bg-green-500' : rec.status === 'ditolak' ? 'bg-red-500' : 'bg-yellow-500')} />
                                         <div className="min-w-0 flex-1">
                                             <p className="text-base font-bold">{new Date(rec.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</p>

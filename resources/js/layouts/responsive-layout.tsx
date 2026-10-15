@@ -201,7 +201,7 @@ function MobileHeader({ title, showBack, backHref, isAdmin }: { title?: string; 
                     <Link
                         href={backHref}
                         aria-label="Kembali"
-                        className="-ml-2 flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        className="-ml-2 flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
                         <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M15 18l-6-6 6-6" />
@@ -394,7 +394,7 @@ return url === href;
                                         className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors ${
                                             active
                                                 ? `${'activeBg' in item ? item.activeBg : 'bg-teal-100 dark:bg-teal-950'} ${'activeColor' in item ? item.activeColor : 'text-teal-600 dark:text-teal-400'}`
-                                                : 'text-foreground hover:bg-accent'
+                                                : 'text-foreground hover:bg-muted'
                                         }`}
                                     >
                                         <Icon size={20} strokeWidth={active ? 2.5 : 1.75} />
@@ -427,7 +427,7 @@ return url === href;
                                         className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors ${
                                             active
                                                 ? `${item.activeBg} ${item.activeColor}`
-                                                : 'text-foreground hover:bg-accent'
+                                                : 'text-foreground hover:bg-muted'
                                         }`}
                                     >
                                         <Icon size={20} strokeWidth={active ? 2.5 : 1.75} />

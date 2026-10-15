@@ -444,7 +444,7 @@ return null;
                 {step === 'sign' && (
                     <form onSubmit={handleSign} className="flex flex-col gap-6">
                         <div className="flex items-center gap-3">
-                            <button type="button" onClick={() => setStep('review')} className="flex h-9 w-9 items-center justify-center rounded-xl border hover:bg-accent transition-colors">
+                            <button type="button" onClick={() => setStep('review')} className="flex h-9 w-9 items-center justify-center rounded-xl border hover:bg-muted transition-colors">
                                 <ArrowLeft size={18} />
                             </button>
                             <div>
@@ -487,7 +487,7 @@ return null;
                 {step === 'reject' && (
                     <form onSubmit={handleReject} className="flex flex-col gap-6">
                         <div className="flex items-center gap-3">
-                            <button type="button" onClick={() => setStep('review')} className="flex h-9 w-9 items-center justify-center rounded-xl border hover:bg-accent transition-colors">
+                            <button type="button" onClick={() => setStep('review')} className="flex h-9 w-9 items-center justify-center rounded-xl border hover:bg-muted transition-colors">
                                 <ArrowLeft size={18} />
                             </button>
                             <div>

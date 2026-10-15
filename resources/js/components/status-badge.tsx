@@ -1,29 +1,45 @@
+import { CheckCircle2, CircleDot, Clock, Loader, OctagonX, TriangleAlert } from 'lucide-react';
+import type { ComponentType } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { kelayakanLabels, tindakanLabels } from '@/lib/status';
+import type { Kelayakan, StatusTindakan } from '@/lib/status';
 
-type Kelayakan = 'layak' | 'catatan' | 'dilarang';
-type StatusTindakan = 'pending' | 'continue' | 'progress' | 'close';
+type Variant = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+type Config = { variant: Variant; icon: ComponentType };
 
-const kelayakanConfig: Record<Kelayakan, { label: string; className: string }> = {
-    layak:    { label: 'Layak Bekerja',          className: 'bg-green-100 text-green-800 border-green-200' },
-    catatan:  { label: 'Bekerja dengan Catatan',  className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-    dilarang: { label: 'Dilarang Bekerja',        className: 'bg-red-100 text-red-800 border-red-200' },
+const kelayakanConfig: Record<Kelayakan, Config> = {
+    layak: { variant: 'success', icon: CheckCircle2 },
+    catatan: { variant: 'warning', icon: TriangleAlert },
+    dilarang: { variant: 'danger', icon: OctagonX },
 };
 
-const tindakanConfig: Record<StatusTindakan, { label: string; className: string }> = {
-    pending:  { label: 'Pending',  className: 'bg-orange-100 text-orange-800 border-orange-200' },
-    continue: { label: 'Continue', className: 'bg-blue-100 text-blue-800 border-blue-200' },
-    progress: { label: 'Progress', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-    close:    { label: 'Close',    className: 'bg-green-100 text-green-800 border-green-200' },
+const tindakanConfig: Record<StatusTindakan, Config> = {
+    pending: { variant: 'warning', icon: Clock },
+    continue: { variant: 'info', icon: CircleDot },
+    progress: { variant: 'neutral', icon: Loader },
+    close: { variant: 'success', icon: CheckCircle2 },
 };
 
 export function KelayakanBadge({ status }: { status: Kelayakan }) {
-    const { label, className } = kelayakanConfig[status] ?? kelayakanConfig.layak;
+    const key = status in kelayakanConfig ? status : 'layak';
+    const { variant, icon: Icon } = kelayakanConfig[key];
 
-    return <Badge variant="outline" className={className}>{label}</Badge>;
+    return (
+        <Badge variant={variant}>
+            <Icon />
+            {kelayakanLabels[key]}
+        </Badge>
+    );
 }
 
 export function TindakanBadge({ status }: { status: StatusTindakan }) {
-    const { label, className } = tindakanConfig[status] ?? tindakanConfig.pending;
+    const key = status in tindakanConfig ? status : 'pending';
+    const { variant, icon: Icon } = tindakanConfig[key];
 
-    return <Badge variant="outline" className={className}>{label}</Badge>;
+    return (
+        <Badge variant={variant}>
+            <Icon />
+            {tindakanLabels[key]}
+        </Badge>
+    );
 }

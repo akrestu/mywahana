@@ -85,7 +85,7 @@ function RecordList({ records, asRI = false }: { records: Paginated; asRI?: bool
                         {items.map((rec, idx) => (
                             <div key={`${rec.jenis}-${rec.id}`}>
                                 <Link href={`/sap/inspeksi-${rec.jenis}/${rec.id}`}>
-                                    <div className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-accent">
+                                    <div className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted">
                                         <div
                                             className={cn(
                                                 'h-14 w-1.5 shrink-0 rounded-full',

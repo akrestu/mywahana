@@ -48,10 +48,10 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
                     '[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground',
                     defaultClassNames.selected,
                 ),
-                today: cn('[&>button]:bg-accent [&>button]:text-accent-foreground', defaultClassNames.today),
-                outside: cn('text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30', defaultClassNames.outside),
+                today: cn('[&>button]:bg-muted [&>button]:text-foreground', defaultClassNames.today),
+                outside: cn('text-muted-foreground opacity-50 aria-selected:bg-muted/50 aria-selected:text-muted-foreground aria-selected:opacity-30', defaultClassNames.outside),
                 disabled: cn('text-muted-foreground opacity-50', defaultClassNames.disabled),
-                range_middle: cn('aria-selected:bg-accent aria-selected:text-accent-foreground', defaultClassNames.range_middle),
+                range_middle: cn('aria-selected:bg-muted aria-selected:text-foreground', defaultClassNames.range_middle),
                 hidden: cn('invisible', defaultClassNames.hidden),
                 ...classNames,
             }}

@@ -104,7 +104,7 @@ return;
 
  signForm.post(`/sap/inspeksi-workshop/${record.id}/re-inspeksi`); 
 }} className="flex flex-col gap-6">
-                        <div className="flex items-center gap-3"><button type="button" onClick={() => setStep('review')} className="flex h-9 w-9 items-center justify-center rounded-xl border hover:bg-accent transition-colors"><ArrowLeft size={18} /></button><div><h2 className="text-xl font-bold">Tanda Tangan Re-Inspeksi</h2><p className="text-sm text-muted-foreground">{tanggal}</p></div></div>
+                        <div className="flex items-center gap-3"><button type="button" onClick={() => setStep('review')} className="flex h-9 w-9 items-center justify-center rounded-xl border hover:bg-muted transition-colors"><ArrowLeft size={18} /></button><div><h2 className="text-xl font-bold">Tanda Tangan Re-Inspeksi</h2><p className="text-sm text-muted-foreground">{tanggal}</p></div></div>
                         <div className="rounded-2xl border bg-green-50/50 dark:bg-green-950/10 border-green-200 dark:border-green-800 px-4 py-4"><p className="text-sm leading-relaxed text-green-800 dark:text-green-300">Dengan memberikan tanda tangan, Anda menyatakan telah melakukan re-inspeksi dan menyetujui hasil inspeksi ini.</p></div>
                         <div className="flex flex-col gap-3"><p className="text-base font-bold">Tanda Tangan <span className="text-destructive">*</span></p><SignaturePad onCapture={d => {
  signForm.setData('ttd_re_inspektor', d ?? ''); setHasSig(!!d); 
@@ -126,7 +126,7 @@ return;
 
  rejectForm.post(`/sap/inspeksi-workshop/${record.id}/tolak`); 
 }} className="flex flex-col gap-6">
-                        <div className="flex items-center gap-3"><button type="button" onClick={() => setStep('review')} className="flex h-9 w-9 items-center justify-center rounded-xl border hover:bg-accent transition-colors"><ArrowLeft size={18} /></button><div><h2 className="text-xl font-bold">Penolakan Re-Inspeksi</h2><p className="text-sm text-muted-foreground">{tanggal}</p></div></div>
+                        <div className="flex items-center gap-3"><button type="button" onClick={() => setStep('review')} className="flex h-9 w-9 items-center justify-center rounded-xl border hover:bg-muted transition-colors"><ArrowLeft size={18} /></button><div><h2 className="text-xl font-bold">Penolakan Re-Inspeksi</h2><p className="text-sm text-muted-foreground">{tanggal}</p></div></div>
                         <div className="rounded-2xl border bg-red-50/50 dark:bg-red-950/10 border-red-200 dark:border-red-800 px-4 py-4"><p className="text-sm leading-relaxed text-red-800 dark:text-red-300">Jelaskan alasan penolakan agar inspektor dapat memperbaiki form atau melakukan tindakan yang diperlukan.</p></div>
                         <div className="flex flex-col gap-2"><label className="text-base font-bold">Alasan Penolakan <span className="text-destructive">*</span></label><Textarea value={rejectForm.data.alasan} onChange={e => rejectForm.setData('alasan', e.target.value)} placeholder="Tuliskan alasan penolakan..." className="min-h-32 resize-none text-sm" /></div>
                         <div className="grid grid-cols-2 gap-3">

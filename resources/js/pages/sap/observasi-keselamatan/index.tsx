@@ -97,7 +97,7 @@ function RecordList({ records, asPJ = false }: { records: Paginated; asPJ?: bool
                             <div key={record.id}>
                                 <Link href={`/sap/observasi-keselamatan/${record.id}`}>
                                     <div className={cn(
-                                        'flex cursor-pointer items-center gap-4 px-4 py-4 transition-colors hover:bg-accent',
+                                        'flex cursor-pointer items-center gap-4 px-4 py-4 transition-colors hover:bg-muted',
                                         recordBgColor(record.status),
                                     )}>
                                         <div className={cn('h-14 w-1.5 shrink-0 rounded-full', recordBarColor(record.status))} />
@@ -157,7 +157,7 @@ function PendingKonfirmasiList({ records }: { records: Paginated }) {
                         {items.map((record, idx) => (
                             <div key={record.id}>
                                 <Link href={`/sap/observasi-keselamatan/${record.id}/konfirmasi`}>
-                                    <div className="flex cursor-pointer items-center gap-4 px-4 py-4 transition-colors hover:bg-accent bg-yellow-50/30 dark:bg-yellow-950/10">
+                                    <div className="flex cursor-pointer items-center gap-4 px-4 py-4 transition-colors hover:bg-muted bg-yellow-50/30 dark:bg-yellow-950/10">
                                         <div className="h-14 w-1.5 shrink-0 rounded-full bg-yellow-500" />
                                         <div className="min-w-0 flex-1">
                                             <p className="text-base font-bold">

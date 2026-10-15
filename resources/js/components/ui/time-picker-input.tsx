@@ -114,7 +114,7 @@ export function TimePickerInput({
                                             'scroll-snap-align-center',
                                             tempHour === h
                                                 ? 'bg-primary text-primary-foreground rounded-md mx-1 w-[calc(100%-8px)]'
-                                                : 'text-foreground hover:bg-accent',
+                                                : 'text-foreground hover:bg-muted',
                                         )}
                                     >
                                         {h}
@@ -146,7 +146,7 @@ export function TimePickerInput({
                                             'flex h-10 w-full items-center justify-center text-base font-medium transition-colors',
                                             tempMinute === m
                                                 ? 'bg-primary text-primary-foreground rounded-md mx-1 w-[calc(100%-8px)]'
-                                                : 'text-foreground hover:bg-accent',
+                                                : 'text-foreground hover:bg-muted',
                                         )}
                                     >
                                         {m}

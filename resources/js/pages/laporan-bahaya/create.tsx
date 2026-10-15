@@ -41,6 +41,7 @@ import {
 import { TimePickerInput } from '@/components/ui/time-picker-input';
 import { UploadOverlay } from '@/components/upload-overlay';
 import { compressImageWithToast } from '@/lib/compress-image';
+import { computeRisk } from '@/lib/risk';
 import { cn } from '@/lib/utils';
 
 type UserInfo = {
@@ -60,14 +61,6 @@ type PicUser = {
 type SiteOption = { value: string; label: string; locations?: string[] | null };
 
 type Props = { user: UserInfo; sites: SiteOption[]; pics: PicUser[] };
-
-function computeRisk(p: number, f: number, s: number) {
-    const nilai = p * f * s;
-    const level =
-        nilai >= 125 ? 'AA' : nilai >= 25 ? 'A' : nilai >= 10 ? 'B' : 'C';
-
-    return { nilai, level: level as 'AA' | 'A' | 'B' | 'C' };
-}
 
 const PROBABILITAS = [
     { value: '1', label: 'Hampir tidak mungkin', sub: 'Belum pernah terjadi' },

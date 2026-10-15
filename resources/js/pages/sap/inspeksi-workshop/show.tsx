@@ -141,7 +141,7 @@ export default function InspeksiWorkshopShow({ record, is_ri }: Props) {
             <Head title="Detail Inspeksi Workshop" />
             <div className="flex flex-col gap-6 max-w-2xl">
                 <div className="flex items-start gap-3">
-                    <Link href="/sap/inspeksi-workshop"><button className="flex h-9 w-9 items-center justify-center rounded-xl border hover:bg-accent transition-colors mt-0.5"><ArrowLeft size={18} /></button></Link>
+                    <Link href="/sap/inspeksi-workshop"><button className="flex h-9 w-9 items-center justify-center rounded-xl border hover:bg-muted transition-colors mt-0.5"><ArrowLeft size={18} /></button></Link>
                     <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap"><h2 className="text-xl font-bold">Inspeksi Area Workshop</h2><StatusBadge s={record.status} /></div>
                         <p className="text-sm text-muted-foreground mt-0.5">{tanggal}</p>

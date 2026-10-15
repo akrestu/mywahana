@@ -36,7 +36,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                             'shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                             isCurrentOrParentUrl(item.href)
                                 ? 'bg-primary text-primary-foreground'
-                                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                         )}
                     >
                         {item.title}
@@ -58,7 +58,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                     'rounded-md px-3 py-2 text-sm font-medium transition-colors',
                                     isCurrentOrParentUrl(item.href)
                                         ? 'bg-muted text-foreground'
-                                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                                 )}
                             >
                                 {item.title}

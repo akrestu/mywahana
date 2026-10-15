@@ -375,7 +375,7 @@ return;
                     href="/logout"
                     method="post"
                     as="button"
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                     <LogOut size={16} />
                     Keluar dari Akun

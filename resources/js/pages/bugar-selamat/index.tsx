@@ -120,7 +120,7 @@ export default function BugarSelamatIndex({ records }: Props) {
                                             <div key={record.id}>
                                                 <Link href={`/bugar-selamat/${record.id}`}>
                                                     <div className={cn(
-                                                        'flex cursor-pointer items-center gap-4 px-4 py-4 transition-colors hover:bg-accent',
+                                                        'flex cursor-pointer items-center gap-4 px-4 py-4 transition-colors hover:bg-muted',
                                                         statusBg[record.status_kelayakan],
                                                     )}>
                                                         {/* Status stripe */}
