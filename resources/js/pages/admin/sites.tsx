@@ -282,7 +282,7 @@ return;
                                 Anda akan menghapus site <strong>{toDelete?.label}</strong>{' '}
                                 <span className="font-mono text-xs">({toDelete?.value})</span>.
                             </span>
-                            <span className="block text-amber-600 dark:text-amber-400">
+                            <span className="block text-warning">
                                 Karyawan yang terdaftar di site ini tidak akan ikut terhapus, namun field site mereka akan kosong.
                             </span>
                         </DialogDescription>

@@ -43,18 +43,18 @@ function levelOf(persen: number): Level {
 const LEVEL: Record<Level, { label: string; dot: string; badge: string }> = {
     ok: {
         label: 'Tercapai',
-        dot: 'bg-green-500',
-        badge: 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300',
+        dot: 'bg-success',
+        badge: 'border-success/30 bg-success-soft text-success',
     },
     warn: {
         label: 'Kurang',
-        dot: 'bg-amber-500',
-        badge: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300',
+        dot: 'bg-warning',
+        badge: 'border-warning/30 bg-warning-soft text-warning',
     },
     bad: {
         label: 'Tertinggal',
-        dot: 'bg-red-500',
-        badge: 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300',
+        dot: 'bg-destructive',
+        badge: 'border-destructive/30 bg-destructive-soft text-destructive',
     },
 };
 

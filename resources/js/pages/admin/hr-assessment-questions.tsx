@@ -408,7 +408,7 @@ fileRef.current.value = '';
                         <DialogTitle>Hapus Soal?</DialogTitle>
                         <DialogDescription className="space-y-1">
                             <span className="block">Anda akan menghapus soal ini secara permanen.</span>
-                            <span className="block text-amber-600 dark:text-amber-400">
+                            <span className="block text-warning">
                                 Riwayat jawaban peserta yang pernah mengerjakan soal ini juga akan ikut terhapus dari statistik.
                             </span>
                         </DialogDescription>

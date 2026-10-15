@@ -43,33 +43,33 @@ const baseUserMobileNavItems = [
         href: '/home',
         label: 'Beranda',
         icon: Home,
-        activeColor: 'text-blue-600 dark:text-blue-400',
-        activeBg: 'bg-blue-100 dark:bg-blue-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-info',
+        activeBg: 'bg-info-soft',
+        inactiveColor: 'text-muted-foreground',
     },
     {
         href: '/bugar-selamat',
         label: 'Bugar',
         icon: ClipboardList,
-        activeColor: 'text-green-600 dark:text-green-400',
-        activeBg: 'bg-green-100 dark:bg-green-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-success',
+        activeBg: 'bg-success-soft',
+        inactiveColor: 'text-muted-foreground',
     },
     {
         href: '/laporan-bahaya',
         label: 'Laporan',
         icon: AlertTriangle,
-        activeColor: 'text-red-500 dark:text-red-400',
-        activeBg: 'bg-red-100 dark:bg-red-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-destructive',
+        activeBg: 'bg-destructive-soft',
+        inactiveColor: 'text-muted-foreground',
     },
     {
         href: '/settings/profile',
         label: 'Profil',
         icon: User,
-        activeColor: 'text-purple-600 dark:text-purple-400',
-        activeBg: 'bg-purple-100 dark:bg-purple-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-info',
+        activeBg: 'bg-info-soft',
+        inactiveColor: 'text-muted-foreground',
     },
 ];
 
@@ -79,69 +79,69 @@ const sapMobileNavItems = [
         label: 'Laporan',
         fullLabel: 'Laporan Bahaya',
         icon: AlertTriangle,
-        activeColor: 'text-red-500 dark:text-red-400',
-        activeBg: 'bg-red-100 dark:bg-red-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-destructive',
+        activeBg: 'bg-destructive-soft',
+        inactiveColor: 'text-muted-foreground',
     },
     {
         href: '/sap/observasi-keselamatan',
         label: 'OK',
         fullLabel: 'Observasi Keselamatan',
         icon: ClipboardCheck,
-        activeColor: 'text-teal-600 dark:text-teal-400',
-        activeBg: 'bg-teal-100 dark:bg-teal-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-info',
+        activeBg: 'bg-info-soft',
+        inactiveColor: 'text-muted-foreground',
     },
     {
         href: '/sap/inspeksi-kantor',
         label: 'Kantor',
         fullLabel: 'Inspeksi Kantor',
         icon: Building2,
-        activeColor: 'text-teal-600 dark:text-teal-400',
-        activeBg: 'bg-teal-100 dark:bg-teal-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-info',
+        activeBg: 'bg-info-soft',
+        inactiveColor: 'text-muted-foreground',
     },
     {
         href: '/sap/inspeksi-tambang',
         label: 'Tambang',
         fullLabel: 'Inspeksi Tambang',
         icon: Mountain,
-        activeColor: 'text-teal-600 dark:text-teal-400',
-        activeBg: 'bg-teal-100 dark:bg-teal-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-info',
+        activeBg: 'bg-info-soft',
+        inactiveColor: 'text-muted-foreground',
     },
     {
         href: '/sap/inspeksi-workshop',
         label: 'Workshop',
         fullLabel: 'Inspeksi Workshop',
         icon: Wrench,
-        activeColor: 'text-teal-600 dark:text-teal-400',
-        activeBg: 'bg-teal-100 dark:bg-teal-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-info',
+        activeBg: 'bg-info-soft',
+        inactiveColor: 'text-muted-foreground',
     },
     {
         href: '/sap/inspeksi-mess',
         label: 'Mess',
         fullLabel: 'Inspeksi Mess',
         icon: BedDouble,
-        activeColor: 'text-teal-600 dark:text-teal-400',
-        activeBg: 'bg-teal-100 dark:bg-teal-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-info',
+        activeBg: 'bg-info-soft',
+        inactiveColor: 'text-muted-foreground',
     },
     {
         href: '/sap/komunikasi-jsa',
         label: 'Kom. JSA',
         fullLabel: 'Komunikasi JSA',
         icon: BookOpen,
-        activeColor: 'text-indigo-600 dark:text-indigo-400',
-        activeBg: 'bg-indigo-100 dark:bg-indigo-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-info',
+        activeBg: 'bg-info-soft',
+        inactiveColor: 'text-muted-foreground',
     },
 ];
 
 const assessmentDrawerItems = [
-    { href: '/assessment',    fullLabel: 'Safety Assessment', icon: GraduationCap, activeColor: 'text-indigo-600 dark:text-indigo-400', activeBg: 'bg-indigo-100 dark:bg-indigo-950' },
-    { href: '/hr-assessment', fullLabel: 'HR Assessment',     icon: UserCheck,     activeColor: 'text-purple-600 dark:text-purple-400', activeBg: 'bg-purple-100 dark:bg-purple-950' },
+    { href: '/assessment',    fullLabel: 'Safety Assessment', icon: GraduationCap, activeColor: 'text-info', activeBg: 'bg-info-soft' },
+    { href: '/hr-assessment', fullLabel: 'HR Assessment',     icon: UserCheck,     activeColor: 'text-info', activeBg: 'bg-info-soft' },
 ];
 
 const adminSapDrawerItems = [
@@ -162,33 +162,33 @@ const adminMobileNavItems = [
         href: '/home',
         label: 'Admin',
         icon: ShieldCheck,
-        activeColor: 'text-blue-600 dark:text-blue-400',
-        activeBg: 'bg-blue-100 dark:bg-blue-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-info',
+        activeBg: 'bg-info-soft',
+        inactiveColor: 'text-muted-foreground',
     },
     {
         href: '/admin/bugar-selamat',
         label: 'Bugar',
         icon: HeartPulse,
-        activeColor: 'text-green-600 dark:text-green-400',
-        activeBg: 'bg-green-100 dark:bg-green-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-success',
+        activeBg: 'bg-success-soft',
+        inactiveColor: 'text-muted-foreground',
     },
     {
         href: '/admin/laporan-bahaya',
         label: 'Laporan',
         icon: AlertTriangle,
-        activeColor: 'text-red-500 dark:text-red-400',
-        activeBg: 'bg-red-100 dark:bg-red-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-destructive',
+        activeBg: 'bg-destructive-soft',
+        inactiveColor: 'text-muted-foreground',
     },
     {
         href: '/admin/users',
         label: 'Pengguna',
         icon: Users,
-        activeColor: 'text-purple-600 dark:text-purple-400',
-        activeBg: 'bg-purple-100 dark:bg-purple-950',
-        inactiveColor: 'text-slate-500 dark:text-slate-400',
+        activeColor: 'text-info',
+        activeBg: 'bg-info-soft',
+        inactiveColor: 'text-muted-foreground',
     },
 ];
 
@@ -257,12 +257,12 @@ return url === href;
                 style={{ minWidth: '4rem' }}
             >
                 <div className={`flex items-center justify-center rounded-2xl px-3 py-1.5 transition-all ${
-                    active ? `${item.activeBg} ${item.activeColor}` : item.inactiveColor
+                    active ? 'bg-accent text-accent-foreground' : 'text-[oklch(0.82_0.02_88)]'
                 }`}>
                     <Icon size={22} strokeWidth={active ? 2.5 : 1.75} />
                 </div>
                 <span className={`text-[11px] font-semibold leading-none transition-colors ${
-                    active ? item.activeColor : item.inactiveColor
+                    active ? 'text-white' : 'text-[oklch(0.82_0.02_88)]'
                 }`}>
                     {item.label}
                 </span>
@@ -271,8 +271,8 @@ return url === href;
     };
 
     return (
-        <nav className={`fixed bottom-0 left-0 right-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden transition-transform duration-300 pb-[env(safe-area-inset-bottom)] ${navVisible ? 'translate-y-0' : 'translate-y-full'}`}>
-            <div className="flex h-[72px] items-center justify-around px-1">
+        <nav aria-label="Navigasi admin" className={`fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 mx-auto max-w-md rounded-[28px] bg-[oklch(0.191_0_0)] shadow-[0_12px_28px_oklch(0.191_0_0/0.18)] transition-transform duration-300 lg:hidden dark:border dark:border-border dark:bg-card ${navVisible ? 'translate-y-0' : 'translate-y-[calc(100%+2rem)]'}`}>
+            <div className="flex h-[68px] items-center justify-around px-1">
                 {isAdmin ? (
                     <>
                         {/* Admin: Admin, Bugar, Laporan, SAP(drawer), Pengguna */}
@@ -285,14 +285,12 @@ return url === href;
                             style={{ minWidth: '3.5rem' }}
                         >
                             <div className={`flex items-center justify-center rounded-2xl px-3 py-1.5 transition-all ${
-                                isSapActive
-                                    ? 'bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400'
-                                    : 'text-slate-500 dark:text-slate-400'
+                                isSapActive ? 'bg-accent text-accent-foreground' : 'text-[oklch(0.82_0.02_88)]'
                             }`}>
                                 <ClipboardCheck size={22} strokeWidth={isSapActive ? 2.5 : 1.75} />
                             </div>
                             <span className={`text-[11px] font-semibold leading-none transition-colors ${
-                                isSapActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'
+                                isSapActive ? 'text-white' : 'text-[oklch(0.82_0.02_88)]'
                             }`}>SAP</span>
                         </button>
                         {items.slice(3).map((item) => (
@@ -311,14 +309,12 @@ return url === href;
                             style={{ minWidth: '3.5rem' }}
                         >
                             <div className={`flex items-center justify-center rounded-2xl px-3 py-1.5 transition-all ${
-                                isSapActive
-                                    ? 'bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400'
-                                    : 'text-slate-500 dark:text-slate-400'
+                                isSapActive ? 'bg-accent text-accent-foreground' : 'text-[oklch(0.82_0.02_88)]'
                             }`}>
                                 <ClipboardCheck size={22} strokeWidth={isSapActive ? 2.5 : 1.75} />
                             </div>
                             <span className={`text-[11px] font-semibold leading-none transition-colors ${
-                                isSapActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'
+                                isSapActive ? 'text-white' : 'text-[oklch(0.82_0.02_88)]'
                             }`}>SAP</span>
                         </button>
                         <button
@@ -327,14 +323,12 @@ return url === href;
                             style={{ minWidth: '3.5rem' }}
                         >
                             <div className={`flex items-center justify-center rounded-2xl px-3 py-1.5 transition-all ${
-                                isAssessmentActive
-                                    ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
-                                    : 'text-slate-500 dark:text-slate-400'
+                                isAssessmentActive ? 'bg-accent text-accent-foreground' : 'text-[oklch(0.82_0.02_88)]'
                             }`}>
                                 <GraduationCap size={22} strokeWidth={isAssessmentActive ? 2.5 : 1.75} />
                             </div>
                             <span className={`text-[11px] font-semibold leading-none transition-colors ${
-                                isAssessmentActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'
+                                isAssessmentActive ? 'text-white' : 'text-[oklch(0.82_0.02_88)]'
                             }`}>Assessment</span>
                         </button>
                         {/* Profil — last item (skip Laporan at index 2, ada di SAP drawer) */}
@@ -354,14 +348,12 @@ return url === href;
                             style={{ minWidth: '3.5rem' }}
                         >
                             <div className={`flex items-center justify-center rounded-2xl px-3 py-1.5 transition-all ${
-                                isAssessmentActive
-                                    ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
-                                    : 'text-slate-500 dark:text-slate-400'
+                                isAssessmentActive ? 'bg-accent text-accent-foreground' : 'text-[oklch(0.82_0.02_88)]'
                             }`}>
                                 <GraduationCap size={22} strokeWidth={isAssessmentActive ? 2.5 : 1.75} />
                             </div>
                             <span className={`text-[11px] font-semibold leading-none transition-colors ${
-                                isAssessmentActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'
+                                isAssessmentActive ? 'text-white' : 'text-[oklch(0.82_0.02_88)]'
                             }`}>Assessment</span>
                         </button>
                         {/* Profil */}
@@ -390,7 +382,7 @@ return url === href;
                                         onClick={() => setSapDrawerOpen(false)}
                                         className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors ${
                                             active
-                                                ? `${'activeBg' in item ? item.activeBg : 'bg-teal-100 dark:bg-teal-950'} ${'activeColor' in item ? item.activeColor : 'text-teal-600 dark:text-teal-400'}`
+                                                ? `${'activeBg' in item ? item.activeBg : 'bg-info-soft'} ${'activeColor' in item ? item.activeColor : 'text-info'}`
                                                 : 'text-foreground hover:bg-muted'
                                         }`}
                                     >

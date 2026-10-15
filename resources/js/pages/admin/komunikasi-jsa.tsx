@@ -43,18 +43,18 @@ const PERIODE_OPTIONS = [
 
 function StatusBadge({ status }: { status: JsaRecord['status'] }) {
     if (status === 'selesai')              {
-return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">Selesai</Badge>;
+return <Badge className="bg-success-soft text-success border-success/60 hover:bg-success-soft">Selesai</Badge>;
 }
 
     if (status === 'dikonfirmasi')         {
-return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">Dikonfirmasi</Badge>;
+return <Badge className="bg-success-soft text-success border-success/60 hover:bg-success-soft">Dikonfirmasi</Badge>;
 }
 
     if (status === 'ditolak')              {
-return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100">Ditolak</Badge>;
+return <Badge className="bg-destructive-soft text-destructive border-destructive/60 hover:bg-destructive-soft">Ditolak</Badge>;
 }
 
-    return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-100">Menunggu Konfirmasi</Badge>;
+    return <Badge className="bg-warning-soft text-warning border-warning/60 hover:bg-warning-soft">Menunggu Konfirmasi</Badge>;
 }
 
 function barColor(status: JsaRecord['status']) {
@@ -219,18 +219,18 @@ p.set('date_to', filters.date_to);
                 </div>
 
                 {/* Banner Ringkasan */}
-                <div className={`rounded-lg p-3 ${hasPending ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'}`}>
+                <div className={`rounded-lg p-3 ${hasPending ? 'bg-warning-soft border border-warning/30' : 'bg-success-soft border border-success/30'}`}>
                     <div className="flex flex-wrap gap-x-5 gap-y-1">
                         <span className="text-sm">
-                            <span className={`font-bold text-base ${hasPending ? 'text-yellow-600' : 'text-green-600'}`}>{summary.menunggu_konfirmasi}</span>
+                            <span className={`font-bold text-base ${hasPending ? 'text-warning' : 'text-success'}`}>{summary.menunggu_konfirmasi}</span>
                             <span className="ml-1 text-muted-foreground">Menunggu Konfirmasi</span>
                         </span>
                         <span className="text-sm">
-                            <span className="font-bold text-base text-green-600">{summary.selesai + summary.dikonfirmasi}</span>
+                            <span className="font-bold text-base text-success">{summary.selesai + summary.dikonfirmasi}</span>
                             <span className="ml-1 text-muted-foreground">Selesai / Dikonfirmasi</span>
                         </span>
                         <span className="text-sm">
-                            <span className="font-bold text-base text-red-500">{summary.ditolak}</span>
+                            <span className="font-bold text-base text-destructive">{summary.ditolak}</span>
                             <span className="ml-1 text-muted-foreground">Ditolak</span>
                         </span>
                     </div>
@@ -287,18 +287,18 @@ p.set('date_to', filters.date_to);
                             <SelectTrigger className="text-sm"><SelectValue placeholder="Semua Status" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Semua Status</SelectItem>
-                                <SelectItem value="selesai">✅ Selesai</SelectItem>
-                                <SelectItem value="dikonfirmasi">✅ Dikonfirmasi</SelectItem>
+                                <SelectItem value="selesai">Selesai</SelectItem>
+                                <SelectItem value="dikonfirmasi">Dikonfirmasi</SelectItem>
                                 <SelectItem value="menunggu_konfirmasi">⏳ Menunggu Konfirmasi</SelectItem>
-                                <SelectItem value="ditolak">❌ Ditolak</SelectItem>
+                                <SelectItem value="ditolak">Ditolak</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select value={filters.shift ?? 'all'} onValueChange={v => applyFilters({ shift: v === 'all' ? undefined : v })}>
                             <SelectTrigger className="text-sm"><SelectValue placeholder="Semua Shift" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Semua Shift</SelectItem>
-                                <SelectItem value="siang">🌤 Siang</SelectItem>
-                                <SelectItem value="malam">🌙 Malam</SelectItem>
+                                <SelectItem value="siang">Siang</SelectItem>
+                                <SelectItem value="malam">Malam</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

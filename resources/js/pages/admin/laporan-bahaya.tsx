@@ -165,8 +165,8 @@ return;
 
     const hasCritical = summary.pending > 0 || summary.aa > 0;
     const bannerBg = hasCritical
-        ? 'bg-red-50 border border-red-200'
-        : 'bg-green-50 border border-green-200';
+        ? 'bg-destructive-soft border border-destructive/30'
+        : 'bg-success-soft border border-success/30';
 
     const exportUrl = `/admin/laporan-bahaya/export${(() => {
         const p = new URLSearchParams();
@@ -248,19 +248,19 @@ p.set('date_to', filters.date_to);
                 <div className={`rounded-lg p-3 ${bannerBg}`}>
                     <div className="flex flex-wrap gap-x-5 gap-y-1">
                         <span className="text-sm">
-                            <span className={`font-bold text-base ${summary.pending > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            <span className={`font-bold text-base ${summary.pending > 0 ? 'text-destructive' : 'text-success'}`}>
                                 {summary.pending}
                             </span>
                             <span className="ml-1 text-muted-foreground">Belum Ditangani</span>
                         </span>
                         <span className="text-sm">
-                            <span className={`font-bold text-base ${summary.aa > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                            <span className={`font-bold text-base ${summary.aa > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
                                 {summary.aa}
                             </span>
                             <span className="ml-1 text-muted-foreground">Sangat Tinggi (AA)</span>
                         </span>
                         <span className="text-sm">
-                            <span className="font-bold text-base text-orange-500">{summary.a}</span>
+                            <span className="font-bold text-base text-warning">{summary.a}</span>
                             <span className="ml-1 text-muted-foreground">Tinggi (A)</span>
                         </span>
                     </div>
@@ -319,20 +319,20 @@ p.set('date_to', filters.date_to);
                             <SelectTrigger className="text-sm"><SelectValue placeholder="Tingkat Risiko" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Semua Risiko</SelectItem>
-                                <SelectItem value="AA">🔴 AA – Sangat Tinggi</SelectItem>
-                                <SelectItem value="A">🟠 A – Tinggi</SelectItem>
-                                <SelectItem value="B">🟡 B – Sedang</SelectItem>
-                                <SelectItem value="C">🟢 C – Rendah</SelectItem>
+                                <SelectItem value="AA">AA – Sangat Tinggi</SelectItem>
+                                <SelectItem value="A">A – Tinggi</SelectItem>
+                                <SelectItem value="B">B – Sedang</SelectItem>
+                                <SelectItem value="C">C – Rendah</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select value={filters.status_tindakan ?? 'all'} onValueChange={(v) => applyFilters({ status_tindakan: v === 'all' ? undefined : v })}>
                             <SelectTrigger className="text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Semua Status</SelectItem>
-                                <SelectItem value="pending">⏳ Pending</SelectItem>
-                                <SelectItem value="continue">🔵 Continue</SelectItem>
-                                <SelectItem value="progress">🟡 Progress</SelectItem>
-                                <SelectItem value="close">✅ Close</SelectItem>
+                                <SelectItem value="pending">Menunggu</SelectItem>
+                                <SelectItem value="continue">Berlanjut</SelectItem>
+                                <SelectItem value="progress">Diproses</SelectItem>
+                                <SelectItem value="close">Selesai</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -411,10 +411,10 @@ p.set('date_to', filters.date_to);
                                                         disabled={updatingId === record.id}
                                                         className="h-6 rounded border bg-background px-1 text-[11px] disabled:opacity-50"
                                                     >
-                                                        <option value="pending">Pending</option>
-                                                        <option value="continue">Continue</option>
-                                                        <option value="progress">Progress</option>
-                                                        <option value="close">Close</option>
+                                                        <option value="pending">Menunggu</option>
+                                                        <option value="continue">Berlanjut</option>
+                                                        <option value="progress">Diproses</option>
+                                                        <option value="close">Selesai</option>
                                                     </select>
                                                 )}
                                             </div>

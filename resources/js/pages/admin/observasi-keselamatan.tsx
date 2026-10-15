@@ -159,8 +159,8 @@ return;
                 <div className="grid grid-cols-3 gap-3">
                     {[
                         { label: 'Total', value: summary.total, color: 'text-foreground' },
-                        { label: 'Menunggu', value: summary.menunggu_konfirmasi, color: 'text-yellow-600' },
-                        { label: 'Dikonfirmasi', value: summary.dikonfirmasi, color: 'text-green-600' },
+                        { label: 'Menunggu', value: summary.menunggu_konfirmasi, color: 'text-warning' },
+                        { label: 'Dikonfirmasi', value: summary.dikonfirmasi, color: 'text-success' },
                     ].map(({ label, value, color }) => (
                         <Card key={label} className="p-0">
                             <CardContent className="flex flex-col items-center py-4 px-3 gap-1">
@@ -264,7 +264,7 @@ return;
                                         <td className="px-2 py-2 text-center">
                                             <Badge variant="outline" className={cn(
                                                 'gap-1 text-[11px]',
-                                                record.status === 'dikonfirmasi' ? 'border-green-400 text-green-700' : 'border-yellow-400 text-yellow-700',
+                                                record.status === 'dikonfirmasi' ? 'border-success/60 text-success' : 'border-warning/60 text-warning',
                                             )}>
                                                 {record.status === 'dikonfirmasi'
                                                     ? <CheckCircle2 size={11} />

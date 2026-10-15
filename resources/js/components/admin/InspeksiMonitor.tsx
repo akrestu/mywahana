@@ -46,10 +46,10 @@ return null;
 }
 
     const cfg = {
-        L:  { label: 'Baik',           cls: 'bg-green-100 text-green-700 border-green-300' },
-        M:  { label: 'Cukup',          cls: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
-        H:  { label: 'Perhatian',      cls: 'bg-orange-100 text-orange-700 border-orange-300' },
-        VH: { label: 'Perlu Tindakan', cls: 'bg-red-100 text-red-700 border-red-300' },
+        L:  { label: 'Baik',           cls: 'bg-success-soft text-success border-success/60' },
+        M:  { label: 'Cukup',          cls: 'bg-warning-soft text-warning border-warning/60' },
+        H:  { label: 'Perhatian',      cls: 'bg-warning-soft text-warning border-warning/60' },
+        VH: { label: 'Perlu Tindakan', cls: 'bg-destructive-soft text-destructive border-destructive/60' },
     };
     const { label, cls } = cfg[level];
 
@@ -58,14 +58,14 @@ return null;
 
 function StatusBadge({ status }: { status: InspeksiRecord['status'] }) {
     if (status === 'selesai') {
-return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100">Selesai</Badge>;
+return <Badge className="bg-success-soft text-success border-success/60 hover:bg-success-soft">Selesai</Badge>;
 }
 
     if (status === 'ditolak') {
-return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100">Ditolak</Badge>;
+return <Badge className="bg-destructive-soft text-destructive border-destructive/60 hover:bg-destructive-soft">Ditolak</Badge>;
 }
 
-    return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-100">Menunggu Re-Inspeksi</Badge>;
+    return <Badge className="bg-warning-soft text-warning border-warning/60 hover:bg-warning-soft">Menunggu Re-Inspeksi</Badge>;
 }
 
 const statusRowBorder = (status: InspeksiRecord['status']) => {
@@ -207,9 +207,9 @@ return;
                 <div className="grid grid-cols-4 gap-3">
                     {[
                         { label: 'Total',    value: summary.total,                color: 'text-foreground' },
-                        { label: 'Menunggu', value: summary.menunggu_re_inspeksi, color: 'text-yellow-600' },
-                        { label: 'Selesai',  value: summary.selesai,              color: 'text-green-600' },
-                        { label: 'Ditolak',  value: summary.ditolak,              color: 'text-red-600' },
+                        { label: 'Menunggu', value: summary.menunggu_re_inspeksi, color: 'text-warning' },
+                        { label: 'Selesai',  value: summary.selesai,              color: 'text-success' },
+                        { label: 'Ditolak',  value: summary.ditolak,              color: 'text-destructive' },
                     ].map(({ label, value, color }) => (
                         <Card key={label} className="p-0">
                             <CardContent className="flex flex-col items-center py-4 px-2 gap-1">

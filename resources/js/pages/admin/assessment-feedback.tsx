@@ -34,14 +34,14 @@ type Props = {
 
 function scoreColor(v: number) {
     if (v >= 4) {
-        return 'text-green-600';
+        return 'text-success';
     }
 
     if (v >= 3) {
-        return 'text-amber-600';
+        return 'text-warning';
     }
 
-    return 'text-red-600';
+    return 'text-destructive';
 }
 
 function AspectBars({ title, items }: { title: string; items: AspectAvg[] }) {
@@ -58,7 +58,7 @@ function AspectBars({ title, items }: { title: string; items: AspectAvg[] }) {
                             <span className={cn('font-semibold tabular-nums shrink-0', scoreColor(item.avg))}>{item.avg.toFixed(2)}</span>
                         </div>
                         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full rounded-full bg-indigo-500" style={{ width: `${(item.avg / 5) * 100}%` }} />
+                            <div className="h-full rounded-full bg-info" style={{ width: `${(item.avg / 5) * 100}%` }} />
                         </div>
                     </div>
                 ))}
@@ -128,7 +128,7 @@ export default function AdminAssessmentFeedback({ records, filters, summary, tra
                 {/* KPI */}
                 <div className="grid gap-3 sm:grid-cols-3">
                     {[
-                        { label: 'Total Penilaian', value: String(summary.total), color: 'text-blue-600' },
+                        { label: 'Total Penilaian', value: String(summary.total), color: 'text-info' },
                         { label: 'Rata-rata Pemateri', value: `${summary.trainer_avg.toFixed(2)} / 5`, color: scoreColor(summary.trainer_avg) },
                         { label: 'Rata-rata Efektivitas', value: `${summary.effectiveness_avg.toFixed(2)} / 5`, color: scoreColor(summary.effectiveness_avg) },
                     ].map((kpi) => (
@@ -216,7 +216,7 @@ export default function AdminAssessmentFeedback({ records, filters, summary, tra
                                         <td className={cn('py-2 pr-3 text-right font-semibold tabular-nums', scoreColor(r.effectiveness_avg))}>{r.effectiveness_avg.toFixed(2)}</td>
                                         <td className="py-2 pr-3 text-right whitespace-nowrap">
                                             {r.session ? (
-                                                <span className={r.session.passed ? 'text-green-600' : 'text-red-600'}>{r.session.percentage}%</span>
+                                                <span className={r.session.passed ? 'text-success' : 'text-destructive'}>{r.session.percentage}%</span>
                                             ) : '-'}
                                         </td>
                                         <td className="py-2 max-w-xs">

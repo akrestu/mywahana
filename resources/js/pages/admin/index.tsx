@@ -61,30 +61,25 @@ const LEVEL_LABELS: Record<string, string> = {
     nonstaff: 'Non-Staff', staff: 'Staff', srstaff: 'Sr. Staff',
 };
 const LEVEL_COLORS: Record<string, string> = {
-    nonstaff: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-    staff:    'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-    srstaff:  'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300',
+    nonstaff: 'bg-muted text-foreground',
+    staff:    'bg-info-soft text-info',
+    srstaff:  'bg-success-soft text-success',
 };
 
 const DEPT_OPTIONS = ['Management','Production','Maintenance','Supply Chain','Engineering','HSE','HRGA'];
 
 // Warna latar tiap departemen untuk group header
 const DEPT_COLORS: Record<string, { bg: string; text: string; badge: string }> = {
-    'Production':    { bg: 'bg-orange-50  dark:bg-orange-950/50',  text: 'text-orange-800 dark:text-orange-200',  badge: 'bg-orange-200 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
-    'Maintenance':   { bg: 'bg-blue-50    dark:bg-blue-950/50',    text: 'text-blue-800   dark:text-blue-200',    badge: 'bg-blue-200   text-blue-800   dark:bg-blue-900   dark:text-blue-200' },
-    'Supply Chain':  { bg: 'bg-violet-50  dark:bg-violet-950/50',  text: 'text-violet-800 dark:text-violet-200',  badge: 'bg-violet-200 text-violet-800 dark:bg-violet-900 dark:text-violet-200' },
-    'Engineering':   { bg: 'bg-teal-50    dark:bg-teal-950/50',    text: 'text-teal-800   dark:text-teal-200',    badge: 'bg-teal-200   text-teal-800   dark:bg-teal-900   dark:text-teal-200' },
-    'HSE':           { bg: 'bg-green-50   dark:bg-green-950/50',   text: 'text-green-800  dark:text-green-200',   badge: 'bg-green-200  text-green-800  dark:bg-green-900  dark:text-green-200' },
+    'Production':    { bg: 'bg-warning-soft ',  text: 'text-warning',  badge: 'bg-warning-soft text-warning' },
+    'Maintenance':   { bg: 'bg-info-soft   ',    text: 'text-info  ',    badge: 'bg-info-soft   text-info    ' },
+    'Supply Chain':  { bg: 'bg-info-soft ',  text: 'text-info',  badge: 'bg-info-soft text-info' },
+    'Engineering':   { bg: 'bg-info-soft   ',    text: 'text-info  ',    badge: 'bg-info-soft   text-info    ' },
+    'HSE':           { bg: 'bg-success-soft  ',   text: 'text-success ',   badge: 'bg-success-soft  text-success  ' },
     'HRGA':          { bg: 'bg-pink-50    dark:bg-pink-950/50',    text: 'text-pink-800   dark:text-pink-200',    badge: 'bg-pink-200   text-pink-800   dark:bg-pink-900   dark:text-pink-200' },
-    'Management':    { bg: 'bg-amber-50   dark:bg-amber-950/50',   text: 'text-amber-800  dark:text-amber-200',   badge: 'bg-amber-200  text-amber-800  dark:bg-amber-900  dark:text-amber-200' },
+    'Management':    { bg: 'bg-warning-soft  ',   text: 'text-warning ',   badge: 'bg-warning-soft  text-warning  ' },
 };
 const DEFAULT_DEPT_COLOR = { bg: 'bg-muted/40', text: 'text-foreground', badge: 'bg-muted text-muted-foreground' };
 
-const DEPT_ICONS: Record<string, string> = {
-    'Production':   '⚙️', 'Maintenance':  '🔧', 'Supply Chain': '📦',
-    'Engineering':  '🏗️', 'HSE':          '🦺', 'HRGA':         '👥',
-    'Management':   '🏢',
-};
 
 const ACTIVITIES = [
     { key: 'laporan'   as const, label: 'Laporan Bahaya',  unit: 'minggu',  icon: '⚠️' },
@@ -107,14 +102,14 @@ const DEFAULT_SAP_MONITORING: SapMonitoring = {
 
 function percentTone(persen: number): { text: string; bg: string } {
     if (persen >= 80) {
-        return { text: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/50' };
+        return { text: 'text-success', bg: 'bg-success-soft' };
     }
 
     if (persen >= 50) {
-        return { text: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-950/50' };
+        return { text: 'text-warning', bg: 'bg-warning-soft' };
     }
 
-    return { text: 'text-red-700 dark:text-red-300', bg: 'bg-red-50 dark:bg-red-950/50' };
+    return { text: 'text-destructive', bg: 'bg-destructive-soft' };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -187,10 +182,10 @@ function FilterBar({ filter, sites, jabatanOptions, adminSite }: {
         : null;
 
     const activeFilters = [
-        siteLabel                   && { label: siteLabel, prefix: '📍' },
-        filter.departemen !== 'all' && { label: filter.departemen, prefix: '🏭' },
-        filter.level !== 'all'      && { label: LEVEL_LABELS[filter.level] ?? filter.level, prefix: '👤' },
-        filter.jabatan !== 'all'    && { label: filter.jabatan, prefix: '💼' },
+        siteLabel                   && { label: siteLabel, prefix: '' },
+        filter.departemen !== 'all' && { label: filter.departemen, prefix: '' },
+        filter.level !== 'all'      && { label: LEVEL_LABELS[filter.level] ?? filter.level, prefix: '' },
+        filter.jabatan !== 'all'    && { label: filter.jabatan, prefix: '' },
     ].filter(Boolean) as { label: string; prefix: string }[];
 
     const activeLabel = `${BULAN_NAMES[filter.bulan - 1]} ${filter.tahun}` +
@@ -268,10 +263,10 @@ function FilterBar({ filter, sites, jabatanOptions, adminSite }: {
                         <Select value={filter.site} onValueChange={v => apply({ site: v })}>
                             <SelectTrigger className="h-9 w-full text-sm"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">🏢 Semua Site</SelectItem>
+                                <SelectItem value="all">Semua Site</SelectItem>
                                 {sites.map(s => (
                                     <SelectItem key={s.value} value={s.value}>
-                                        📍 {s.label}{adminSite === s.value ? ' (site Anda)' : ''}
+                                        {s.label}{adminSite === s.value ? ' (site Anda)' : ''}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -286,7 +281,7 @@ function FilterBar({ filter, sites, jabatanOptions, adminSite }: {
                                 <SelectTrigger className="h-9 w-full text-sm"><SelectValue placeholder="Semua" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">Semua Dept.</SelectItem>
-                                    {DEPT_OPTIONS.map(d => <SelectItem key={d} value={d}>{DEPT_ICONS[d] ?? '🏢'} {d}</SelectItem>)}
+                                    {DEPT_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -338,8 +333,8 @@ function ActivityCell({ summary }: { summary: ActivitySummary }) {
 
     const all  = met === total;
     const none = met === 0;
-    const circleCls = all ? 'bg-green-500' : none ? 'bg-red-400' : 'bg-amber-400';
-    const txtCls    = all ? 'text-green-700 dark:text-green-300' : none ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-300';
+    const circleCls = all ? 'bg-success' : none ? 'bg-destructive' : 'bg-warning';
+    const txtCls    = all ? 'text-success' : none ? 'text-destructive' : 'text-warning';
     const IconEl    = all ? <CheckCircle2 className="h-2.5 w-2.5 text-white" /> : none ? <AlertTriangle className="h-2.5 w-2.5 text-white" /> : <TrendingUp className="h-2.5 w-2.5 text-white" />;
 
     return (
@@ -360,10 +355,10 @@ return <span className="text-[11px] text-muted-foreground/50">—</span>;
 }
 
     const cls = pct >= 80
-        ? 'bg-green-100 text-green-800 ring-1 ring-green-300 dark:bg-green-900 dark:text-green-200 dark:ring-green-700'
+        ? 'bg-success-soft text-success ring-1 ring-success/60'
         : pct >= 50
-        ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300 dark:bg-amber-900 dark:text-amber-200 dark:ring-amber-700'
-        : 'bg-red-100 text-red-700 ring-1 ring-red-300 dark:bg-red-900 dark:text-red-300 dark:ring-red-700';
+        ? 'bg-warning-soft text-warning ring-1 ring-warning/60'
+        : 'bg-destructive-soft text-destructive ring-1 ring-destructive/60';
 
     return (
         <span className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${cls}`}>
@@ -475,7 +470,7 @@ return null;
         return (
             <Card>
                 <CardHeader className="px-4 pt-4 pb-2">
-                    <p className="text-sm font-bold">📊 Rekap Capaian Karyawan</p>
+                    <p className="text-sm font-bold">Rekap Capaian Karyawan</p>
                     <p className="text-xs text-muted-foreground">{bulanLabel} {filter.tahun}</p>
                 </CardHeader>
                 <CardContent className="pt-0 pb-10 text-center">
@@ -492,14 +487,14 @@ return null;
             {/* Section header */}
             <div className="flex items-center justify-between gap-2">
                 <div>
-                    <h2 className="text-sm font-bold">📊 Rekap Capaian Karyawan</h2>
+                    <h2 className="text-sm font-bold">Rekap capaian karyawan</h2>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
                         {bulanLabel} {filter.tahun} · {employees.length} karyawan · {deptGroups.length} departemen
                     </p>
                 </div>
                 {agg && (
                     <div className="text-right shrink-0">
-                        <p className={`text-sm font-bold ${agg.avg >= 80 ? 'text-green-600' : agg.avg >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
+                        <p className={`text-sm font-bold ${agg.avg >= 80 ? 'text-success' : agg.avg >= 50 ? 'text-warning' : 'text-destructive'}`}>
                             {agg.avg}%
                         </p>
                         <p className="text-[11px] text-muted-foreground">{agg.full} capai 100%</p>
@@ -510,9 +505,9 @@ return null;
             {/* Legend — single compact row */}
             <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground px-0.5">
                 {[
-                    { cls: 'bg-green-500', Icon: CheckCircle2,  label: 'Terpenuhi' },
-                    { cls: 'bg-amber-400', Icon: TrendingUp,    label: 'Sebagian'  },
-                    { cls: 'bg-red-400',   Icon: AlertTriangle, label: 'Belum'     },
+                    { cls: 'bg-success', Icon: CheckCircle2,  label: 'Terpenuhi' },
+                    { cls: 'bg-warning', Icon: TrendingUp,    label: 'Sebagian'  },
+                    { cls: 'bg-destructive',   Icon: AlertTriangle, label: 'Belum'     },
                     { cls: 'bg-muted',     Icon: Minus,         label: 'N/A'       },
                 ].map(({ cls, Icon, label }) => (
                     <span key={label} className="flex items-center gap-1">
@@ -562,7 +557,7 @@ return null;
                                         <tr>
                                             <td colSpan={ACTIVITIES.length + 2} className={`${deptColor.bg} border-b border-t border-border/50 px-2 py-1`}>
                                                 <span className={`text-[11px] font-semibold ${deptColor.text}`}>
-                                                    {DEPT_ICONS[dept] ?? '🏢'} {dept}
+                                                    {dept}
                                                 </span>
                                             </td>
                                         </tr>
@@ -718,22 +713,29 @@ return;
 
 // ─── Stat Cards (ringkasan) ─────────────────────────────────────────────────────
 
-function StatTile({ icon, label, value, sub, tone, onClick }: {
-    icon: string; label: string; value: string; sub?: string;
+function StatTile({ label, value, sub, tone, onClick }: {
+    icon?: string; label: string; value: string; sub?: string;
     tone: { text: string; bg: string }; onClick?: () => void;
 }) {
     const Comp = onClick ? 'button' : 'div';
+    const pct = Number.parseFloat(value);
 
     return (
         <Comp
+            type={onClick ? 'button' : undefined}
             onClick={onClick}
-            className={`flex flex-col gap-0.5 rounded-xl border px-2.5 py-2 text-left ${tone.bg} ${
-                onClick ? 'cursor-pointer transition-colors hover:brightness-95 dark:hover:brightness-110' : ''
+            className={`flex min-w-0 flex-col gap-1.5 rounded-lg bg-card p-4 text-left ${
+                onClick ? 'cursor-pointer transition-shadow hover:shadow-[0_8px_24px_oklch(0.191_0_0/0.08)]' : ''
             }`}
         >
-            <span className="text-[11px] font-medium text-muted-foreground truncate">{icon} {label}</span>
-            <p className={`text-base font-bold leading-none ${tone.text}`}>{value}</p>
-            {sub && <p className="text-[11px] text-muted-foreground truncate">{sub}</p>}
+            <span className="truncate text-xs font-semibold text-muted-foreground">{label}</span>
+            <p className={`text-2xl leading-none font-extrabold tabular ${tone.text}`}>{value}</p>
+            {value.endsWith('%') && Number.isFinite(pct) && (
+                <span className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+                    <span className={`block h-full rounded-full ${tone.text.replace('text-', 'bg-')}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                </span>
+            )}
+            {sub && <p className="truncate text-[11px] text-muted-foreground">{sub}</p>}
         </Comp>
     );
 }
@@ -748,7 +750,7 @@ function StatCardsRow({ compliance, sapMonitoring, dilarangExpanded, onToggleDil
     const dilarangCount = compliance.dilarang_list.length;
 
     return (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fit,minmax(170px,1fr))]">
             <StatTile
                 icon="💪" label="Bugar Selamat"
                 value={`${bsPersen}%`}
@@ -776,8 +778,8 @@ function StatCardsRow({ compliance, sapMonitoring, dilarangExpanded, onToggleDil
                 value={String(dilarangCount)}
                 sub={dilarangCount > 0 ? (dilarangExpanded ? 'Tutup daftar' : 'Lihat daftar') : 'Aman'}
                 tone={dilarangCount > 0
-                    ? { text: 'text-red-700 dark:text-red-300', bg: 'bg-red-50 dark:bg-red-950/50' }
-                    : { text: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/50' }}
+                    ? { text: 'text-destructive', bg: 'bg-destructive-soft' }
+                    : { text: 'text-success', bg: 'bg-success-soft' }}
                 onClick={dilarangCount > 0 ? onToggleDilarang : undefined}
             />
         </div>
@@ -818,7 +820,7 @@ export default function AdminIndex({
                 {/* ① PAGE TITLE + EXPORT */}
                 <div className="flex items-start justify-between gap-2">
                     <div>
-                        <h1 className="text-xl font-bold">Monitoring SAP</h1>
+                        <h1 className="text-[28px] font-extrabold tracking-tight">Monitoring SAP</h1>
                         <p className="text-xs text-muted-foreground mt-0.5">
                             {BULAN_NAMES[filter.bulan - 1]} {filter.tahun}
                             {filter.site !== 'all' && <span> · {sites.find(s => s.value === filter.site)?.label ?? filter.site}</span>}
@@ -837,23 +839,23 @@ export default function AdminIndex({
 
                 {/* Daftar dilarang bekerja — muncul saat tile "Dilarang Bekerja" diklik */}
                 {dilarangExpanded && dilarangList.length > 0 && (
-                    <div className="rounded-xl border-2 border-red-300 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
-                        <p className="text-xs text-red-600 dark:text-red-400 mb-2">
+                    <div className="rounded-lg bg-destructive-soft px-4 py-3">
+                        <p className="text-xs text-destructive mb-2">
                             Berdasarkan hasil Bugar Selamat terbaru
                         </p>
                         <div className="space-y-2">
                             {dilarangList.map((entry, i) => (
-                                <div key={i} className="flex items-center gap-2 rounded-lg bg-red-100 dark:bg-red-900 px-3 py-2">
+                                <div key={i} className="flex items-center gap-2 rounded-md bg-card px-3 py-2">
                                     {entry.avatar ? (
                                         <img src={entry.avatar} alt={entry.name} className="h-8 w-8 rounded-full object-cover shrink-0" />
                                     ) : (
-                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-300 dark:bg-red-700 text-sm font-bold text-red-800 dark:text-red-200">
+                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive text-sm font-bold text-destructive-foreground">
                                             {entry.name.charAt(0).toUpperCase()}
                                         </div>
                                     )}
                                     <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-red-900 dark:text-red-100 truncate">{entry.name}</p>
-                                        <p className="text-xs text-red-600 dark:text-red-400">{entry.jabatan ?? '-'} · {entry.site ?? '-'}</p>
+                                        <p className="text-sm font-semibold text-destructive truncate">{entry.name}</p>
+                                        <p className="text-xs text-destructive">{entry.jabatan ?? '-'} · {entry.site ?? '-'}</p>
                                     </div>
                                 </div>
                             ))}

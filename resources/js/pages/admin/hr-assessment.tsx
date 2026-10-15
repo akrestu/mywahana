@@ -5,8 +5,8 @@ import type {AssessmentConfig, Props} from '@/components/admin/AssessmentMonitor
 const config: AssessmentConfig = {
     heading: 'HR Assessment',
     subtitle: 'Monitoring & analitik hasil HR assessment seluruh karyawan',
-    kpiTotalColor: 'text-violet-600',
-    kpiAvgColor: 'text-purple-600',
+    kpiTotalColor: 'text-info',
+    kpiAvgColor: 'text-info',
     lineColor: '#8b5cf6',
     route: '/admin/hr-assessment',
     showDeptChart: false,

@@ -50,9 +50,9 @@ type Item = {
 };
 
 const TONE: Record<Tone, string> = {
-    ok: 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300',
-    warn: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300',
-    bad: 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300',
+    ok: 'border-success/30 bg-success-soft text-success',
+    warn: 'border-warning/30 bg-warning-soft text-warning',
+    bad: 'border-destructive/30 bg-destructive-soft text-destructive',
 };
 
 const KELAYAKAN: Record<RecentBugar['status_kelayakan'], [string, Tone]> = {

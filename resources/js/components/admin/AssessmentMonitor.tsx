@@ -282,11 +282,11 @@ return;
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
                 {[
                     { label: 'Total Assessment', value: summary.total, color: config.kpiTotalColor, suffix: '', detail: 'Percobaan tercatat' },
-                    { label: 'Tingkat Kelulusan', value: passRate, color: 'text-emerald-600', suffix: '%', detail: `${summary.lulus} lulus · ${summary.tidak_lulus} belum lulus` },
+                    { label: 'Tingkat Kelulusan', value: passRate, color: 'text-success', suffix: '%', detail: `${summary.lulus} lulus · ${summary.tidak_lulus} belum lulus` },
                     { label: 'Rata-rata Skor', value: summary.avg_score, color: config.kpiAvgColor, suffix: '%', detail: 'Dari seluruh percobaan' },
-                    { label: 'Coverage Karyawan', value: summary.coverage_pct, color: 'text-amber-600', suffix: '%', detail: `${uncovered_users.length} belum assessment` },
-                    { label: 'Sudah Induksi', value: attendance_summary.total_tercatat, color: 'text-teal-600', suffix: '', detail: `Induksi ${config.inductionLabel}` },
-                    { label: 'Belum Induksi', value: attendance_summary.belum_tercatat, color: 'text-orange-600', suffix: '', detail: 'Perlu tindak lanjut' },
+                    { label: 'Coverage Karyawan', value: summary.coverage_pct, color: 'text-warning', suffix: '%', detail: `${uncovered_users.length} belum assessment` },
+                    { label: 'Sudah Induksi', value: attendance_summary.total_tercatat, color: 'text-info', suffix: '', detail: `Induksi ${config.inductionLabel}` },
+                    { label: 'Belum Induksi', value: attendance_summary.belum_tercatat, color: 'text-warning', suffix: '', detail: 'Perlu tindak lanjut' },
                 ].map(item => (
                     <Card key={item.label} className="shadow-none">
                         <CardContent className="space-y-1 p-4">
@@ -299,9 +299,9 @@ return;
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-                <Card className={cn('shadow-none', uncovered_users.length > 0 && 'border-amber-200 dark:border-amber-900')}>
+                <Card className={cn('shadow-none', uncovered_users.length > 0 && 'border-warning/30')}>
                     <CardContent className="flex items-start gap-3 p-4">
-                        <div className="rounded-lg bg-amber-50 p-2 text-amber-600 dark:bg-amber-950/40"><Users className="h-5 w-5" /></div>
+                        <div className="rounded-lg bg-warning-soft p-2 text-warning"><Users className="h-5 w-5" /></div>
                         <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold">{config.uncoveredLabel}</p>
                             <p className="mt-1 text-xs text-muted-foreground">{uncovered_users.length > 0 ? `${uncovered_users.length} karyawan belum tercakup. ${uncovered_users.slice(0, 2).map(u => u.name).join(', ')}${uncovered_users.length > 2 ? ' dan lainnya' : ''}.` : 'Semua karyawan sudah tercakup.'}</p>
@@ -312,9 +312,9 @@ return;
                         }} disabled={uncovered_users.length === 0}>Lihat</Button>
                     </CardContent>
                 </Card>
-                <Card className={cn('shadow-none', topWeakQuestion && 'border-rose-200 dark:border-rose-900')}>
+                <Card className={cn('shadow-none', topWeakQuestion && 'border-destructive/30')}>
                     <CardContent className="flex items-start gap-3 p-4">
-                        <div className="rounded-lg bg-rose-50 p-2 text-rose-600 dark:bg-rose-950/40"><AlertTriangle className="h-5 w-5" /></div>
+                        <div className="rounded-lg bg-destructive-soft p-2 text-destructive"><AlertTriangle className="h-5 w-5" /></div>
                         <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold">Soal Paling Sering Salah</p>
                             <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{topWeakQuestion ? `${topWeakQuestion.pct_salah}% salah dari ${topWeakQuestion.total_attempt} percobaan · ${topWeakQuestion.question ?? 'Soal tidak tersedia'}` : 'Belum ada data jawaban soal.'}</p>
@@ -421,7 +421,7 @@ return;
                                         )}
                                         <td className="px-4 py-2.5 text-right">{q.total_salah} / {q.total_attempt}</td>
                                         <td className="px-4 py-2.5 text-right">
-                                            <span className={cn('font-semibold', q.pct_salah >= 60 ? 'text-red-600' : q.pct_salah >= 40 ? 'text-orange-500' : 'text-muted-foreground')}>
+                                            <span className={cn('font-semibold', q.pct_salah >= 60 ? 'text-destructive' : q.pct_salah >= 40 ? 'text-warning' : 'text-muted-foreground')}>
                                                 {q.pct_salah}%
                                             </span>
                                         </td>
@@ -458,7 +458,7 @@ return;
                             </thead>
                             <tbody className="divide-y">
                                 {uncovered_users.length === 0 && (
-                                    <tr><td colSpan={3} className="py-6 text-center text-green-600 font-medium">{config.uncoveredAllDoneMessage}</td></tr>
+                                    <tr><td colSpan={3} className="py-6 text-center text-success font-medium">{config.uncoveredAllDoneMessage}</td></tr>
                                 )}
                                 {uncovered_users.map(u => (
                                     <tr key={u.id} className="hover:bg-muted/30">
@@ -600,8 +600,8 @@ return;
                                     <td className="px-4 py-3 text-right font-medium">{Number(r.percentage).toFixed(0)}%</td>
                                     <td className="px-4 py-3 text-center">
                                         {r.passed
-                                            ? <div className="flex justify-center"><CheckCircle2 className="h-5 w-5 text-green-500" /></div>
-                                            : <div className="flex justify-center"><XCircle className="h-5 w-5 text-red-500" /></div>
+                                            ? <div className="flex justify-center"><CheckCircle2 className="h-5 w-5 text-success" /></div>
+                                            : <div className="flex justify-center"><XCircle className="h-5 w-5 text-destructive" /></div>
                                         }
                                     </td>
                                     <td className="px-4 py-3 text-sm text-muted-foreground">
@@ -648,7 +648,7 @@ return;
             <div className="pt-2 border-t">
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-semibold flex items-center gap-2">
-                        <ClipboardCheck className="h-4 w-4 text-teal-600" />
+                        <ClipboardCheck className="h-4 w-4 text-info" />
                         Absensi Induksi {config.inductionLabel}
                     </h3>
                     <a href={config.inductionExportUrl}>
@@ -659,23 +659,23 @@ return;
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-3">
-                    <Card className="border-teal-200 bg-teal-50 dark:bg-teal-950/20">
+                    <Card className="border-info/30 bg-info-soft">
                         <CardContent className="p-4">
-                            <p className="text-xs text-teal-600 font-medium">Sudah Tercatat</p>
-                            <p className="text-2xl font-bold text-teal-700">{attendance_summary.total_tercatat}</p>
+                            <p className="text-xs text-info font-medium">Sudah Tercatat</p>
+                            <p className="text-2xl font-bold text-info">{attendance_summary.total_tercatat}</p>
                         </CardContent>
                     </Card>
-                    <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
+                    <Card className="border-warning/30 bg-warning-soft">
                         <CardContent className="p-4 flex items-start justify-between">
                             <div>
-                                <p className="text-xs text-orange-600 font-medium">Belum Induksi</p>
-                                <p className="text-2xl font-bold text-orange-700">{attendance_summary.belum_tercatat}</p>
+                                <p className="text-xs text-warning font-medium">Belum Induksi</p>
+                                <p className="text-2xl font-bold text-warning">{attendance_summary.belum_tercatat}</p>
                             </div>
                             {attendance_summary.belum_tercatat > 0 && (
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-orange-600 hover:text-orange-700 text-xs h-auto p-1"
+                                    className="text-warning hover:text-warning text-xs h-auto p-1"
                                     onClick={() => setShowBelumInduksi(true)}
                                 >
                                     Lihat →
@@ -760,8 +760,8 @@ return;
                                         <td className="px-3 py-2 text-right font-medium">{Number(r.percentage).toFixed(0)}%</td>
                                         <td className="px-3 py-2 text-center">
                                             {r.passed
-                                                ? <CheckCircle2 className="h-4 w-4 text-green-500 inline" />
-                                                : <XCircle className="h-4 w-4 text-red-500 inline" />
+                                                ? <CheckCircle2 className="h-4 w-4 text-success inline" />
+                                                : <XCircle className="h-4 w-4 text-destructive inline" />
                                             }
                                         </td>
                                     </tr>
@@ -852,7 +852,7 @@ return;
                             <tbody className="divide-y">
                                 {attendance_summary.belum_users.length === 0 && (
                                     <tr>
-                                        <td colSpan={config.belumIndukeShowDept ? 3 : 2} className="py-6 text-center text-green-600 font-medium">
+                                        <td colSpan={config.belumIndukeShowDept ? 3 : 2} className="py-6 text-center text-success font-medium">
                                             {config.belumIndukeAllDoneMessage}
                                         </td>
                                     </tr>

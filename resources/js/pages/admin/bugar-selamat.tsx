@@ -92,9 +92,9 @@ const isToday = (iso: string) => iso === todayJakarta();
 const isFuture = (iso: string) => iso > todayJakarta();
 
 const STATUS_COLOR: Record<string, string> = {
-    layak:    'bg-green-500',
-    catatan:  'bg-yellow-400',
-    dilarang: 'bg-red-500',
+    layak:    'bg-success',
+    catatan:  'bg-warning',
+    dilarang: 'bg-destructive',
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -150,10 +150,10 @@ function HarianView({ tanggal, users, entries, summary, filters, sites }: Extrac
     }).toString()}`;
 
     const summaryItems = [
-        { label: 'Belum Mengisi', count: summary.not_filled, color: 'text-slate-500', bg: 'bg-slate-100' },
-        { label: 'Layak',         count: summary.layak,      color: 'text-green-700',  bg: 'bg-green-50' },
-        { label: 'Catatan',       count: summary.catatan,    color: 'text-yellow-700', bg: 'bg-yellow-50' },
-        { label: 'Dilarang',      count: summary.dilarang,   color: 'text-red-700',    bg: 'bg-red-50' },
+        { label: 'Belum Mengisi', count: summary.not_filled, color: 'text-muted-foreground', bg: 'bg-muted' },
+        { label: 'Layak',         count: summary.layak,      color: 'text-success',  bg: 'bg-success-soft' },
+        { label: 'Catatan',       count: summary.catatan,    color: 'text-warning', bg: 'bg-warning-soft' },
+        { label: 'Dilarang',      count: summary.dilarang,   color: 'text-destructive',    bg: 'bg-destructive-soft' },
     ];
 
     return (
@@ -254,7 +254,7 @@ function HarianView({ tanggal, users, entries, summary, filters, sites }: Extrac
                                         <td className="px-2 py-2 text-center">
                                             {entry
                                                 ? (
-                                                    <span className={entry.siap_bekerja ? 'text-green-600' : 'font-semibold text-red-600'}>
+                                                    <span className={entry.siap_bekerja ? 'text-success' : 'font-semibold text-destructive'}>
                                                         {entry.siap_bekerja ? '✓' : '✗'}
                                                     </span>
                                                 )
@@ -343,9 +343,9 @@ function KalenderView({ tanggal, users, dates, entries, summary, filters, sites 
 
             {/* Legend */}
             <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-green-500" /> Layak</span>
-                <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-yellow-400" /> Catatan</span>
-                <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-red-500" /> Dilarang</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-success" /> Layak</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-warning" /> Catatan</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-destructive" /> Dilarang</span>
                 <span className="flex items-center gap-1"><span className="text-muted-foreground">–</span> Belum isi</span>
             </div>
 
@@ -372,7 +372,7 @@ function KalenderView({ tanggal, users, dates, entries, summary, filters, sites 
                                     return (
                                         <th
                                             key={date}
-                                            className={`px-1.5 py-2 text-center font-medium min-w-[36px] ${isSun ? 'text-red-500' : ''} ${today ? 'bg-primary/10' : ''}`}
+                                            className={`px-1.5 py-2 text-center font-medium min-w-[36px] ${isSun ? 'text-destructive' : ''} ${today ? 'bg-primary/10' : ''}`}
                                         >
                                             <div>{dayName}</div>
                                             <div className={`text-sm font-bold ${today ? 'text-primary' : ''}`}>{day}</div>
@@ -528,10 +528,10 @@ p.set('date_to', filters.date_to);
     const allSelected = records.data.length > 0 && selectedIds.size === records.data.length;
 
     const bannerBg = summary.dilarang > 0
-        ? 'bg-red-50 border border-red-200'
+        ? 'bg-destructive-soft border border-destructive/30'
         : summary.catatan > 0
-            ? 'bg-yellow-50 border border-yellow-200'
-            : 'bg-green-50 border border-green-200';
+            ? 'bg-warning-soft border border-warning/30'
+            : 'bg-success-soft border border-success/30';
 
     return (
         <>
@@ -567,15 +567,15 @@ p.set('date_to', filters.date_to);
                 <div className={`rounded-lg p-3 ${bannerBg}`}>
                     <div className="flex flex-wrap gap-x-5 gap-y-1">
                         <span className="text-sm">
-                            <span className="font-bold text-red-600 text-base">{summary.dilarang}</span>
+                            <span className="font-bold text-destructive text-base">{summary.dilarang}</span>
                             <span className="ml-1 text-muted-foreground">Dilarang</span>
                         </span>
                         <span className="text-sm">
-                            <span className="font-bold text-yellow-600 text-base">{summary.catatan}</span>
+                            <span className="font-bold text-warning text-base">{summary.catatan}</span>
                             <span className="ml-1 text-muted-foreground">Catatan</span>
                         </span>
                         <span className="text-sm">
-                            <span className="font-bold text-green-600 text-base">{summary.layak}</span>
+                            <span className="font-bold text-success text-base">{summary.layak}</span>
                             <span className="ml-1 text-muted-foreground">Layak</span>
                         </span>
                     </div>
@@ -635,9 +635,9 @@ p.set('date_to', filters.date_to);
                             <SelectTrigger className="text-sm"><SelectValue placeholder="Semua Status" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Semua Status</SelectItem>
-                                <SelectItem value="layak">✅ Layak Bekerja</SelectItem>
-                                <SelectItem value="catatan">⚠️ Ada Catatan</SelectItem>
-                                <SelectItem value="dilarang">🚫 Dilarang Bekerja</SelectItem>
+                                <SelectItem value="layak">Layak Bekerja</SelectItem>
+                                <SelectItem value="catatan">Ada Catatan</SelectItem>
+                                <SelectItem value="dilarang">Dilarang Bekerja</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
