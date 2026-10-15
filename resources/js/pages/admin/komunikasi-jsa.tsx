@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { BookOpen, CalendarDays, Clock, Download, Lock, MapPin, Search, Trash2, Users } from 'lucide-react';
 import { useState } from 'react';
+import { AdminTitle } from '@/components/admin/admin-title';
 import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import DateRangeFilter from '@/components/admin/DateRangeFilter';
 import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
@@ -186,10 +187,7 @@ p.set('date_to', filters.date_to);
 
             <div className="space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                        <h2 className="text-lg font-bold">Komunikasi JSA/SOP/IK</h2>
-                        <p className="text-sm text-muted-foreground">WBK-HSE-FO-026 · Semua data karyawan</p>
-                    </div>
+                    <AdminTitle eyebrow="K3 / Safety" title="Komunikasi JSA/SOP/IK" description="WBK-HSE-FO-026 · Semua data karyawan" />
                     <div className="flex flex-wrap gap-2">
                         {selectMode ? (
                             <>

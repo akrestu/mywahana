@@ -21,6 +21,8 @@ class BugarSelamatController extends Controller
 
         return Inertia::render('bugar-selamat/index', [
             'records' => $records,
+            'sudah_isi_hari_ini' => $request->user()->bugarSelamats()
+                ->whereDate('tanggal', now()->toDateString())->exists(),
         ]);
     }
 

@@ -3,6 +3,7 @@ import {
     Download, FileSpreadsheet, GraduationCap, Pencil, Plus, Search, Trash2, Upload, X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { AdminTitle } from '@/components/admin/admin-title';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -250,10 +251,7 @@ fileRef.current.value = '';
 
             <div className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h2 className="text-lg font-bold">Bank Soal HR Assessment</h2>
-                        <p className="text-sm text-muted-foreground">{questions.total} soal tersimpan dalam sistem</p>
-                    </div>
+                    <AdminTitle eyebrow="Assessment" title="Bank Soal HR Assessment" description={`${questions.total} soal tersimpan dalam sistem`} />
                     <div className="flex flex-wrap items-center gap-2">
                         <a href="/admin/hr-assessment/questions/export">
                             <Button size="sm" variant="outline" className="gap-1.5">

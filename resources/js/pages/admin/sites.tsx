@@ -1,6 +1,7 @@
 import { Head, useForm, router } from '@inertiajs/react';
 import { Check, MapPin, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
+import { AdminTitle } from '@/components/admin/admin-title';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -215,10 +216,7 @@ return;
 
             <div className="space-y-4">
                 {/* Header */}
-                <div>
-                    <h2 className="text-lg font-bold">Kelola Site</h2>
-                    <p className="text-sm text-muted-foreground">Tambah, ubah, atau hapus daftar lokasi/site dalam sistem.</p>
-                </div>
+                <AdminTitle eyebrow="Manajemen" title="Kelola Site" description="Tambah, ubah, atau hapus daftar lokasi/site dalam sistem." />
 
                 {/* Layout: form (kiri) + tabel (kanan) */}
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start">

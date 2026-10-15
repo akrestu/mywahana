@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Eye, EyeOff, ShieldAlert } from 'lucide-react';
+import { ChevronLeft, Eye, EyeOff, ShieldAlert } from 'lucide-react';
 import { useState } from 'react';
+import { AdminTitle } from '@/components/admin/admin-title';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -96,27 +97,26 @@ export default function UserForm({ mode, user, sites }: Props) {
             <div className="space-y-4">
                 {/* Back + Title */}
                 <div className="flex items-center gap-3">
-                    <Link href="/admin/users">
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-9 gap-1.5"
-                        >
-                            <ArrowLeft size={15} /> Kembali
-                        </Button>
+                    <Link
+                        href="/admin/users"
+                        aria-label="Kembali"
+                        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card shadow-[0_1px_2px_oklch(0.191_0_0/0.06)] transition-colors hover:bg-muted"
+                    >
+                        <ChevronLeft className="size-5" strokeWidth={1.8} />
                     </Link>
-                    <div>
-                        <h2 className="text-lg font-bold">
-                            {isEdit
+                    <AdminTitle
+                        eyebrow="Manajemen"
+                        title={
+                            isEdit
                                 ? `Edit: ${user?.name}`
-                                : 'Tambah Pengguna Baru'}
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                            {isEdit
+                                : 'Tambah Pengguna Baru'
+                        }
+                        description={
+                            isEdit
                                 ? 'Ubah data akun karyawan'
-                                : 'Isi data untuk membuat akun karyawan'}
-                        </p>
-                    </div>
+                                : 'Isi data untuk membuat akun karyawan'
+                        }
+                    />
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">

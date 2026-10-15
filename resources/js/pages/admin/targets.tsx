@@ -2,6 +2,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Search, X } from 'lucide-react';
 import { Info } from 'lucide-react';
 import { useState } from 'react';
+import { AdminTitle } from '@/components/admin/admin-title';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -130,6 +131,12 @@ export default function AdminTargets({ targets, users, filters, sites }: Props) 
             <Head title="Target Partisipasi" />
 
             <div className="space-y-6">
+                <AdminTitle
+                    eyebrow="Manajemen"
+                    title="Target Partisipasi"
+                    description="Target minimum pelaporan per level dan per karyawan"
+                />
+
                 {/* Target per Level */}
                 <Card>
                     <CardHeader>

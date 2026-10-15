@@ -1,9 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Download, Lock, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { AdminTitle } from '@/components/admin/admin-title';
 import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import DateRangeFilter from '@/components/admin/DateRangeFilter';
 import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
+import { SegmentTabs } from '@/components/patterns/segment-tabs';
 import { KelayakanBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -789,31 +791,18 @@ export default function AdminBugarSelamat(props: Props) {
             <Head title="Admin — Bugar Selamat" />
             <div className="space-y-4">
                 {/* Header */}
-                <div>
-                    <h2 className="text-lg font-bold">Bugar Selamat</h2>
-                    <p className="text-sm text-muted-foreground">Monitoring checklist kesehatan karyawan</p>
-                </div>
+                <AdminTitle eyebrow="K3 / Safety" title="Bugar Selamat" description="Monitoring checklist kesehatan karyawan" />
 
-                {/* Tabs */}
-                <div className="flex rounded-lg border bg-muted/30 p-1 gap-1">
-                    {(['harian', 'kalender', 'daftar'] as const).map((v) => {
-                        const labels = { harian: 'Monitoring Harian', kalender: 'Kalender', daftar: 'Riwayat' };
-
-                        return (
-                            <button
-                                key={v}
-                                onClick={() => switchTab(v)}
-                                className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
-                                    currentView === v
-                                        ? 'bg-background shadow-sm text-foreground'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                            >
-                                {labels[v]}
-                            </button>
-                        );
-                    })}
-                </div>
+                <SegmentTabs
+                    label="Tampilan monitoring"
+                    value={currentView}
+                    onChange={switchTab}
+                    tabs={[
+                        { key: 'harian', label: 'Harian' },
+                        { key: 'kalender', label: 'Kalender' },
+                        { key: 'daftar', label: 'Riwayat' },
+                    ]}
+                />
 
                 {/* View Content */}
                 {props.view === 'harian'   && <HarianView   {...props} />}

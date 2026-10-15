@@ -1,23 +1,11 @@
 import { Head, Link } from '@inertiajs/react';
+import { Check, Download, X } from 'lucide-react';
 import {
-    ArrowLeft,
-    BedDouble,
-    Brain,
-    Check,
-    Coffee,
-    FileDown,
-    FlaskConical,
-    Moon,
-    Pill,
-    ShieldAlert,
-    ShieldCheck,
-    Sun,
-    X,
-} from 'lucide-react';
+    ModuleHeader,
+    SectionLabel,
+} from '@/components/patterns/module-header';
 import { KelayakanBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 type BugarRecord = {
@@ -43,74 +31,65 @@ type BugarRecord = {
 
 type Props = { record: BugarRecord; back_url?: string; hasil?: boolean };
 
-const statusConfig = {
+const STATUS_TONE = {
     layak: {
-        bg: 'bg-success-soft border-success/60',
-        icon: ShieldCheck,
-        iconClass: 'text-success',
-        iconBg: 'bg-success-soft',
-        title: 'LAYAK BEKERJA',
-        desc: 'Kondisi Anda prima untuk bekerja hari ini.',
+        bg: 'bg-success-soft',
+        text: 'text-success',
+        desc: 'Kondisi prima untuk bekerja hari ini.',
     },
     catatan: {
-        bg: 'bg-warning-soft border-warning/60',
-        icon: ShieldAlert,
-        iconClass: 'text-warning',
-        iconBg: 'bg-warning-soft',
-        title: 'BEKERJA DENGAN CATATAN',
-        desc: 'Tetap waspada dan perhatikan kondisi fisik Anda.',
+        bg: 'bg-warning-soft',
+        text: 'text-warning',
+        desc: 'Tetap waspada dan perhatikan kondisi fisik.',
     },
     dilarang: {
-        bg: 'bg-destructive-soft border-destructive/60',
-        icon: ShieldAlert,
-        iconClass: 'text-destructive',
-        iconBg: 'bg-destructive-soft',
-        title: 'DILARANG BEKERJA',
-        desc: 'Kondisi Anda tidak memenuhi syarat untuk bekerja.',
+        bg: 'bg-destructive-soft',
+        text: 'text-destructive',
+        desc: 'Kondisi tidak memenuhi syarat untuk bekerja.',
     },
-};
+} as const;
 
-function AnswerRow({
-    icon: Icon,
-    label,
-    value,
-    dangerWhen,
-}: {
-    icon: React.FC<{ className?: string }>;
-    label: string;
-    value: boolean | string;
-    dangerWhen?: boolean;
-}) {
-    const isDanger = dangerWhen !== undefined ? value === dangerWhen : false;
-    const isBool = typeof value === 'boolean';
-
+/** Yes/no answer chip; red when the answer is the risky one. */
+function AnswerChip({ value, risky }: { value: boolean; risky: boolean }) {
     return (
-        <div className="flex items-center gap-4 py-4">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted">
-                <Icon className="size-5 text-muted-foreground" />
-            </div>
-            <span className="flex-1 text-base leading-snug text-foreground">
-                {label}
-            </span>
-            {isBool ? (
-                <div
-                    className={cn(
-                        'flex size-9 items-center justify-center rounded-full',
-                        isDanger
-                            ? 'bg-destructive-soft'
-                            : 'bg-success-soft',
-                    )}
-                >
-                    {isDanger ? (
-                        <X size={16} className="font-bold text-destructive" />
-                    ) : (
-                        <Check size={16} className="font-bold text-success" />
-                    )}
-                </div>
-            ) : (
-                <span className="text-base font-bold">{value as string}</span>
+        <span
+            className={cn(
+                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold',
+                risky
+                    ? 'bg-destructive-soft text-destructive'
+                    : 'bg-success-soft text-success',
             )}
-        </div>
+        >
+            {risky ? (
+                <X className="size-3.5" />
+            ) : (
+                <Check className="size-3.5" />
+            )}
+            {value ? 'Ya' : 'Tidak'}
+        </span>
+    );
+}
+
+/** Label/value rows in a single card. */
+function InfoList({
+    rows,
+}: {
+    rows: { label: string; value: string | number }[];
+}) {
+    return (
+        <dl className="overflow-hidden rounded-lg bg-card">
+            {rows.map((r) => (
+                <div
+                    key={r.label}
+                    className="flex justify-between gap-4 border-b border-border/60 px-4 py-3 text-sm last:border-0"
+                >
+                    <dt className="text-muted-foreground">{r.label}</dt>
+                    <dd className="tabular text-right font-semibold">
+                        {r.value}
+                    </dd>
+                </div>
+            ))}
+        </dl>
     );
 }
 
@@ -123,224 +102,137 @@ export default function BugarSelamatShow({
         return <BugarResult record={record} />;
     }
 
-    const cfg = statusConfig[record.status_kelayakan];
-    const StatusIcon = cfg.icon;
-
-    const jamTidurLabel =
+    const tone = STATUS_TONE[record.status_kelayakan] ?? STATUS_TONE.layak;
+    const jamTidur =
         record.jam_tidur === '<5'
             ? '< 5 jam'
             : record.jam_tidur === '5-6'
               ? '5–6 jam'
               : '> 6 jam';
+    const site = record.user.site
+        ? record.user.site.charAt(0).toUpperCase() + record.user.site.slice(1)
+        : '—';
+    const answers = [
+        {
+            label: 'Sakit atau kelelahan',
+            value: record.kondisi_sakit,
+            riskyWhen: true,
+        },
+        {
+            label: 'Minum obat (6 jam terakhir)',
+            value: record.minum_obat,
+            riskyWhen: true,
+        },
+        {
+            label: 'Masalah pribadi mengganggu',
+            value: record.masalah_pribadi,
+            riskyWhen: true,
+        },
+        {
+            label: 'Terpengaruh alkohol',
+            value: record.pengaruh_alkohol,
+            riskyWhen: true,
+        },
+        {
+            label: 'Siap bekerja hari ini',
+            value: record.siap_bekerja,
+            riskyWhen: false,
+        },
+    ];
 
     return (
         <>
             <Head title="Detail Bugar Selamat" />
 
-            <div className="flex flex-col gap-6">
-                {/* Back */}
-                <Link
-                    href={back_url}
-                    className="flex w-fit items-center gap-2 py-1 text-base text-muted-foreground transition-colors hover:text-foreground"
-                >
-                    <ArrowLeft size={18} />
-                    {back_url.includes('kalender')
-                        ? 'Kembali ke Kalender'
-                        : back_url.includes('admin')
-                          ? 'Kembali ke Monitoring Harian'
-                          : 'Kembali ke Riwayat'}
-                </Link>
-
-                {/* Status hero */}
-                <div
-                    className={cn(
-                        'flex flex-col items-center gap-4 rounded-2xl border-2 px-4 py-8 text-center',
-                        cfg.bg,
-                    )}
-                >
-                    <div
-                        className={cn(
-                            'flex size-20 items-center justify-center rounded-full shadow-sm',
-                            cfg.iconBg,
-                        )}
-                    >
-                        <StatusIcon className={cn('size-10', cfg.iconClass)} />
-                    </div>
-                    <div className="space-y-2">
-                        <KelayakanBadge status={record.status_kelayakan} />
-                        <p className="text-sm text-muted-foreground">
-                            {cfg.desc}
-                        </p>
-                    </div>
-                    <p className="text-sm font-semibold text-muted-foreground">
-                        {new Date(record.tanggal).toLocaleDateString('id-ID', {
+            <div className="flex flex-col gap-4 pt-2 pb-4 lg:mx-auto lg:max-w-[640px]">
+                <ModuleHeader
+                    backHref={back_url}
+                    eyebrow={new Date(record.tanggal).toLocaleDateString(
+                        'id-ID',
+                        {
                             weekday: 'long',
                             day: 'numeric',
                             month: 'long',
                             year: 'numeric',
-                        })}
+                        },
+                    )}
+                    title="Bugar Selamat"
+                    actions={
+                        <Button asChild variant="outline" size="sm">
+                            <a
+                                href={`/bugar-selamat/${record.id}/pdf`}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                <Download /> PDF
+                            </a>
+                        </Button>
+                    }
+                />
+
+                <section
+                    className={cn(
+                        'flex flex-col items-start gap-1.5 rounded-lg px-4 py-4',
+                        tone.bg,
+                    )}
+                >
+                    <KelayakanBadge status={record.status_kelayakan} />
+                    <p className={cn('text-sm font-bold', tone.text)}>
+                        {tone.desc}
                     </p>
-                </div>
+                </section>
 
-                {/* Identitas karyawan */}
-                <Card>
-                    <CardHeader className="pt-5 pb-2">
-                        <CardTitle className="text-base font-bold">
-                            👤 Identitas Karyawan
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                        <dl className="flex flex-col gap-0">
-                            {[
-                                { label: 'Nama', value: record.user.name },
-                                { label: 'NIK', value: record.user.nik ?? '—' },
-                                {
-                                    label: 'Jabatan',
-                                    value: record.user.jabatan ?? '—',
-                                },
-                                {
-                                    label: 'Site',
-                                    value: record.user.site
-                                        ? record.user.site
-                                              .charAt(0)
-                                              .toUpperCase() +
-                                          record.user.site.slice(1)
-                                        : '—',
-                                },
-                            ].map(({ label, value }, idx, arr) => (
-                                <div key={label}>
-                                    <div className="flex items-center justify-between py-3.5 text-sm">
-                                        <dt className="text-muted-foreground">
-                                            {label}
-                                        </dt>
-                                        <dd className="text-right font-semibold">
-                                            {value}
-                                        </dd>
-                                    </div>
-                                    {idx < arr.length - 1 && <Separator />}
-                                </div>
-                            ))}
-                        </dl>
-                    </CardContent>
-                </Card>
+                <SectionLabel>Jadwal kerja</SectionLabel>
+                <InfoList
+                    rows={[
+                        {
+                            label: 'Shift',
+                            value:
+                                record.shift === 'Siang'
+                                    ? 'Shift I · Siang'
+                                    : 'Shift II · Malam',
+                        },
+                        { label: 'Hari ke-', value: record.hari_ke },
+                        { label: 'Jam tidur', value: jamTidur },
+                    ]}
+                />
 
-                {/* Jadwal */}
-                <Card>
-                    <CardHeader className="pt-5 pb-2">
-                        <CardTitle className="text-base font-bold">
-                            📅 Jadwal Kerja
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                        <div className="flex items-center justify-between py-3.5 text-sm">
-                            <span className="text-muted-foreground">Shift</span>
-                            <div className="flex items-center gap-2 font-semibold">
-                                {record.shift === 'Siang' ? (
-                                    <Sun size={16} className="text-warning" />
-                                ) : (
-                                    <Moon
-                                        size={16}
-                                        className="text-info"
-                                    />
-                                )}
-                                {record.shift === 'Siang'
-                                    ? 'Shift I – Siang'
-                                    : 'Shift II – Malam'}
-                            </div>
-                        </div>
-                        <Separator />
-                        <div className="flex items-center justify-between py-3.5 text-sm">
-                            <span className="text-muted-foreground">
-                                Hari ke-
-                            </span>
-                            <span className="font-semibold">
-                                {record.hari_ke}
-                            </span>
-                        </div>
-                    </CardContent>
-                </Card>
+                <SectionLabel>Kondisi fisik &amp; mental</SectionLabel>
+                <ul className="overflow-hidden rounded-lg bg-card">
+                    {answers.map((a) => (
+                        <li
+                            key={a.label}
+                            className="flex items-center justify-between gap-4 border-b border-border/60 px-4 py-3 text-sm last:border-0"
+                        >
+                            <span>{a.label}</span>
+                            <AnswerChip
+                                value={a.value}
+                                risky={a.value === a.riskyWhen}
+                            />
+                        </li>
+                    ))}
+                </ul>
 
-                {/* Kondisi fisik */}
-                <Card>
-                    <CardHeader className="pt-5 pb-2">
-                        <CardTitle className="text-base font-bold">
-                            🩺 Kondisi Fisik &amp; Mental
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                        <AnswerRow
-                            icon={BedDouble}
-                            label="Jam tidur"
-                            value={jamTidurLabel}
-                        />
-                        <Separator />
-                        <AnswerRow
-                            icon={Coffee}
-                            label="Sedang sakit atau kelelahan?"
-                            value={record.kondisi_sakit}
-                            dangerWhen={true}
-                        />
-                        <Separator />
-                        <AnswerRow
-                            icon={Pill}
-                            label="Minum obat dalam 6 jam terakhir?"
-                            value={record.minum_obat}
-                            dangerWhen={true}
-                        />
-                        <Separator />
-                        <AnswerRow
-                            icon={Brain}
-                            label="Ada masalah pribadi mengganggu?"
-                            value={record.masalah_pribadi}
-                            dangerWhen={true}
-                        />
-                        <Separator />
-                        <AnswerRow
-                            icon={FlaskConical}
-                            label="Terpengaruh alkohol?"
-                            value={record.pengaruh_alkohol}
-                            dangerWhen={true}
-                        />
-                        <Separator />
-                        <AnswerRow
-                            icon={ShieldCheck}
-                            label="Siap bekerja hari ini?"
-                            value={record.siap_bekerja}
-                            dangerWhen={false}
-                        />
-                    </CardContent>
-                </Card>
-
-                {/* Catatan */}
                 {record.catatan && (
-                    <Card>
-                        <CardHeader className="pt-5 pb-2">
-                            <CardTitle className="text-base font-bold">
-                                📝 Catatan
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0 pb-5">
-                            <p className="text-base leading-relaxed text-muted-foreground">
-                                {record.catatan}
-                            </p>
-                        </CardContent>
-                    </Card>
+                    <section className="flex flex-col gap-1.5 rounded-lg bg-card px-4 py-3">
+                        <h3 className="text-xs font-bold tracking-[0.08em] text-muted-foreground uppercase">
+                            Catatan
+                        </h3>
+                        <p className="text-sm leading-relaxed whitespace-pre-line">
+                            {record.catatan}
+                        </p>
+                    </section>
                 )}
 
-                {/* Actions */}
-                <a
-                    href={`/bugar-selamat/${record.id}/pdf`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <Button
-                        variant="outline"
-                        className="h-13 w-full gap-2 text-base font-semibold"
-                    >
-                        <FileDown size={18} />
-                        Unduh / Export PDF
-                    </Button>
-                </a>
+                <SectionLabel>Karyawan</SectionLabel>
+                <InfoList
+                    rows={[
+                        { label: 'Nama', value: record.user.name },
+                        { label: 'NIK', value: record.user.nik ?? '—' },
+                        { label: 'Jabatan', value: record.user.jabatan ?? '—' },
+                        { label: 'Site', value: site },
+                    ]}
+                />
             </div>
         </>
     );

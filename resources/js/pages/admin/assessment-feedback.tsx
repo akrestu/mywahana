@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { Download, MessageSquare, Search } from 'lucide-react';
 import { useState } from 'react';
+import { AdminTitle } from '@/components/admin/admin-title';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,10 +86,7 @@ export default function AdminAssessmentFeedback({ records, filters, summary, tra
 
             <div className="space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <h2 className="text-lg font-bold">Lembar Penilaian Induksi Safety</h2>
-                        <p className="text-sm text-muted-foreground">Rekap penilaian pemateri dan efektivitas pembelajaran dari peserta assessment.</p>
-                    </div>
+                    <AdminTitle eyebrow="Assessment" title="Lembar Penilaian Induksi Safety" description="Rekap penilaian pemateri dan efektivitas pembelajaran dari peserta assessment." />
                     <Button asChild variant="outline" size="sm" className="gap-2">
                         <a href={exportUrl}><Download className="h-4 w-4" />Export Excel</a>
                     </Button>

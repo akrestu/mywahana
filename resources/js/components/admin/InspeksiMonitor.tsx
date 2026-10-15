@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Download, Lock, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { AdminTitle } from '@/components/admin/admin-title';
 import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import DateRangeFilter from '@/components/admin/DateRangeFilter';
 import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
@@ -172,10 +173,7 @@ return;
             <Head title={`Monitoring Inspeksi ${label}`} />
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h2 className="text-xl font-bold">{heading}</h2>
-                        <p className="text-sm text-muted-foreground">Monitoring seluruh site</p>
-                    </div>
+                    <AdminTitle eyebrow="K3 / Safety" title={heading} description="Monitoring seluruh site" />
                     <div className="flex flex-wrap gap-2">
                         {selectMode ? (
                             <>

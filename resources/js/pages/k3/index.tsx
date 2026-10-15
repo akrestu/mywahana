@@ -223,11 +223,7 @@ export default function K3Index({
                 <SectionLabel>Program</SectionLabel>
                 <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
                     <ProgramTile
-                        href={
-                            bugar_hari_ini
-                                ? '/bugar-selamat'
-                                : '/bugar-selamat/create'
-                        }
+                        href="/bugar-selamat"
                         icon={Activity}
                         tint="bg-success-soft"
                         iconClass="text-success"
@@ -350,7 +346,7 @@ export default function K3Index({
                         </Link>
                     }
                 >
-                    Riwayat saya
+                    Laporan bahaya terbaru
                 </SectionLabel>
                 {riwayat.length > 0 ? (
                     <ul className="overflow-hidden rounded-lg bg-card">

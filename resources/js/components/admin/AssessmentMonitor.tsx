@@ -5,6 +5,7 @@ import {
     Bar, BarChart, CartesianGrid, Line, LineChart,
     ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
+import { AdminTitle } from '@/components/admin/admin-title';
 import BatchDeleteBar from '@/components/admin/BatchDeleteBar';
 import DateRangeFilter from '@/components/admin/DateRangeFilter';
 import DeleteRangeDialog from '@/components/admin/DeleteRangeDialog';
@@ -241,11 +242,7 @@ return;
 
             {/* Header */}
             <div className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:p-5 xl:flex-row xl:items-center xl:justify-between">
-                <div className="space-y-1">
-                    <Badge variant="outline" className="text-[11px]">Dashboard Assessment</Badge>
-                    <h2 className="text-2xl font-bold tracking-tight">{config.heading}</h2>
-                    <p className="text-sm text-muted-foreground">{config.subtitle}</p>
-                </div>
+                <AdminTitle eyebrow="Assessment" title={config.heading} description={config.subtitle} />
                 <div className="flex flex-wrap gap-2 xl:justify-end">
                     <Link href={config.manageQuestionsUrl}>
                         <Button size="sm" variant="outline" className="gap-1">

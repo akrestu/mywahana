@@ -206,7 +206,7 @@ export default function BugarSelamatCreate({ user }: Props) {
                 className="flex flex-col gap-4 pt-2 lg:mx-auto lg:max-w-[560px]"
             >
                 <ModuleHeader
-                    backHref="/k3"
+                    backHref="/bugar-selamat"
                     title="Bugar Selamat"
                     eyebrow={`${dateLabel}${user.site ? ` · Site ${user.site.toUpperCase()}` : ''}`}
                     step={{ current: step, total: 3 }}
