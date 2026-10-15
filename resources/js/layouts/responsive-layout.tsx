@@ -499,18 +499,18 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
         <SidebarProvider defaultOpen={sidebarOpen ?? true}>
             {/* ── Desktop sidebar (hidden on mobile) ── */}
             <Sidebar collapsible="icon" className="hidden lg:flex">
-                <SidebarHeader className="px-3.5 pt-5 pb-2">
+                <SidebarHeader className="px-3.5 pt-5 pb-2 group-data-[collapsible=icon]:px-3">
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton
                                 size="lg"
                                 asChild
-                                className="gap-2.5 rounded-[12px] px-2 hover:bg-background"
+                                className="gap-2.5 rounded-[12px] px-2 hover:bg-background group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!"
                                 tooltip={{ children: 'MyWahana' }}
                             >
                                 <Link href={dashboardUrl} prefetch="mount">
                                     <img src="/logo.png" alt="Logo PT.WBK" className="size-8 shrink-0 object-contain" />
-                                    <span className="text-[15px] font-extrabold">MyWahana</span>
+                                    <span className="text-[15px] font-extrabold group-data-[collapsible=icon]:hidden">MyWahana</span>
                                     {isAdmin && (
                                         <span className="ml-auto rounded-full bg-primary px-[7px] py-[3px] text-[10px] font-bold text-accent group-data-[collapsible=icon]:hidden dark:text-primary-foreground">
                                             ADMIN
@@ -522,11 +522,11 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                     </SidebarMenu>
                 </SidebarHeader>
 
-                <SidebarContent className="gap-0 px-3.5 pb-4">
+                <SidebarContent className="gap-0 px-3.5 pb-4 group-data-[collapsible=icon]:px-3">
                     <NavMain groups={mainNavGroups} />
                 </SidebarContent>
 
-                <SidebarFooter className="gap-2 border-t border-sidebar-border px-3.5 pt-3 pb-4">
+                <SidebarFooter className="gap-2 border-t border-sidebar-border px-3.5 pt-3 pb-4 group-data-[collapsible=icon]:px-3">
                     <NavUser />
                 </SidebarFooter>
             </Sidebar>

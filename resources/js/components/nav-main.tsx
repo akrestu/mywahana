@@ -61,6 +61,12 @@ function NavGroup({
     return (
         <SidebarGroup className="p-0">
             {group.label && (
+                <div
+                    aria-hidden
+                    className="mx-auto my-2.5 hidden h-px w-6 bg-border group-data-[collapsible=icon]:block"
+                />
+            )}
+            {group.label && (
                 <SidebarGroupLabel className="h-auto px-3 pt-3.5 pb-1 text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
                     {group.label}
                 </SidebarGroupLabel>
@@ -103,7 +109,16 @@ function NavGroup({
                                         />
                                     )}
                                     {item.icon && (
-                                        <item.icon className="hidden size-4 shrink-0 group-data-[collapsible=icon]:block" />
+                                        <span className="relative hidden shrink-0 group-data-[collapsible=icon]:block">
+                                            <item.icon className="size-4" />
+                                            {badge !== undefined &&
+                                                badge !== 0 && (
+                                                    <span
+                                                        aria-hidden
+                                                        className="absolute -top-1 -right-1 size-2 rounded-full bg-accent ring-2 ring-sidebar"
+                                                    />
+                                                )}
+                                        </span>
                                     )}
                                     <span className="truncate">
                                         {item.title}
