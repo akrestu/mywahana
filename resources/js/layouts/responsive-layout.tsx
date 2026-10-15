@@ -104,7 +104,7 @@ const adminMobileNavItems = [
 
 function MobileHeader({ title, showBack, backHref, isAdmin }: { title?: string; showBack?: boolean; backHref?: string; isAdmin?: boolean }) {
     return (
-        <header className="sticky top-0 z-10 bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/70 lg:hidden">
+        <header className="sticky top-0 z-10 bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/70 [view-transition-name:app-header] lg:hidden">
             <div className="mx-auto flex h-14 max-w-lg items-center gap-3 px-4">
                 {showBack && backHref ? (
                     <Link
@@ -360,7 +360,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
             <SidebarInset>
                 <OfflineBanner />
                 {/* Desktop top bar (hidden on mobile) */}
-                <header className="hidden h-16 shrink-0 items-center gap-2 border-b border-sidebar-border/50 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 lg:flex">
+                <header className="hidden h-16 shrink-0 items-center gap-2 border-b border-sidebar-border/50 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 [view-transition-name:app-topbar] lg:flex">
                     <SidebarTrigger className="-ml-1" />
                     <Separator orientation="vertical" className="mx-1 h-4" />
                     <span className="text-sm font-medium text-muted-foreground">
