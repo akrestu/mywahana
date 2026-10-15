@@ -61,6 +61,30 @@ function isToday(dateStr: string): boolean {
     return new Date(dateStr).toDateString() === new Date().toDateString();
 }
 
+/** When a Bugar Selamat was filled in, e.g. "Kam, 15 Okt · 07.12" (device time). */
+function filledAt(record: RecentBugar): string {
+    const at = new Date(record.created_at ?? record.tanggal);
+    const date = at.toLocaleDateString('id-ID', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        ...(at.getFullYear() !== new Date().getFullYear() && {
+            year: 'numeric',
+        }),
+    });
+
+    if (!record.created_at) {
+        return date;
+    }
+
+    const time = at.toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+
+    return `${date} · ${time}`;
+}
+
 function initials(name: string): string {
     return name
         .split(' ')
@@ -220,6 +244,7 @@ export default function Dashboard({
                         <BugarDone
                             status={bugarHariIni.status_kelayakan}
                             shift={bugarHariIni.shift}
+                            filledAt={filledAt(bugarHariIni)}
                         />
                     ) : (
                         <Link
@@ -240,7 +265,9 @@ export default function Dashboard({
                                     Isi Bugar Selamat
                                 </span>
                                 <span className="block text-xs text-muted-foreground">
-                                    Kurang dari 30 detik
+                                    {recent_bugar_selamat[0]
+                                        ? `Terakhir diisi ${filledAt(recent_bugar_selamat[0])}`
+                                        : 'Kurang dari 30 detik'}
                                 </span>
                             </span>
                             <span className="flex h-11 items-center rounded-full bg-primary px-[18px] text-[13px] font-semibold text-primary-foreground">
@@ -414,9 +441,11 @@ export default function Dashboard({
 function BugarDone({
     status,
     shift,
+    filledAt,
 }: {
     status: RecentBugar['status_kelayakan'];
     shift: string;
+    filledAt: string;
 }) {
     // Status "dilarang" adalah kondisi keselamatan: tetap menonjol, bukan baris tenang.
     if (status === 'dilarang') {
@@ -435,6 +464,9 @@ function BugarDone({
                     <p className="text-sm text-muted-foreground">
                         Hasil Bugar Selamat shift {shift}. Segera lapor ke
                         pengawas Anda.
+                    </p>
+                    <p className="tabular mt-1 text-xs text-muted-foreground">
+                        Diisi {filledAt}
                     </p>
                 </div>
             </section>
@@ -455,6 +487,9 @@ function BugarDone({
                 </span>
                 <span className="block text-[15px] font-bold">
                     Sudah diisi hari ini
+                </span>
+                <span className="tabular block text-xs text-muted-foreground">
+                    Diisi {filledAt}
                 </span>
             </span>
             <KelayakanBadge status={status} />

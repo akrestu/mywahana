@@ -18,7 +18,6 @@ use App\Services\InboxService;
 use App\Services\UserTargetService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -44,8 +43,9 @@ class DashboardController extends Controller
 
         $recent_bugar_selamat = (clone $bugarQuery)
             ->latest('tanggal')
+            ->latest('id')
             ->limit(5)
-            ->get(['id', 'tanggal', 'shift', 'status_kelayakan']);
+            ->get(['id', 'tanggal', 'shift', 'status_kelayakan', 'created_at']);
 
         $recent_laporan_bahaya = (clone $laporanQuery)
             ->latest('tanggal')
@@ -414,7 +414,6 @@ class DashboardController extends Controller
             ],
         ];
     }
-
 
     /**
      * Cross-module summary for the admin overview: daily Bugar compliance,

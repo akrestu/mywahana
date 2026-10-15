@@ -65,3 +65,20 @@ test('beranda menampilkan maksimal tiga item perlu tindakan dari inbox', functio
             ->has('perlu_tindakan', 3)
             ->where('perlu_tindakan_total', 4));
 });
+
+test('bugar selamat terbaru membawa waktu pengisian untuk beranda', function () {
+    $user = User::factory()->create(['participation_level' => 'nonstaff']);
+    $filledAt = now()->setTime(6, 45)->startOfMinute();
+    $this->travelTo($filledAt);
+    BugarSelamat::create([
+        'user_id' => $user->id, 'tanggal' => today()->toDateString(), 'shift' => 'Siang', 'hari_ke' => 1,
+        'jam_tidur' => '>6', 'kondisi_sakit' => false, 'minum_obat' => false,
+        'masalah_pribadi' => false, 'pengaruh_alkohol' => false, 'siap_bekerja' => true,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('app.home'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('dashboard')
+            ->where('recent_bugar_selamat.0.created_at', fn ($at) => Carbon\Carbon::parse($at)->equalTo($filledAt)));
+});

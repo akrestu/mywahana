@@ -9,6 +9,7 @@ export type RecentBugar = {
     tanggal: string;
     shift: string;
     status_kelayakan: 'layak' | 'catatan' | 'dilarang';
+    created_at?: string | null;
 };
 export type RecentLaporan = {
     id: number;
