@@ -1,11 +1,16 @@
 import { router } from '@inertiajs/react';
-import { ListChecks } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, LayoutGrid } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
 export type QuizQuestion = {
@@ -19,47 +24,18 @@ export type QuizQuestion = {
     jawaban_user: number | null;
 };
 
-type Accent = 'blue' | 'purple';
-
 type Props = {
     submitUrl: string;
     subtitle: string;
     totalQuestions: number;
     remainingSeconds: number;
     questions: QuizQuestion[];
-    accent: Accent;
+    /** Kept for backwards compatibility; the runner now follows the theme. */
+    accent?: 'blue' | 'purple';
 };
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 const RETRY_DELAY_MS = 5000;
-
-const ACCENT: Record<
-    Accent,
-    {
-        bar: string;
-        selected: string;
-        bullet: string;
-        button: string;
-        chip: string;
-    }
-> = {
-    blue: {
-        bar: 'bg-blue-500',
-        selected:
-            'border-blue-500 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-400',
-        bullet: 'border-blue-500 bg-blue-500 text-white',
-        button: '',
-        chip: 'border-blue-500 bg-blue-500 text-white',
-    },
-    purple: {
-        bar: 'bg-purple-500',
-        selected:
-            'border-purple-500 bg-purple-50 dark:bg-purple-950/30 dark:border-purple-400',
-        bullet: 'border-purple-500 bg-purple-500 text-white',
-        button: 'bg-purple-600 hover:bg-purple-700',
-        chip: 'border-purple-500 bg-purple-500 text-white',
-    },
-};
 
 function readSaved(key: string): Record<number, number> {
     try {
@@ -84,9 +60,9 @@ function writeSaved(key: string, value: Record<number, number> | null): void {
 }
 
 /**
- * Pengerjaan quiz assessment. Jawaban disimpan di perangkat agar tidak hilang
- * saat halaman ter-reload, dan timer dihitung dari sisa waktu yang dikirim
- * server (bukan jam HP).
+ * Pengerjaan quiz assessment, satu soal per layar. Jawaban disimpan di
+ * perangkat agar tidak hilang saat halaman ter-reload, dan timer dihitung
+ * dari sisa waktu yang dikirim server (bukan jam HP).
  */
 export function QuizRunner({
     submitUrl,
@@ -94,10 +70,8 @@ export function QuizRunner({
     totalQuestions,
     remainingSeconds,
     questions,
-    accent,
 }: Props) {
     const storageKey = `quiz-answers:${submitUrl}`;
-    const colors = ACCENT[accent];
 
     const [answers, setAnswers] = useState<Record<number, number>>(() => {
         const init: Record<number, number> = {};
@@ -118,10 +92,14 @@ export function QuizRunner({
 
         return init;
     });
+    const [index, setIndex] = useState(() => {
+        const firstOpen = questions.findIndex((q) => q.jawaban_user == null);
+
+        return firstOpen === -1 ? 0 : firstOpen;
+    });
     const [submitting, setSubmitting] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [navOpen, setNavOpen] = useState(false);
-
     const [remaining, setRemaining] = useState(remainingSeconds);
     const [retryCount, setRetryCount] = useState(0);
 
@@ -220,15 +198,13 @@ export function QuizRunner({
     const unanswered = questions.filter(
         (q) => answers[q.session_question_id] == null,
     );
+    const q = questions[index];
+    const isLast = index === questions.length - 1;
+    const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+    const ss = String(remaining % 60).padStart(2, '0');
+    const isUrgent = remaining <= 5 * 60;
 
-    function scrollToQuestion(sqId: number) {
-        setNavOpen(false);
-        document
-            .getElementById(`soal-${sqId}`)
-            ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    function handleSubmit() {
+    const submit = () => {
         if (unanswered.length > 0) {
             setConfirmOpen(true);
 
@@ -236,12 +212,13 @@ export function QuizRunner({
         }
 
         send(false);
+    };
+
+    if (!q) {
+        return null;
     }
 
-    const progressPct = Math.round((answeredCount / totalQuestions) * 100);
-    const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
-    const ss = String(remaining % 60).padStart(2, '0');
-    const isUrgent = remaining <= 5 * 60;
+    const options = [q.jawaban_1, q.jawaban_2, q.jawaban_3, q.jawaban_4];
 
     return (
         <>
@@ -249,198 +226,241 @@ export function QuizRunner({
                 open={confirmOpen}
                 onOpenChange={setConfirmOpen}
                 title="Masih ada soal yang belum dijawab"
-                description={`${unanswered.length} soal belum dijawab dan akan dihitung salah. Tetap submit sekarang?`}
-                confirmLabel="Ya, submit"
+                description={`${unanswered.length} soal belum dijawab dan akan dihitung salah. Tetap kirim sekarang?`}
+                confirmLabel="Ya, kirim"
                 cancelLabel="Kembali menjawab"
                 onConfirm={() => send(false)}
             />
-            <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
-                <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-10 space-y-2 border-b bg-background/95 pt-1 pb-3 backdrop-blur lg:top-0">
-                    <div className="flex items-center justify-between gap-2 text-sm">
-                        <span className="truncate font-medium">{subtitle}</span>
-                        <div className="flex shrink-0 items-center gap-2">
-                            <span
-                                role="timer"
-                                aria-label={`Sisa waktu ${mm} menit ${ss} detik`}
-                                className={cn(
-                                    'font-mono text-sm font-semibold tabular-nums',
-                                    isUrgent
-                                        ? 'animate-pulse text-red-600 dark:text-red-400'
-                                        : 'text-muted-foreground',
-                                )}
-                            >
-                                ⏱ {mm}:{ss}
-                            </span>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-8 gap-1.5"
-                                aria-expanded={navOpen}
-                                aria-controls="daftar-soal"
-                                onClick={() => setNavOpen((v) => !v)}
-                            >
-                                <ListChecks size={14} />
-                                {answeredCount}/{totalQuestions}
-                            </Button>
+
+            <div className="mx-auto flex min-h-[calc(100svh-6rem)] max-w-[640px] flex-col gap-5 pt-2">
+                <header className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs text-muted-foreground">
+                                {subtitle}
+                            </p>
+                            <p className="tabular text-[15px] font-bold">
+                                Soal {index + 1} dari {totalQuestions}
+                            </p>
                         </div>
+                        <span
+                            role="timer"
+                            aria-label={`Sisa waktu ${mm} menit ${ss} detik`}
+                            className={cn(
+                                'tabular flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-bold',
+                                isUrgent
+                                    ? 'animate-pulse bg-destructive-soft text-destructive'
+                                    : 'bg-card',
+                            )}
+                        >
+                            <Clock className="size-4" />
+                            {mm}:{ss}
+                        </span>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            aria-label={`Daftar soal, ${answeredCount} dari ${totalQuestions} dijawab`}
+                            onClick={() => setNavOpen(true)}
+                        >
+                            <LayoutGrid />
+                        </Button>
                     </div>
                     <div
-                        className="h-2 overflow-hidden rounded-full bg-muted"
+                        className="flex gap-1"
                         role="progressbar"
                         aria-valuenow={answeredCount}
                         aria-valuemin={0}
                         aria-valuemax={totalQuestions}
                         aria-label="Soal dijawab"
                     >
-                        <div
-                            className={cn(
-                                'h-full transition-all duration-300',
-                                colors.bar,
-                            )}
-                            style={{ width: `${progressPct}%` }}
-                        />
+                        {questions.map((qq, i) => (
+                            <span
+                                key={qq.session_question_id}
+                                className={cn(
+                                    'h-1.5 flex-1 rounded-full transition-colors',
+                                    i === index
+                                        ? 'bg-accent'
+                                        : answers[qq.session_question_id] !=
+                                            null
+                                          ? 'bg-foreground'
+                                          : 'bg-border',
+                                )}
+                            />
+                        ))}
                     </div>
-                    {navOpen && (
-                        <div id="daftar-soal" className="space-y-2 pt-1">
-                            <div className="grid grid-cols-8 gap-1.5 sm:grid-cols-10">
-                                {questions.map((q, idx) => {
-                                    const done =
-                                        answers[q.session_question_id] != null;
+                </header>
 
-                                    return (
-                                        <button
-                                            key={q.session_question_id}
-                                            type="button"
-                                            onClick={() =>
-                                                scrollToQuestion(
-                                                    q.session_question_id,
-                                                )
-                                            }
-                                            aria-label={`Soal ${idx + 1}${done ? ', sudah dijawab' : ', belum dijawab'}`}
-                                            className={cn(
-                                                'flex h-9 items-center justify-center rounded-md border text-xs font-semibold',
-                                                done
-                                                    ? colors.chip
-                                                    : 'border-dashed border-muted-foreground/60 text-foreground',
-                                            )}
-                                        >
-                                            {idx + 1}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            {unanswered.length > 0 && (
-                                <Button
+                <section
+                    key={q.session_question_id}
+                    className="flex animate-in flex-col gap-4 duration-300 fade-in-0 slide-in-from-right-4"
+                >
+                    <h1
+                        id="soal-label"
+                        className="text-xl leading-snug font-bold"
+                    >
+                        {q.question}
+                    </h1>
+                    <div
+                        role="radiogroup"
+                        aria-labelledby="soal-label"
+                        className="flex flex-col gap-2.5"
+                    >
+                        {options.map((opt, i) => {
+                            const val = i + 1;
+                            const selected =
+                                answers[q.session_question_id] === val;
+
+                            return (
+                                <button
+                                    key={val}
                                     type="button"
-                                    variant="secondary"
-                                    size="sm"
-                                    className="w-full"
+                                    role="radio"
+                                    aria-checked={selected}
                                     onClick={() =>
-                                        scrollToQuestion(
-                                            unanswered[0].session_question_id,
-                                        )
+                                        setAnswers((prev) => ({
+                                            ...prev,
+                                            [q.session_question_id]: val,
+                                        }))
                                     }
+                                    className={cn(
+                                        'flex min-h-[56px] items-center gap-3 rounded-lg px-4 py-3 text-left text-[15px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                                        selected
+                                            ? 'border-2 border-foreground bg-accent-soft font-semibold'
+                                            : 'border border-border bg-card hover:bg-muted',
+                                    )}
                                 >
-                                    Ke soal belum dijawab ({unanswered.length})
-                                </Button>
-                            )}
-                        </div>
+                                    <span
+                                        aria-hidden
+                                        className={cn(
+                                            'flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold',
+                                            selected
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-muted text-muted-foreground',
+                                        )}
+                                    >
+                                        {OPTION_LABELS[i]}
+                                    </span>
+                                    <span>{opt}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </section>
+
+                <div className="sticky bottom-0 -mx-4 mt-auto flex gap-3 bg-gradient-to-t from-background via-background to-background/0 px-4 pt-6 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:mx-0 lg:px-0">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        className="flex-1"
+                        disabled={index === 0}
+                        onClick={() => setIndex((i) => Math.max(0, i - 1))}
+                        aria-label="Soal sebelumnya"
+                    >
+                        <ChevronLeft />
+                    </Button>
+                    {isLast ? (
+                        <Button
+                            type="button"
+                            size="lg"
+                            className="flex-[3]"
+                            loading={submitting}
+                            onClick={submit}
+                        >
+                            Selesai & kirim
+                        </Button>
+                    ) : (
+                        <Button
+                            type="button"
+                            size="lg"
+                            className="flex-[3]"
+                            onClick={() =>
+                                setIndex((i) =>
+                                    Math.min(questions.length - 1, i + 1),
+                                )
+                            }
+                        >
+                            Soal berikutnya <ChevronRight />
+                        </Button>
                     )}
                 </div>
-
-                {questions.map((q, idx) => {
-                    const options = [
-                        q.jawaban_1,
-                        q.jawaban_2,
-                        q.jawaban_3,
-                        q.jawaban_4,
-                    ];
-                    const labelId = `soal-${q.session_question_id}-label`;
-
-                    return (
-                        <Card
-                            key={q.session_question_id}
-                            id={`soal-${q.session_question_id}`}
-                            className="scroll-mt-40 space-y-3 p-4"
-                        >
-                            <p
-                                id={labelId}
-                                className="text-sm leading-snug font-medium"
-                            >
-                                <span className="mr-2 text-muted-foreground">
-                                    {idx + 1}.
-                                </span>
-                                {q.question}
-                            </p>
-                            <div
-                                className="grid gap-2"
-                                role="radiogroup"
-                                aria-labelledby={labelId}
-                            >
-                                {options.map((opt, i) => {
-                                    const val = i + 1;
-                                    const selected =
-                                        answers[q.session_question_id] === val;
-
-                                    return (
-                                        <button
-                                            key={val}
-                                            type="button"
-                                            role="radio"
-                                            aria-checked={selected}
-                                            onClick={() =>
-                                                setAnswers((prev) => ({
-                                                    ...prev,
-                                                    [q.session_question_id]:
-                                                        val,
-                                                }))
-                                            }
-                                            className={cn(
-                                                'flex min-h-11 items-start gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors',
-                                                selected
-                                                    ? colors.selected
-                                                    : 'border-border hover:bg-muted/50',
-                                            )}
-                                        >
-                                            <span
-                                                aria-hidden
-                                                className={cn(
-                                                    'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-semibold',
-                                                    selected
-                                                        ? colors.bullet
-                                                        : 'border-muted-foreground text-muted-foreground',
-                                                )}
-                                            >
-                                                {OPTION_LABELS[i]}
-                                            </span>
-                                            <span>{opt}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </Card>
-                    );
-                })}
-
-                <div className="space-y-2 pb-6">
-                    <Badge
-                        variant="outline"
-                        className="w-full justify-center py-1"
-                    >
-                        {answeredCount} / {totalQuestions} dijawab · jawaban
-                        tersimpan otomatis di perangkat ini
-                    </Badge>
-                    <Button
-                        className={cn('w-full', colors.button)}
-                        size="lg"
-                        disabled={submitting}
-                        onClick={handleSubmit}
-                    >
-                        {submitting ? 'Menyimpan...' : 'Submit Assessment'}
-                    </Button>
-                </div>
             </div>
+
+            <Sheet open={navOpen} onOpenChange={setNavOpen}>
+                <SheetContent
+                    side="bottom"
+                    className="mx-auto max-w-lg gap-0 border-0 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+                >
+                    <div
+                        className="mx-auto mt-3 h-1 w-10 rounded-full bg-border"
+                        aria-hidden
+                    />
+                    <SheetHeader className="px-0 pb-4">
+                        <SheetTitle className="text-left text-xl font-extrabold">
+                            Daftar soal
+                        </SheetTitle>
+                        <SheetDescription className="tabular text-left">
+                            {answeredCount} dari {totalQuestions} dijawab ·
+                            jawaban tersimpan otomatis di perangkat ini.
+                        </SheetDescription>
+                    </SheetHeader>
+                    <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
+                        {questions.map((qq, i) => {
+                            const done =
+                                answers[qq.session_question_id] != null;
+
+                            return (
+                                <button
+                                    key={qq.session_question_id}
+                                    type="button"
+                                    onClick={() => {
+                                        setIndex(i);
+                                        setNavOpen(false);
+                                    }}
+                                    aria-label={`Soal ${i + 1}${done ? ', sudah dijawab' : ', belum dijawab'}`}
+                                    aria-current={
+                                        i === index ? 'step' : undefined
+                                    }
+                                    className={cn(
+                                        'tabular flex h-11 items-center justify-center rounded-md text-sm font-bold',
+                                        done
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'border border-dashed border-border',
+                                        i === index &&
+                                            'ring-2 ring-accent ring-offset-2 ring-offset-background',
+                                    )}
+                                >
+                                    {i + 1}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <div className="mt-4 flex gap-3">
+                        {unanswered.length > 0 && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => {
+                                    setIndex(questions.indexOf(unanswered[0]));
+                                    setNavOpen(false);
+                                }}
+                            >
+                                Ke soal kosong ({unanswered.length})
+                            </Button>
+                        )}
+                        <Button
+                            type="button"
+                            className="flex-1"
+                            loading={submitting}
+                            onClick={submit}
+                        >
+                            Kirim
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
         </>
     );
 }
