@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, FileQuestion, GraduationCap, HeartPulse, Home, Inbox, LayoutGrid, MapPin, Mountain, Plus, Search, ShieldCheck, Target, User, UserCheck, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BedDouble, BookOpen, Building2, ClipboardCheck, ClipboardList, FileQuestion, GraduationCap, HeartPulse, Home, Inbox, LayoutGrid, MapPin, Mountain, Search, ShieldCheck, Target, User, UserCheck, Users, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useState  } from 'react';
 import type {ReactNode} from 'react';
@@ -11,8 +11,6 @@ import { NavUser } from '@/components/nav-user';
 import { NotificationBell } from '@/components/notification-bell';
 import { OfflineBanner } from '@/components/offline-banner';
 import { AdminTableSkeleton, ModuleSkeleton } from '@/components/patterns/skeletons';
-import { QuickActionSheet } from '@/components/quick-action-sheet';
-import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
@@ -476,7 +474,6 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
     const userMobileNavItems = baseUserMobileNavItems;
     const inboxCount = (usePage<{ inbox_count?: number }>().props.inbox_count ?? 0);
     const navigatingTo = useNavigating();
-    const [quickOpen, setQuickOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
 
     const mainNavGroups = isAdmin
@@ -576,10 +573,6 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                                     <span className="flex-1 text-left">Cari…</span>
                                     <kbd className="rounded-md bg-card px-1.5 py-0.5 text-[11px] font-semibold">Ctrl K</kbd>
                                 </button>
-                                <Button size="sm" onClick={() => setQuickOpen(true)} className="mr-1">
-                                    <Plus />
-                                    Buat
-                                </Button>
                             </>
                         )}
                         <AppearanceToggleButton />
@@ -619,7 +612,6 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 ) : (
                     <>
                         <BottomNav />
-                        <QuickActionSheet open={quickOpen} onOpenChange={setQuickOpen} />
                         <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
                     </>
                 )}
