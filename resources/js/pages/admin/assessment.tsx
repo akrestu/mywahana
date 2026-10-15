@@ -7,7 +7,7 @@ const config: AssessmentConfig = {
     subtitle: 'Monitoring & analitik hasil assessment seluruh karyawan',
     kpiTotalColor: 'text-info',
     kpiAvgColor: 'text-info',
-    lineColor: '#22c55e',
+    lineColor: 'var(--chart-4)',
     route: '/admin/assessment',
     showDeptChart: true,
     showDeptFilter: true,

@@ -67,7 +67,7 @@ export default function Login({ status, canResetPassword }: Props) {
                             alt="Logo PT.WBK"
                             className="size-[30px]"
                         />
-                        <span className="text-xs font-extrabold tracking-[0.1em] text-[oklch(0.191_0_0)]">
+                        <span className="text-xs font-extrabold tracking-[0.1em] text-ink">
                             MYWAHANA
                         </span>
                     </div>

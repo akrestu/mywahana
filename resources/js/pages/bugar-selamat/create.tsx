@@ -3,6 +3,7 @@ import { Minus, Moon, Plus, Sun } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 import InputError from '@/components/input-error';
+import { choiceChip, choiceSurface } from '@/components/patterns/choice-card';
 import { FormStepper } from '@/components/patterns/form-stepper';
 import { ModuleHeader } from '@/components/patterns/module-header';
 import { OfflineSaved } from '@/components/patterns/offline-saved';
@@ -264,9 +265,7 @@ export default function BugarSelamatCreate({ user }: Props) {
                                                 }
                                                 className={cn(
                                                     'flex h-[88px] flex-col items-center justify-center gap-1.5 rounded-lg text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-                                                    on
-                                                        ? 'border-2 border-foreground bg-accent-soft'
-                                                        : 'border border-border bg-card hover:bg-muted',
+                                                    choiceSurface(on),
                                                 )}
                                             >
                                                 <Icon
@@ -362,9 +361,7 @@ export default function BugarSelamatCreate({ user }: Props) {
                                                 }
                                                 className={cn(
                                                     'h-12 rounded-full text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-                                                    on
-                                                        ? 'border-2 border-primary bg-primary text-primary-foreground'
-                                                        : 'border border-border bg-card hover:bg-muted',
+                                                    choiceChip(on),
                                                 )}
                                             >
                                                 {label}
@@ -420,11 +417,7 @@ export default function BugarSelamatCreate({ user }: Props) {
                                                     }
                                                     className={cn(
                                                         'h-11 w-16 shrink-0 rounded-full text-[13px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-                                                        on
-                                                            ? bad
-                                                                ? 'border-2 border-destructive bg-destructive text-destructive-foreground'
-                                                                : 'border-2 border-primary bg-primary text-primary-foreground'
-                                                            : 'border border-border bg-card hover:bg-muted',
+                                                        choiceChip(on, bad),
                                                     )}
                                                 >
                                                     {v === '1' ? 'Ya' : 'Tidak'}

@@ -1,5 +1,6 @@
 import { Camera, Images, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
 import {
     Sheet,
@@ -25,7 +26,7 @@ export function PhotoPicker({
     value: File[];
     onChange: (files: File[]) => void;
     max?: number;
-    label?: string;
+    label?: ReactNode;
 }) {
     const galleryRef = useRef<HTMLInputElement>(null);
     const [sourceOpen, setSourceOpen] = useState(false);
@@ -118,10 +119,6 @@ export function PhotoPicker({
                     side="bottom"
                     className="mx-auto max-w-lg gap-0 border-0 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
                 >
-                    <div
-                        className="mx-auto mt-3 h-1 w-10 rounded-full bg-border"
-                        aria-hidden
-                    />
                     <SheetHeader className="px-0 pb-4">
                         <SheetTitle className="text-left text-xl font-extrabold">
                             Tambah foto

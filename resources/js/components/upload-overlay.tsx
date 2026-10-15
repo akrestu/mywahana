@@ -21,7 +21,7 @@ return null;
             aria-modal="true"
             role="dialog"
         >
-            <div className="flex w-72 flex-col items-center gap-6 rounded-3xl border bg-card px-8 py-10 shadow-2xl">
+            <div className="flex w-72 flex-col items-center gap-6 rounded-[24px] bg-card px-8 py-10 shadow-[0_20px_48px_oklch(0.191_0_0/0.14)]">
                 {/* Spinner with pulsing ring */}
                 <div className="relative flex items-center justify-center">
                     <span className="absolute size-20 animate-ping rounded-full bg-primary/20" />

@@ -158,7 +158,7 @@ function ReviewRow({ item }: { item: ReviewItem }) {
                                     className={cn(
                                         'flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold',
                                         correct
-                                            ? 'bg-success text-white dark:text-[oklch(0.191_0_0)]'
+                                            ? 'bg-success text-on-solid'
                                             : mine
                                               ? 'bg-destructive text-destructive-foreground'
                                               : 'bg-card text-muted-foreground',
@@ -250,7 +250,7 @@ export function AssessmentResult({
                         className={cn(
                             'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-extrabold',
                             session.passed
-                                ? 'bg-success text-white dark:text-[oklch(0.191_0_0)]'
+                                ? 'bg-success text-on-solid'
                                 : 'bg-destructive text-destructive-foreground',
                         )}
                     >

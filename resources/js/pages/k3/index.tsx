@@ -190,7 +190,7 @@ export default function K3Index({
 
                 <section
                     aria-label="Kinerja K3 bulan ini"
-                    className="flex items-center gap-4 rounded-[22px] bg-[oklch(0.191_0_0)] p-[18px] text-white dark:border dark:border-border dark:bg-card"
+                    className="flex items-center gap-4 rounded-[22px] bg-ink p-[18px] text-white dark:border dark:border-border dark:bg-card"
                 >
                     <div
                         className="flex size-16 shrink-0 items-center justify-center rounded-full"
@@ -200,7 +200,7 @@ export default function K3Index({
                         role="img"
                         aria-label={`${summary.persen} persen target terpenuhi`}
                     >
-                        <span className="tabular flex size-[50px] items-center justify-center rounded-full bg-[oklch(0.191_0_0)] text-[15px] font-extrabold dark:bg-card">
+                        <span className="tabular flex size-[50px] items-center justify-center rounded-full bg-ink text-[15px] font-extrabold dark:bg-card">
                             {summary.persen}%
                         </span>
                     </div>

@@ -88,8 +88,8 @@ const SCORE_LABELS = ['', 'Sangat kurang', 'Kurang', 'Baik', 'Sangat baik'];
 const SCORE_ON = [
     '',
     'bg-destructive text-destructive-foreground',
-    'bg-warning text-white dark:text-[oklch(0.191_0_0)]',
-    'bg-success text-white dark:text-[oklch(0.191_0_0)]',
+    'bg-warning text-on-solid',
+    'bg-success text-on-solid',
     'bg-primary text-primary-foreground',
 ];
 

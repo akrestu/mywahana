@@ -570,7 +570,7 @@ export default function AssessmentMonitor({
                                         />
                                         <Bar
                                             dataKey="pass_rate"
-                                            fill="#6366f1"
+                                            fill="var(--chart-3)"
                                             radius={[0, 4, 4, 0]}
                                             maxBarSize={20}
                                         />

@@ -16,7 +16,7 @@ export function RiskBadge({ level }: { level: RiskLevel }) {
     return (
         <Badge
             variant={variants[key]}
-            className={cn('font-extrabold', key === 'AA' && 'bg-risk-extreme text-white dark:text-[oklch(0.191_0_0)]')}
+            className={cn('font-extrabold', key === 'AA' && 'bg-risk-extreme text-on-solid')}
         >
             {riskLabels[key]} · {key}
         </Badge>

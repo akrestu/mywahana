@@ -40,7 +40,7 @@ export function ResultScreen({
                 <Icon className="size-9" strokeWidth={1.8} />
             </span>
             <div className="relative flex flex-col gap-2" aria-live="polite">
-                <h1 className="text-2xl font-extrabold tracking-tight">
+                <h1 className="text-[30px] leading-tight font-extrabold tracking-tight">
                     {title}
                 </h1>
                 {description && (

@@ -189,7 +189,7 @@ export default function Dashboard({
                                     className="size-[42px] shrink-0 rounded-full object-cover"
                                 />
                             ) : (
-                                <span className="flex size-[42px] shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-[oklch(0.191_0_0)]">
+                                <span className="flex size-[42px] shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-ink">
                                     {initials(user.name ?? '')}
                                 </span>
                             )}
@@ -205,7 +205,7 @@ export default function Dashboard({
                                 </span>
                             </span>
                         </Link>
-                        <NotificationBell className="size-11 shrink-0 rounded-full bg-white/95 text-[oklch(0.191_0_0)] hover:bg-white lg:hidden" />
+                        <NotificationBell className="size-11 shrink-0 rounded-full bg-white/95 text-ink hover:bg-white lg:hidden" />
                     </div>
                     <h1 className="mt-5 text-[26px] leading-[1.15] font-extrabold tracking-tight">
                         Siap kerja aman

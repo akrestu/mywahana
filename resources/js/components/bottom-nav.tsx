@@ -87,7 +87,7 @@ export function BottomNav() {
                         'flex size-11 items-center justify-center rounded-full transition-colors duration-200',
                         active
                             ? 'bg-accent text-accent-foreground'
-                            : 'text-[oklch(0.82_0.02_88)]',
+                            : 'text-ink-muted',
                     )}
                 >
                     <Icon
@@ -96,7 +96,7 @@ export function BottomNav() {
                     />
                 </span>
                 {badge && (
-                    <span className="tabular absolute top-2 right-[calc(50%-22px)] flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-extrabold text-accent-foreground ring-2 ring-[oklch(0.191_0_0)] dark:ring-card">
+                    <span className="tabular absolute top-2 right-[calc(50%-22px)] flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-extrabold text-accent-foreground ring-2 ring-ink dark:ring-card">
                         {badge > 99 ? '99+' : badge}
                     </span>
                 )}
@@ -109,7 +109,7 @@ export function BottomNav() {
             <nav
                 aria-label="Navigasi utama"
                 className={cn(
-                    'fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 mx-auto grid h-16 max-w-md grid-cols-5 items-center rounded-full bg-[oklch(0.191_0_0)] shadow-[0_12px_28px_oklch(0.191_0_0/0.18)] transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] lg:hidden dark:border dark:border-border dark:bg-card',
+                    'fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 mx-auto grid h-16 max-w-md grid-cols-5 items-center nav-glass rounded-full transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] lg:hidden',
                     visible ? 'translate-y-0' : 'translate-y-[calc(100%+2rem)]',
                 )}
             >

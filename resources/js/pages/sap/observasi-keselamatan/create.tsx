@@ -3,6 +3,7 @@ import { Check } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 import InputError from '@/components/input-error';
+import { choiceSurface } from '@/components/patterns/choice-card';
 import { ComboField } from '@/components/patterns/combo-field';
 import { FormStepper } from '@/components/patterns/form-stepper';
 import {
@@ -854,9 +855,7 @@ export default function ObservasiKeselamatanCreate({
                                                     }
                                                     className={cn(
                                                         'flex min-h-[52px] items-center gap-3 rounded-lg px-4 text-left text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-                                                        checked
-                                                            ? 'border-2 border-foreground bg-accent-soft'
-                                                            : 'border border-border bg-card hover:bg-muted',
+                                                        choiceSurface(checked),
                                                     )}
                                                 >
                                                     <span

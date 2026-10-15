@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Clock, LayoutGrid } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { choiceSurface } from '@/components/patterns/choice-card';
 import { Button } from '@/components/ui/button';
 import {
     Sheet,
@@ -325,9 +326,7 @@ export function QuizRunner({
                                     }
                                     className={cn(
                                         'flex min-h-[56px] items-center gap-3 rounded-lg px-4 py-3 text-left text-[15px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-                                        selected
-                                            ? 'border-2 border-foreground bg-accent-soft font-semibold'
-                                            : 'border border-border bg-card hover:bg-muted',
+                                        choiceSurface(selected), selected && 'font-semibold',
                                     )}
                                 >
                                     <span

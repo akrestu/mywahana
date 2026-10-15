@@ -7,7 +7,7 @@ const config: AssessmentConfig = {
     subtitle: 'Monitoring & analitik hasil HR assessment seluruh karyawan',
     kpiTotalColor: 'text-info',
     kpiAvgColor: 'text-info',
-    lineColor: '#8b5cf6',
+    lineColor: 'var(--chart-3)',
     route: '/admin/hr-assessment',
     showDeptChart: false,
     showDeptFilter: false,

@@ -1,20 +1,19 @@
 import { Head, router } from '@inertiajs/react';
 import {
-    BookOpen,
     Camera,
-    Images,
     Moon,
     PenLine,
     Plus,
     Sun,
     Trash2,
     UserCheck,
-    X,
 } from 'lucide-react';
-import { useRef, useState } from 'react';
-import { CameraCapture } from '@/components/camera-capture';
+import { useState } from 'react';
+import InputError from '@/components/input-error';
+import { choiceChip, choiceSurface } from '@/components/patterns/choice-card';
 import { ComboField } from '@/components/patterns/combo-field';
 import { ModuleHeader } from '@/components/patterns/module-header';
+import { PhotoPicker } from '@/components/patterns/photo-picker';
 import { SignaturePad } from '@/components/patterns/signature-pad';
 import { SiteCombobox } from '@/components/site-combobox';
 import { Button } from '@/components/ui/button';
@@ -29,15 +28,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-} from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { UploadOverlay } from '@/components/upload-overlay';
-import { compressImageWithToast } from '@/lib/compress-image';
 import { cn } from '@/lib/utils';
 
 type UserInfo = {
@@ -129,30 +121,6 @@ export default function KomunikasiJsaCreate({
 
     const [fotoKelompok, setFotoKelompok] = useState<File | null>(null);
     const [fotoDokumen, setFotoDokumen] = useState<File | null>(null);
-    const [fotoKelompokPreview, setFotoKelompokPreview] = useState<string>('');
-    const [fotoDokumenPreview, setFotoDokumenPreview] = useState<string>('');
-    const fotoKelompokGalleryRef = useRef<HTMLInputElement>(null);
-    const fotoDokumenGalleryRef = useRef<HTMLInputElement>(null);
-    const [photoSheet, setPhotoSheet] = useState<'kelompok' | 'dokumen' | null>(
-        null,
-    );
-    const [showCamera, setShowCamera] = useState<'kelompok' | 'dokumen' | null>(
-        null,
-    );
-    function choosePhotoSource(source: 'camera' | 'gallery') {
-        const slot = photoSheet;
-        setPhotoSheet(null);
-
-        if (source === 'camera') {
-            setShowCamera(slot);
-        } else {
-            (slot === 'kelompok'
-                ? fotoKelompokGalleryRef
-                : fotoDokumenGalleryRef
-            ).current?.click();
-        }
-    }
-
     const [supervisorSig, setSupervisorSig] = useState('');
     const [showSupervisorSig, setShowSupervisorSig] = useState(false);
 
@@ -169,25 +137,6 @@ export default function KomunikasiJsaCreate({
     const lokasiOptions =
         sites.find((item) => item.value === site)?.locations ?? [];
     const noExternalTL = !teamLeaderId;
-
-    async function handleFotoChange(
-        type: 'kelompok' | 'dokumen',
-        file: File | null,
-    ) {
-        if (!file) {
-            return;
-        }
-
-        const compressed = await compressImageWithToast(file);
-
-        if (type === 'kelompok') {
-            setFotoKelompok(compressed);
-            setFotoKelompokPreview(URL.createObjectURL(compressed));
-        } else {
-            setFotoDokumen(compressed);
-            setFotoDokumenPreview(URL.createObjectURL(compressed));
-        }
-    }
 
     function addPeserta() {
         if (peserta.length >= 10) {
@@ -440,9 +389,7 @@ export default function KomunikasiJsaCreate({
                                         onClick={() => setShift(value)}
                                         className={cn(
                                             'flex h-[52px] items-center justify-center gap-2 rounded-lg text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-                                            sel
-                                                ? 'border-2 border-foreground bg-accent-soft'
-                                                : 'border border-border bg-card hover:bg-muted',
+                                            choiceSurface(sel),
                                         )}
                                     >
                                         <Icon className="size-4" />
@@ -477,9 +424,7 @@ export default function KomunikasiJsaCreate({
                                         aria-pressed={sel}
                                         className={cn(
                                             'h-11 rounded-full text-sm font-bold transition-colors',
-                                            sel
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'border border-border bg-card hover:bg-muted',
+                                            choiceChip(sel),
                                         )}
                                     >
                                         {preset} mnt
@@ -797,100 +742,20 @@ export default function KomunikasiJsaCreate({
                     </Label>
 
                     <div className="flex flex-col gap-3">
-                        {/* Foto Kelompok */}
-                        <div className="flex flex-col gap-2">
-                            <Label className="text-sm font-medium">
-                                Foto Kelompok (saat briefing berlangsung){' '}
-                                <span className="text-destructive">*</span>
-                            </Label>
-                            {fotoKelompokPreview ? (
-                                <div className="flex flex-col gap-2">
-                                    <img
-                                        src={fotoKelompokPreview}
-                                        alt="Foto kelompok"
-                                        className="max-h-48 w-full rounded-lg object-cover"
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        className="gap-1.5 self-start"
-                                        onClick={() => {
-                                            setFotoKelompok(null);
-                                            setFotoKelompokPreview('');
-                                        }}
-                                    >
-                                        <X size={13} /> Hapus foto
-                                    </Button>
-                                </div>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => setPhotoSheet('kelompok')}
-                                    className="flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border bg-card p-6 text-sm font-bold transition-colors hover:bg-muted"
-                                >
-                                    <span className="flex size-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
-                                        <Camera size={20} />
-                                    </span>
-                                    <span className="text-sm text-muted-foreground">
-                                        Ketuk untuk ambil/pilih foto kelompok
-                                    </span>
-                                </button>
-                            )}
-                            {errors.foto_kelompok && (
-                                <p className="text-sm text-destructive">
-                                    {errors.foto_kelompok}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Foto Dokumen */}
-                        <div className="flex flex-col gap-2">
-                            <Label className="text-sm font-medium">
-                                Foto Dokumen JSA/SOP/IK yang Dikomunikasikan{' '}
-                                <span className="text-destructive">*</span>
-                            </Label>
-                            {fotoDokumenPreview ? (
-                                <div className="flex flex-col gap-2">
-                                    <img
-                                        src={fotoDokumenPreview}
-                                        alt="Foto dokumen"
-                                        className="max-h-48 w-full rounded-lg object-cover"
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        className="gap-1.5 self-start"
-                                        onClick={() => {
-                                            setFotoDokumen(null);
-                                            setFotoDokumenPreview('');
-                                        }}
-                                    >
-                                        <X size={13} /> Hapus foto
-                                    </Button>
-                                </div>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => setPhotoSheet('dokumen')}
-                                    className="flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border bg-card p-6 text-sm font-bold transition-colors hover:bg-muted"
-                                >
-                                    <span className="flex size-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
-                                        <BookOpen size={20} />
-                                    </span>
-                                    <span className="text-sm text-muted-foreground">
-                                        Ketuk untuk ambil/pilih foto dokumen
-                                        JSA/SOP/IK
-                                    </span>
-                                </button>
-                            )}
-                            {errors.foto_dokumen && (
-                                <p className="text-sm text-destructive">
-                                    {errors.foto_dokumen}
-                                </p>
-                            )}
-                        </div>
+                        <PhotoPicker
+                            label={<>Foto Kelompok (saat briefing berlangsung) <span className="text-destructive">*</span></>}
+                            value={fotoKelompok ? [fotoKelompok] : []}
+                            onChange={(files) => setFotoKelompok(files[0] ?? null)}
+                            max={1}
+                        />
+                        <InputError message={errors.foto_kelompok} />
+                        <PhotoPicker
+                            label={<>Foto Dokumen JSA/SOP/IK yang Dikomunikasikan <span className="text-destructive">*</span></>}
+                            value={fotoDokumen ? [fotoDokumen] : []}
+                            onChange={(files) => setFotoDokumen(files[0] ?? null)}
+                            max={1}
+                        />
+                        <InputError message={errors.foto_dokumen} />
                     </div>
                 </div>
 
@@ -984,76 +849,11 @@ export default function KomunikasiJsaCreate({
                 </DialogContent>
             </Dialog>
 
-            {/* Hidden file inputs untuk galeri */}
-            <input
-                ref={fotoKelompokGalleryRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                    handleFotoChange('kelompok', e.target.files?.[0] ?? null);
-                    e.target.value = '';
-                }}
-            />
-            <input
-                ref={fotoDokumenGalleryRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                    handleFotoChange('dokumen', e.target.files?.[0] ?? null);
-                    e.target.value = '';
-                }}
-            />
             <UploadOverlay
                 open={processing}
                 progress={uploadProgress}
                 label="Menyimpan JSA..."
             />
-            <CameraCapture
-                open={showCamera !== null}
-                onCapture={(file) => {
-                    const slot = showCamera;
-                    setShowCamera(null);
-
-                    if (slot) {
-                        handleFotoChange(slot, file);
-                    }
-                }}
-                onClose={() => setShowCamera(null)}
-            />
-
-            {/* Sheet pilihan sumber foto */}
-            <Sheet
-                open={photoSheet !== null}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        setPhotoSheet(null);
-                    }
-                }}
-            >
-                <SheetContent side="bottom" className="pb-8">
-                    <SheetHeader>
-                        <SheetTitle>Pilih Sumber Foto</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-4 flex flex-col gap-3">
-                        <Button
-                            variant="outline"
-                            className="h-14 gap-3 text-base"
-                            onClick={() => choosePhotoSource('camera')}
-                        >
-                            <Camera size={22} /> Ambil dari Kamera
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="h-14 gap-3 text-base"
-                            onClick={() => choosePhotoSource('gallery')}
-                        >
-                            <Images size={22} /> Pilih dari Galeri
-                        </Button>
-                    </div>
-                </SheetContent>
-            </Sheet>
 
             {/* Dialog TTD Supervisor */}
             <Dialog

@@ -196,7 +196,7 @@ return;
             const dataUrl = await toPng(el, {
                 cacheBust: true,
                 pixelRatio: 2,
-                backgroundColor: '#ffffff',
+                backgroundColor: getComputedStyle(document.body).backgroundColor,
                 width: el.scrollWidth,
                 height: el.scrollHeight,
             });

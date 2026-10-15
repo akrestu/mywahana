@@ -28,7 +28,7 @@ export default function PasskeyItem({ passkey, onDelete }: Props) {
     return (
         <div className="flex items-center justify-between border-b p-4 last:border-b-0">
             <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-muted">
                     <KeyRound className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="space-y-1">

@@ -1,13 +1,14 @@
 import { computeRisk, riskLabels } from '@/lib/risk';
 import type { RiskLevel } from '@/lib/risk';
 import { cn } from '@/lib/utils';
+import { choiceChip } from './choice-card';
 
 export type RiskOption = { value: string; label: string; sub: string };
 export type RiskAxis = 'probabilitas' | 'frekuensi' | 'severity';
 
 const RESULT: Record<RiskLevel, { card: string; desc: string }> = {
     AA: {
-        card: 'bg-risk-extreme text-white dark:text-[oklch(0.191_0_0)]',
+        card: 'bg-risk-extreme text-on-solid',
         desc: 'Sangat berbahaya — hentikan pekerjaan segera.',
     },
     A: {
@@ -119,9 +120,7 @@ export function RiskMatrix({
                                         onClick={() => onChange(key, o.value)}
                                         className={cn(
                                             'tabular h-12 rounded-md text-base font-extrabold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-                                            on
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'border border-border bg-card hover:bg-muted',
+                                            choiceChip(on),
                                         )}
                                     >
                                         {o.value}

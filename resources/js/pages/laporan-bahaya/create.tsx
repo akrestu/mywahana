@@ -4,6 +4,7 @@ import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import InputError from '@/components/input-error';
+import { choiceChip, choiceSurface } from '@/components/patterns/choice-card';
 import { ComboField } from '@/components/patterns/combo-field';
 import { FormStepper } from '@/components/patterns/form-stepper';
 import { ModuleHeader } from '@/components/patterns/module-header';
@@ -456,9 +457,7 @@ export default function LaporanBahayaCreate({ user, sites, pics }: Props) {
                                                 }
                                                 className={cn(
                                                     'flex min-h-[64px] flex-col items-start justify-center rounded-lg px-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-                                                    on
-                                                        ? 'border-2 border-foreground bg-accent-soft'
-                                                        : 'border border-border bg-card hover:bg-muted',
+                                                    choiceSurface(on),
                                                 )}
                                             >
                                                 <span className="text-sm font-bold">
@@ -712,9 +711,7 @@ export default function LaporanBahayaCreate({ user, sites, pics }: Props) {
                                                 }
                                                 className={cn(
                                                     'flex h-11 items-center justify-center gap-1.5 rounded-full text-[13px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-                                                    on
-                                                        ? 'bg-primary text-primary-foreground'
-                                                        : 'border border-border bg-card hover:bg-muted',
+                                                    choiceChip(on),
                                                 )}
                                             >
                                                 <Icon className="size-4" />

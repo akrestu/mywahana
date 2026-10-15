@@ -70,7 +70,7 @@ export function OfflineBanner() {
     return (
         <div
             role="status"
-            className="sticky top-0 z-30 flex items-center justify-center gap-2 bg-[oklch(0.191_0_0)] px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] text-xs font-semibold text-white"
+            className="sticky top-0 z-30 flex items-center justify-center gap-2 bg-ink px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] text-xs font-semibold text-white"
         >
             {online ? (
                 <CloudUpload className="size-3.5 text-accent" />

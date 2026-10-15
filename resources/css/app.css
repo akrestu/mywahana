@@ -16,6 +16,7 @@
     --radius-sm: 0.5rem;
     --radius-md: 1rem;
     --radius-lg: var(--radius);
+    --radius-xl: 1.75rem;
 
     --color-background: var(--background);
     --color-foreground: var(--foreground);
@@ -50,6 +51,9 @@
     --color-info: var(--info);
     --color-info-soft: var(--info-soft);
     --color-risk-extreme: var(--risk-extreme);
+    --color-ink: var(--ink);
+    --color-ink-muted: var(--ink-muted);
+    --color-on-solid: var(--on-solid);
 
     --color-border: var(--border);
     --color-input: var(--input);
@@ -97,6 +101,11 @@
     --info: oklch(0.431 0.108 256);
     --info-soft: oklch(0.94 0.016 254);
     --risk-extreme: oklch(0.317 0.105 28);
+    /* Ink: the fixed near-black used for nav bars and dark tiles in both themes. */
+    --ink: oklch(0.191 0 0);
+    --ink-muted: oklch(0.82 0.02 88);
+    /* Text on solid status fills: white in light, ink in dark. */
+    --on-solid: oklch(1 0 0);
     --border: oklch(0.916 0.013 87);
     --input: oklch(0.964 0.007 89);
     --ring: oklch(0.191 0 0);
@@ -142,6 +151,7 @@
     --info: oklch(0.759 0.087 257);
     --info-soft: oklch(0.259 0.047 258);
     --risk-extreme: oklch(0.709 0.184 28);
+    --on-solid: oklch(0.191 0 0);
     --border: oklch(0.297 0.006 92);
     --input: oklch(0.248 0.004 85);
     --ring: oklch(0.864 0.159 94.5);
@@ -165,6 +175,14 @@
         @apply border-border;
     }
 
+    /* Never let wide content widen the page: on mobile that grows the layout
+       viewport and pushes the fixed bottom nav off screen. Tables scroll
+       inside their own cards instead. `clip` keeps sticky headers working. */
+    html,
+    body {
+        overflow-x: clip;
+    }
+
     body {
         @apply bg-background text-foreground antialiased;
         font-feature-settings: 'cv11', 'ss01';
@@ -182,6 +200,37 @@
 
     .tabular {
         font-variant-numeric: tabular-nums;
+    }
+}
+
+/* Floating bottom nav: smoked glass over ink. Falls back to solid ink where
+   backdrop-filter is unsupported, so icons always keep their contrast. */
+.nav-glass {
+    background-color: var(--ink);
+    box-shadow:
+        0 12px 32px oklch(0.191 0 0 / 0.22),
+        inset 0 0 0 1px oklch(1 0 0 / 0.08),
+        inset 0 1px 0 oklch(1 0 0 / 0.12);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .nav-glass {
+        background-color: color-mix(in oklch, var(--ink) 80%, transparent);
+        -webkit-backdrop-filter: blur(24px) saturate(1.8);
+        backdrop-filter: blur(24px) saturate(1.8);
+    }
+
+    .dark .nav-glass {
+        background-color: color-mix(in oklch, var(--card) 70%, transparent);
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .nav-glass,
+    .dark .nav-glass {
+        background-color: var(--ink);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
     }
 }
 

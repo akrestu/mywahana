@@ -244,7 +244,7 @@ const RESULT = {
         desc: 'Kondisi Anda prima. Selamat bekerja dan tetap utamakan keselamatan.',
         mark: '✓',
         screen: 'bg-success-soft text-foreground',
-        ring: 'bg-success text-white dark:text-[oklch(0.191_0_0)]',
+        ring: 'bg-success text-on-solid',
         topo: 'opacity-20',
     },
     catatan: {
@@ -252,14 +252,14 @@ const RESULT = {
         desc: 'Tetap waspada dan perhatikan kondisi fisik Anda. Sampaikan ke pengawas bila ada keluhan.',
         mark: '!',
         screen: 'bg-accent text-accent-foreground',
-        ring: 'bg-[oklch(0.191_0_0)] text-accent',
+        ring: 'bg-ink text-accent',
         topo: 'opacity-25',
     },
     dilarang: {
         title: 'Dilarang bekerja',
         desc: 'Kondisi Anda belum memenuhi syarat untuk bekerja. Segera lapor ke pengawas Anda.',
         mark: '✕',
-        screen: 'bg-destructive text-white dark:text-[oklch(0.191_0_0)]',
+        screen: 'bg-destructive text-on-solid',
         ring: 'bg-white text-destructive',
         topo: 'opacity-15 invert',
     },
@@ -322,7 +322,7 @@ function BugarResult({ record }: { record: BugarRecord }) {
                     <Button
                         asChild
                         size="lg"
-                        className="bg-[oklch(0.191_0_0)] text-white hover:bg-[oklch(0.191_0_0)]/90"
+                        className="bg-ink text-white hover:bg-ink/90"
                     >
                         <Link href="/home">Kembali ke Beranda</Link>
                     </Button>

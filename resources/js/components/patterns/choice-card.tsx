@@ -1,6 +1,24 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
+/** Selected / idle surface for card-like options (tiles, list rows, quiz answers). */
+export function choiceSurface(on: boolean) {
+    return on
+        ? 'border-2 border-foreground bg-accent-soft'
+        : 'border border-border bg-card hover:bg-muted';
+}
+
+/** Selected / idle fill for pill chips (Ya/Tidak, jam tidur, skor). */
+export function choiceChip(on: boolean, danger = false) {
+    if (!on) {
+        return 'border border-border bg-card hover:bg-muted';
+    }
+
+    return danger
+        ? 'border-2 border-destructive bg-destructive text-destructive-foreground'
+        : 'border-2 border-primary bg-primary text-primary-foreground';
+}
+
 /** Large radio option (at least 52 px tall) for shift, yes/no and similar choices. */
 export function ChoiceCard({
     name,
@@ -24,10 +42,8 @@ export function ChoiceCard({
     return (
         <label
             className={cn(
-                'flex min-h-[52px] cursor-pointer items-center gap-3 rounded-lg border-2 bg-card p-4 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
-                checked
-                    ? 'border-foreground bg-accent-soft'
-                    : 'border-transparent hover:border-border',
+                'flex min-h-[52px] cursor-pointer items-center gap-3 rounded-lg p-4 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
+                choiceSurface(checked),
                 className,
             )}
         >
