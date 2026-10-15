@@ -7,6 +7,7 @@ import InputError from '@/components/input-error';
 import { ComboField } from '@/components/patterns/combo-field';
 import { FormStepper } from '@/components/patterns/form-stepper';
 import { ModuleHeader } from '@/components/patterns/module-header';
+import { OfflineSaved } from '@/components/patterns/offline-saved';
 import { PhotoPicker } from '@/components/patterns/photo-picker';
 import { RiskMatrix } from '@/components/patterns/risk-matrix';
 import type { RiskAxis, RiskOption } from '@/components/patterns/risk-matrix';
@@ -19,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { TimePickerInput } from '@/components/ui/time-picker-input';
 import { UploadOverlay } from '@/components/upload-overlay';
 import { useDraft } from '@/hooks/use-draft';
+import { enqueue, isOffline } from '@/lib/offline-queue';
 import { computeRisk, riskLabels } from '@/lib/risk';
 import { tindakanLabels } from '@/lib/status';
 import type { StatusTindakan } from '@/lib/status';
@@ -195,6 +197,7 @@ export default function LaporanBahayaCreate({ user, sites, pics }: Props) {
     const [step, setStep] = useState(1);
     const [fotos, setFotos] = useState<File[]>([]);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [savedOffline, setSavedOffline] = useState(false);
 
     const { data, setData, post, processing, errors, transform } =
         useForm<FormData>({
@@ -294,6 +297,33 @@ export default function LaporanBahayaCreate({ user, sites, pics }: Props) {
             return;
         }
 
+        if (isOffline()) {
+            const files: Record<string, Blob> = {};
+
+            if (fotos[0]) {
+                files.foto = fotos[0];
+            }
+
+            if (fotos[1]) {
+                files.foto_2 = fotos[1];
+            }
+
+            void enqueue({
+                url: '/laporan-bahaya',
+                label: `Laporan bahaya ${data.lokasi}`,
+                fields: Object.fromEntries(
+                    Object.entries(data).map(([k, v]) => [k, String(v ?? '')]),
+                ),
+                files,
+                successMatch: 'terkirim=1',
+            }).then(() => {
+                draft.clear();
+                setSavedOffline(true);
+            });
+
+            return;
+        }
+
         transform((d) => ({
             ...d,
             foto: fotos[0] ?? null,
@@ -320,6 +350,15 @@ export default function LaporanBahayaCreate({ user, sites, pics }: Props) {
     };
 
     const picked = picOptions.find((p) => p.value === data.pic_user_id);
+
+    if (savedOffline) {
+        return (
+            <OfflineSaved
+                what="Laporan bahaya"
+                onAgain={() => window.location.reload()}
+            />
+        );
+    }
 
     return (
         <>

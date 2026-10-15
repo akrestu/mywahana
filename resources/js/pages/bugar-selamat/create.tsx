@@ -5,12 +5,14 @@ import { useEffect, useState } from 'react';
 import InputError from '@/components/input-error';
 import { FormStepper } from '@/components/patterns/form-stepper';
 import { ModuleHeader } from '@/components/patterns/module-header';
+import { OfflineSaved } from '@/components/patterns/offline-saved';
 import { SignaturePad } from '@/components/patterns/signature-pad';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { UploadOverlay } from '@/components/upload-overlay';
 import { useDraft } from '@/hooks/use-draft';
+import { enqueue, isOffline } from '@/lib/offline-queue';
 import { cn } from '@/lib/utils';
 
 type UserInfo = {
@@ -104,6 +106,7 @@ export default function BugarSelamatCreate({ user }: Props) {
     });
     const [step, setStep] = useState(1);
     const [hasSig, setHasSig] = useState(false);
+    const [savedOffline, setSavedOffline] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm<FormData>({
         tanggal: today,
@@ -164,6 +167,21 @@ export default function BugarSelamatCreate({ user }: Props) {
             return;
         }
 
+        if (isOffline()) {
+            void enqueue({
+                url: '/bugar-selamat',
+                label: 'Bugar Selamat',
+                fields: { ...data },
+                files: {},
+                successMatch: 'hasil=1',
+            }).then(() => {
+                draft.clear();
+                setSavedOffline(true);
+            });
+
+            return;
+        }
+
         post('/bugar-selamat', {
             onSuccess: () => draft.clear(),
             // "Already filled today" stays on the last step; schedule errors go back to step 1.
@@ -174,6 +192,10 @@ export default function BugarSelamatCreate({ user }: Props) {
             },
         });
     };
+
+    if (savedOffline) {
+        return <OfflineSaved what="Checklist Bugar Selamat" />;
+    }
 
     return (
         <>
