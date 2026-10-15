@@ -45,26 +45,26 @@ type Props = { record: BugarRecord; back_url?: string; hasil?: boolean };
 
 const statusConfig = {
     layak: {
-        bg: 'bg-green-50 border-green-300 dark:bg-green-950/30',
+        bg: 'bg-success-soft border-success/60',
         icon: ShieldCheck,
-        iconClass: 'text-green-500',
-        iconBg: 'bg-green-100 dark:bg-green-900/40',
+        iconClass: 'text-success',
+        iconBg: 'bg-success-soft',
         title: 'LAYAK BEKERJA',
         desc: 'Kondisi Anda prima untuk bekerja hari ini.',
     },
     catatan: {
-        bg: 'bg-yellow-50 border-yellow-300 dark:bg-yellow-950/30',
+        bg: 'bg-warning-soft border-warning/60',
         icon: ShieldAlert,
-        iconClass: 'text-yellow-500',
-        iconBg: 'bg-yellow-100 dark:bg-yellow-900/40',
+        iconClass: 'text-warning',
+        iconBg: 'bg-warning-soft',
         title: 'BEKERJA DENGAN CATATAN',
         desc: 'Tetap waspada dan perhatikan kondisi fisik Anda.',
     },
     dilarang: {
-        bg: 'bg-red-50 border-red-300 dark:bg-red-950/30',
+        bg: 'bg-destructive-soft border-destructive/60',
         icon: ShieldAlert,
-        iconClass: 'text-red-500',
-        iconBg: 'bg-red-100 dark:bg-red-900/40',
+        iconClass: 'text-destructive',
+        iconBg: 'bg-destructive-soft',
         title: 'DILARANG BEKERJA',
         desc: 'Kondisi Anda tidak memenuhi syarat untuk bekerja.',
     },
@@ -97,14 +97,14 @@ function AnswerRow({
                     className={cn(
                         'flex size-9 items-center justify-center rounded-full',
                         isDanger
-                            ? 'bg-red-100 dark:bg-red-950/40'
-                            : 'bg-green-100 dark:bg-green-950/40',
+                            ? 'bg-destructive-soft'
+                            : 'bg-success-soft',
                     )}
                 >
                     {isDanger ? (
-                        <X size={16} className="font-bold text-red-600" />
+                        <X size={16} className="font-bold text-destructive" />
                     ) : (
-                        <Check size={16} className="font-bold text-green-600" />
+                        <Check size={16} className="font-bold text-success" />
                     )}
                 </div>
             ) : (
@@ -236,11 +236,11 @@ export default function BugarSelamatShow({
                             <span className="text-muted-foreground">Shift</span>
                             <div className="flex items-center gap-2 font-semibold">
                                 {record.shift === 'Siang' ? (
-                                    <Sun size={16} className="text-amber-500" />
+                                    <Sun size={16} className="text-warning" />
                                 ) : (
                                     <Moon
                                         size={16}
-                                        className="text-indigo-500"
+                                        className="text-info"
                                     />
                                 )}
                                 {record.shift === 'Siang'

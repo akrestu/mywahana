@@ -36,38 +36,38 @@ function groupByMonth(records: OKRecord[]) {
 
 function StatusBadge({ status }: { status: OKRecord['status'] }) {
     if (status === 'dikonfirmasi') {
-        return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-400">Dikonfirmasi</Badge>;
+        return <Badge className="bg-success-soft text-success border-success/60 hover:bg-success-soft">Dikonfirmasi</Badge>;
     }
 
     if (status === 'ditolak') {
-        return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400">Ditolak</Badge>;
+        return <Badge className="bg-destructive-soft text-destructive border-destructive/60 hover:bg-destructive-soft">Ditolak</Badge>;
     }
 
-    return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-100 dark:bg-yellow-950/40 dark:text-yellow-400">Menunggu Konfirmasi</Badge>;
+    return <Badge className="bg-warning-soft text-warning border-warning/60 hover:bg-warning-soft">Menunggu Konfirmasi</Badge>;
 }
 
 function recordBarColor(status: OKRecord['status']) {
     if (status === 'dikonfirmasi') {
-return 'bg-green-500';
+return 'bg-success';
 }
 
     if (status === 'ditolak') {
-return 'bg-red-500';
+return 'bg-destructive';
 }
 
-    return 'bg-yellow-500';
+    return 'bg-warning';
 }
 
 function recordBgColor(status: OKRecord['status']) {
     if (status === 'dikonfirmasi') {
-return 'bg-green-50/30 dark:bg-green-950/10';
+return 'bg-success-soft';
 }
 
     if (status === 'ditolak') {
-return 'bg-red-50/30 dark:bg-red-950/10';
+return 'bg-destructive-soft';
 }
 
-    return 'bg-yellow-50/30 dark:bg-yellow-950/10';
+    return 'bg-warning-soft';
 }
 
 function RecordList({ records, asPJ = false }: { records: Paginated; asPJ?: boolean }) {
@@ -150,15 +150,15 @@ function PendingKonfirmasiList({ records }: { records: Paginated }) {
             {grouped.map(([month, items]) => (
                 <div key={month} className="flex flex-col gap-3">
                     <div className="flex items-center gap-2">
-                        <CalendarDays size={15} className="text-yellow-600" />
-                        <span className="text-sm font-bold uppercase tracking-wider text-yellow-700 dark:text-yellow-400">{month}</span>
+                        <CalendarDays size={15} className="text-warning" />
+                        <span className="text-sm font-bold uppercase tracking-wider text-warning">{month}</span>
                     </div>
                     <Card className="overflow-hidden p-0">
                         {items.map((record, idx) => (
                             <div key={record.id}>
                                 <Link href={`/sap/observasi-keselamatan/${record.id}/konfirmasi`}>
-                                    <div className="flex cursor-pointer items-center gap-4 px-4 py-4 transition-colors hover:bg-muted bg-yellow-50/30 dark:bg-yellow-950/10">
-                                        <div className="h-14 w-1.5 shrink-0 rounded-full bg-yellow-500" />
+                                    <div className="flex cursor-pointer items-center gap-4 px-4 py-4 transition-colors hover:bg-muted bg-warning-soft">
+                                        <div className="h-14 w-1.5 shrink-0 rounded-full bg-warning" />
                                         <div className="min-w-0 flex-1">
                                             <p className="text-base font-bold">
                                                 {new Date(record.tanggal).toLocaleDateString('id-ID', {
@@ -171,7 +171,7 @@ function PendingKonfirmasiList({ records }: { records: Paginated }) {
                                                 <p className="text-xs text-muted-foreground mt-1">oleh {record.user.name}</p>
                                             )}
                                         </div>
-                                        <ChevronRight size={20} className="shrink-0 text-yellow-600" />
+                                        <ChevronRight size={20} className="shrink-0 text-warning" />
                                     </div>
                                 </Link>
                                 {idx < items.length - 1 && <Separator />}

@@ -27,15 +27,15 @@ type PaginatedRecords = {
 type Props = { records: PaginatedRecords };
 
 const statusStripe: Record<BugarRecord['status_kelayakan'], string> = {
-    layak:    'bg-green-500',
-    catatan:  'bg-yellow-500',
-    dilarang: 'bg-red-500',
+    layak:    'bg-success',
+    catatan:  'bg-warning',
+    dilarang: 'bg-destructive',
 };
 
 const statusBg: Record<BugarRecord['status_kelayakan'], string> = {
-    layak:    'bg-green-50 dark:bg-green-950/20',
-    catatan:  'bg-yellow-50 dark:bg-yellow-950/20',
-    dilarang: 'bg-red-50 dark:bg-red-950/20',
+    layak:    'bg-success-soft',
+    catatan:  'bg-warning-soft',
+    dilarang: 'bg-destructive-soft',
 };
 
 const statusIcon: Record<BugarRecord['status_kelayakan'], React.FC<{ className?: string }>> = {
@@ -45,9 +45,9 @@ const statusIcon: Record<BugarRecord['status_kelayakan'], React.FC<{ className?:
 };
 
 const statusIconColor: Record<BugarRecord['status_kelayakan'], string> = {
-    layak:    'text-green-500',
-    catatan:  'text-yellow-500',
-    dilarang: 'text-red-500',
+    layak:    'text-success',
+    catatan:  'text-warning',
+    dilarang: 'text-destructive',
 };
 
 function groupByMonth(records: BugarRecord[]) {
@@ -142,8 +142,8 @@ export default function BugarSelamatIndex({ records }: Props) {
                                                             </p>
                                                             <div className="mt-1 flex items-center gap-2">
                                                                 {record.shift === 'Siang'
-                                                                    ? <Sun size={13} className="text-amber-500" />
-                                                                    : <Moon size={13} className="text-indigo-500" />}
+                                                                    ? <Sun size={13} className="text-warning" />
+                                                                    : <Moon size={13} className="text-info" />}
                                                                 <span className="text-sm text-muted-foreground">
                                                                     Shift {record.shift === 'Siang' ? 'I' : 'II'} · Hari ke-{record.hari_ke}
                                                                 </span>

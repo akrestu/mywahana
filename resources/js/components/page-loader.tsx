@@ -62,7 +62,7 @@ return null;
                 .page-loader-spinner {
                     width: 40px;
                     height: 40px;
-                    --c: no-repeat linear-gradient(orange 0 0);
+                    --c: no-repeat linear-gradient(var(--accent) 0 0);
                     background: var(--c), var(--c), var(--c), var(--c);
                     background-size: 21px 21px;
                     animation: page-loader-l5 1.5s infinite cubic-bezier(0.3,1,0,1);
@@ -75,7 +75,7 @@ return null;
                 }
             `}</style>
             <div
-                className="fixed inset-0 z-[9999] flex items-center justify-center bg-white dark:bg-black pointer-events-none transition-opacity duration-300"
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-background pointer-events-none transition-opacity duration-300"
                 style={{ opacity: leaving ? 0 : 1 }}
             >
                 <div className="page-loader-spinner" />

@@ -1,16 +1,16 @@
 import { Head, router } from '@inertiajs/react';
-import { BookOpen, Camera, Check, ChevronsUpDown, Images, MapPin, PenLine, Plus, Trash2, UserCheck, X } from 'lucide-react';
+import { BookOpen, Camera, Images, Moon, PenLine, Plus, Sun, Trash2, UserCheck, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { CameraCapture } from '@/components/camera-capture';
+import { ComboField } from '@/components/patterns/combo-field';
+import { ModuleHeader } from '@/components/patterns/module-header';
 import { SiteCombobox } from '@/components/site-combobox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
@@ -122,8 +122,6 @@ return;
 }
 
 export default function KomunikasiJsaCreate({ user, staffUsers, sites }: Props) {
-    const [tlOpen, setTlOpen] = useState(false);
-    const [lokasiOpen, setLokasiOpen] = useState(false);
     const [teamLeaderId, setTeamLeaderId] = useState<string>('');
     const [site, setSite] = useState(() => sites.some((item) => item.value === user.site) ? user.site! : (sites[0]?.value ?? ''));
     const [tanggal, setTanggal] = useState(today);
@@ -325,17 +323,13 @@ formData.append('supervisor_signature', supervisorSig);
     return (
         <>
             <Head title="Buat Komunikasi JSA" />
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-w-2xl">
-                <div>
-                    <h2 className="text-xl font-bold">Lembar Komunikasi JSA/SOP/IK</h2>
-                    <p className="text-sm text-muted-foreground mt-0.5">WBK-HSE-FO-026 · {user.name}</p>
-                </div>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5 pt-2 lg:mx-auto lg:max-w-[640px]">
+                <ModuleHeader backHref="/sap/komunikasi-jsa" title="Komunikasi JSA" eyebrow={`WBK-HSE-FO-026 · ${user.name}`} />
 
                 {/* ── Informasi Dasar ── */}
-                <Card>
-                    <CardContent className="flex flex-col gap-5 pt-5">
+                <div className="flex flex-col gap-4">
                         <div className="flex flex-col gap-2">
-                            <Label className="text-base font-bold">Site <span className="text-destructive">*</span></Label>
+                            <Label className="text-[13px] font-semibold">Site <span className="text-destructive">*</span></Label>
                             <SiteCombobox
                                 value={site}
                                 options={sites}
@@ -350,7 +344,7 @@ formData.append('supervisor_signature', supervisorSig);
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <Label htmlFor="tanggal" className="text-base font-bold">Tanggal <span className="text-destructive">*</span></Label>
+                            <Label htmlFor="tanggal" className="text-[13px] font-semibold">Tanggal <span className="text-destructive">*</span></Label>
                             <DatePickerInput
                                 value={tanggal}
                                 onChange={setTanggal}
@@ -360,75 +354,41 @@ formData.append('supervisor_signature', supervisorSig);
                             {errors.tanggal && <p className="text-sm text-destructive">{errors.tanggal}</p>}
                         </div>
 
-                        <div className="flex flex-col gap-2">
-                            <Label className="text-base font-bold">Lokasi <span className="text-destructive">*</span></Label>
-                            <Popover open={lokasiOpen} onOpenChange={setLokasiOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={lokasiOpen}
-                                        className="h-12 w-full justify-between text-base font-normal"
-                                    >
-                                        <span className="flex items-center gap-2">
-                                            <MapPin size={16} className={lokasi ? 'text-orange-500 shrink-0' : 'text-muted-foreground shrink-0'} />
-                                            {lokasi || <span className="text-muted-foreground">Pilih lokasi...</span>}
-                                        </span>
-                                        <ChevronsUpDown size={16} className="opacity-50" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                                    <Command>
-                                        <CommandInput placeholder="Cari lokasi..." className="h-11 text-base" />
-                                        <CommandList>
-                                            <CommandEmpty>Tidak ditemukan.</CommandEmpty>
-                                            <CommandGroup>
-                                                {lokasiOptions.map((opt) => (
-                                                    <CommandItem
-                                                        key={opt}
-                                                        value={opt}
-                                                        onSelect={val => {
- setLokasi(val === lokasi ? '' : val); setLokasiOpen(false); 
-}}
-                                                    >
-                                                        {opt}
-                                                        <Check
-                                                            size={14}
-                                                            className={cn('ml-auto', lokasi === opt ? 'opacity-100 text-orange-600' : 'opacity-0')}
-                                                        />
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                            {errors.lokasi && <p className="text-sm text-destructive">{errors.lokasi}</p>}
-                        </div>
+                        <ComboField
+                            id="lokasi"
+                            label="Lokasi"
+                            value={lokasi}
+                            options={lokasiOptions.map((l) => ({ value: l, label: l }))}
+                            onChange={setLokasi}
+                            placeholder="Pilih lokasi"
+                            searchPlaceholder="Cari lokasi…"
+                            emptyText="Lokasi tidak ditemukan."
+                            error={errors.lokasi}
+                        />
 
                         <div className="flex flex-col gap-2">
-                            <Label className="text-base font-bold">Shift <span className="text-destructive">*</span></Label>
+                            <Label className="text-[13px] font-semibold">Shift <span className="text-destructive">*</span></Label>
                             <div className="grid grid-cols-2 gap-3">
                                 {[
-                                    { value: 'siang' as const, emoji: '☀️', label: 'Siang', selCls: 'border-amber-400 bg-amber-50 dark:bg-amber-950/30' },
-                                    { value: 'malam' as const, emoji: '🌙', label: 'Malam', selCls: 'border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30' },
-                                ].map(({ value, emoji, label, selCls }) => {
+                                    { value: 'siang' as const, label: 'Siang', Icon: Sun },
+                                    { value: 'malam' as const, label: 'Malam', Icon: Moon },
+                                ].map(({ value, label, Icon }) => {
                                     const sel = shift === value;
 
                                     return (
                                         <button
                                             key={value}
                                             type="button"
+                                            role="radio"
+                                            aria-checked={sel}
                                             onClick={() => setShift(value)}
                                             className={cn(
-                                                'flex items-center justify-center gap-2 rounded-xl border-2 py-3.5 text-base font-semibold transition-all',
-                                                sel ? selCls : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/40',
+                                                'flex h-[52px] items-center justify-center gap-2 rounded-lg text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                                                sel ? 'border-2 border-foreground bg-accent-soft' : 'border border-border bg-card hover:bg-muted',
                                             )}
                                         >
-                                            <span className="text-xl">{emoji}</span>
+                                            <Icon className="size-4" />
                                             {label}
-                                            {sel && <Check size={16} className="text-primary" />}
                                         </button>
                                     );
                                 })}
@@ -437,7 +397,7 @@ formData.append('supervisor_signature', supervisorSig);
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <Label htmlFor="durasi" className="text-base font-bold">Durasi <span className="text-destructive">*</span></Label>
+                            <Label htmlFor="durasi" className="text-[13px] font-semibold">Durasi <span className="text-destructive">*</span></Label>
                             <div className="grid grid-cols-4 gap-2">
                                 {['15', '30', '45', '60'].map((preset) => {
                                     const sel = durasi === preset;
@@ -447,11 +407,10 @@ formData.append('supervisor_signature', supervisorSig);
                                             key={preset}
                                             type="button"
                                             onClick={() => setDurasi(preset)}
+                                            aria-pressed={sel}
                                             className={cn(
-                                                'rounded-xl border-2 py-2.5 text-sm font-semibold transition-all',
-                                                sel
-                                                    ? 'border-primary bg-primary/10 text-primary'
-                                                    : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/40',
+                                                'h-11 rounded-full text-sm font-bold transition-colors',
+                                                sel ? 'bg-primary text-primary-foreground' : 'border border-border bg-card hover:bg-muted',
                                             )}
                                         >
                                             {preset} mnt
@@ -468,7 +427,7 @@ formData.append('supervisor_signature', supervisorSig);
                                     value={durasi}
                                     onChange={e => setDurasi(e.target.value)}
                                     placeholder="Atau isi manual, contoh: 30"
-                                    className="h-12 pr-16 text-base"
+                                    className="pr-16"
                                 />
                                 <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm text-muted-foreground">menit</span>
                             </div>
@@ -476,78 +435,44 @@ formData.append('supervisor_signature', supervisorSig);
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <Label htmlFor="kegiatan" className="text-base font-bold">Kegiatan <span className="text-destructive">*</span></Label>
-                            <Textarea id="kegiatan" value={kegiatan} onChange={e => setKegiatan(e.target.value)} placeholder="Uraian kegiatan yang akan dilakukan" className="text-base min-h-[80px]" />
+                            <Label htmlFor="kegiatan" className="text-[13px] font-semibold">Kegiatan <span className="text-destructive">*</span></Label>
+                            <Textarea id="kegiatan" value={kegiatan} onChange={e => setKegiatan(e.target.value)} placeholder="Uraian kegiatan yang akan dilakukan" />
                             {errors.kegiatan && <p className="text-sm text-destructive">{errors.kegiatan}</p>}
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <Label htmlFor="judul_dokumen" className="text-base font-bold">
+                            <Label htmlFor="judul_dokumen" className="text-[13px] font-semibold">
                                 Judul JSA / SOP / IK yang Dikomunikasikan <span className="text-destructive">*</span>
                             </Label>
-                            <Input id="judul_dokumen" value={judulDokumen} onChange={e => setJudulDokumen(e.target.value)} placeholder="Contoh: JSA-001 Pengoperasian Excavator" className="h-12 text-base" />
+                            <Input id="judul_dokumen" value={judulDokumen} onChange={e => setJudulDokumen(e.target.value)} placeholder="Contoh: JSA-001 Pengoperasian Excavator" />
                             {errors.judul_dokumen && <p className="text-sm text-destructive">{errors.judul_dokumen}</p>}
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <Label htmlFor="catatan" className="text-base font-bold">Catatan / Masukan <span className="text-sm font-normal text-muted-foreground">(opsional)</span></Label>
-                            <Textarea id="catatan" value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Catatan tambahan atau masukan" className="text-base min-h-[60px]" />
+                            <Label htmlFor="catatan" className="text-[13px] font-semibold">Catatan / Masukan <span className="text-sm font-normal text-muted-foreground">(opsional)</span></Label>
+                            <Textarea id="catatan" value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Catatan tambahan atau masukan" />
                         </div>
-                    </CardContent>
-                </Card>
+                </div>
 
                 {/* ── Team Leader ── */}
                 <div className="flex flex-col gap-2">
-                    <Label className="text-base font-bold flex items-center gap-2">
+                    <Label className="text-[13px] font-semibold flex items-center gap-2">
                         <UserCheck size={16} />
                         Team Leader / Supervisor
                         <span className="text-sm font-normal text-muted-foreground">(opsional)</span>
                     </Label>
                     <p className="text-sm text-muted-foreground -mt-1">Jika tidak dipilih, Anda otomatis menjadi team leader dan form langsung selesai.</p>
-                    <Popover open={tlOpen} onOpenChange={setTlOpen}>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" role="combobox" className="h-12 w-full justify-between text-base font-normal">
-                                {selectedTL
-                                    ? <span>{selectedTL.name}{selectedTL.jabatan ? ` — ${selectedTL.jabatan}` : ''}</span>
-                                    : <span className="text-muted-foreground">Pilih team leader... (default: Anda)</span>}
-                                <ChevronsUpDown size={16} className="opacity-50" />
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                            <Command>
-                                <CommandInput placeholder="Cari nama / NIK..." />
-                                <CommandList>
-                                    <CommandEmpty>Tidak ditemukan.</CommandEmpty>
-                                    <CommandGroup>
-                                        {teamLeaderId && (
-                                            <CommandItem value="__clear__" onSelect={() => {
- setTeamLeaderId(''); setTlOpen(false); 
-}}>
-                                                <X size={16} className="mr-2 text-destructive" />
-                                                <span className="text-muted-foreground">Hapus pilihan (saya sendiri TL)</span>
-                                            </CommandItem>
-                                        )}
-                                        {availableStaffUsers.map(u => (
-                                            <CommandItem
-                                                key={u.id}
-                                                value={`${u.name} ${u.nik ?? ''}`}
-                                                onSelect={() => {
- setTeamLeaderId(String(u.id)); setTlOpen(false); 
-}}
-                                            >
-                                                <Check size={16} className={cn('mr-2', String(u.id) === teamLeaderId ? 'opacity-100' : 'opacity-0')} />
-                                                <span>{u.name}</span>
-                                                {u.jabatan && <span className="ml-2 text-xs text-muted-foreground">{u.jabatan}</span>}
-                                                {u.site && <span className="ml-1 text-xs text-muted-foreground">· {u.site}</span>}
-                                            </CommandItem>
-                                        ))}
-                                    </CommandGroup>
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
+                    <ComboField
+                        id="team_leader"
+                        label="Team leader"
+                        value={teamLeaderId}
+                        options={[{ value: '', label: 'Saya sendiri' }, ...availableStaffUsers.map((u) => ({ value: String(u.id), label: u.name, sub: u.jabatan }))]}
+                        onChange={setTeamLeaderId}
+                        placeholder="Saya sendiri"
+                        searchPlaceholder="Cari nama…"
+                    />
                     {selectedTL && (
-                        <p className="text-sm text-amber-600 dark:text-amber-400">
+                        <p className="text-sm font-semibold text-warning">
                             Form akan dikirim ke {selectedTL.name} untuk dikonfirmasi.
                         </p>
                     )}
@@ -559,7 +484,7 @@ formData.append('supervisor_signature', supervisorSig);
                 {/* ── Daftar Peserta ── */}
                 <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                        <Label className="text-base font-bold">
+                        <Label className="text-[13px] font-semibold">
                             Daftar Peserta <span className="text-destructive">*</span>
                             <span className="ml-1.5 text-sm font-normal text-muted-foreground">({peserta.length}/10)</span>
                         </Label>
@@ -628,7 +553,7 @@ formData.append('supervisor_signature', supervisorSig);
 
                 {/* ── Foto Bukti ── */}
                 <div className="flex flex-col gap-3">
-                    <Label className="text-base font-bold flex items-center gap-2">
+                    <Label className="text-[13px] font-semibold flex items-center gap-2">
                         <Camera size={16} />
                         Foto Bukti Komunikasi <span className="text-destructive">*</span>
                     </Label>
@@ -639,7 +564,7 @@ formData.append('supervisor_signature', supervisorSig);
                             <Label className="text-sm font-medium">Foto Kelompok (saat briefing berlangsung) <span className="text-destructive">*</span></Label>
                             {fotoKelompokPreview ? (
                                 <div className="flex flex-col gap-2">
-                                    <img src={fotoKelompokPreview} alt="Foto kelompok" className="w-full max-h-48 object-cover rounded-lg border" />
+                                    <img src={fotoKelompokPreview} alt="Foto kelompok" className="max-h-48 w-full rounded-lg object-cover" />
                                     <Button type="button" variant="outline" size="sm" className="gap-1.5 self-start"
                                         onClick={() => {
  setFotoKelompok(null); setFotoKelompokPreview(''); 
@@ -648,8 +573,8 @@ formData.append('supervisor_signature', supervisorSig);
                                     </Button>
                                 </div>
                             ) : (
-                                <button type="button" onClick={() => setPhotoSheet('kelompok')} className="flex flex-col items-center gap-2 border-2 border-dashed rounded-lg p-6 w-full cursor-pointer hover:border-primary transition-colors">
-                                    <Camera size={28} className="text-muted-foreground" />
+                                <button type="button" onClick={() => setPhotoSheet('kelompok')} className="flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border bg-card p-6 text-sm font-bold transition-colors hover:bg-muted">
+                                    <span className="flex size-11 items-center justify-center rounded-full bg-accent text-accent-foreground"><Camera size={20} /></span>
                                     <span className="text-sm text-muted-foreground">Ketuk untuk ambil/pilih foto kelompok</span>
                                 </button>
                             )}
@@ -661,7 +586,7 @@ formData.append('supervisor_signature', supervisorSig);
                             <Label className="text-sm font-medium">Foto Dokumen JSA/SOP/IK yang Dikomunikasikan <span className="text-destructive">*</span></Label>
                             {fotoDokumenPreview ? (
                                 <div className="flex flex-col gap-2">
-                                    <img src={fotoDokumenPreview} alt="Foto dokumen" className="w-full max-h-48 object-cover rounded-lg border" />
+                                    <img src={fotoDokumenPreview} alt="Foto dokumen" className="max-h-48 w-full rounded-lg object-cover" />
                                     <Button type="button" variant="outline" size="sm" className="gap-1.5 self-start"
                                         onClick={() => {
  setFotoDokumen(null); setFotoDokumenPreview(''); 
@@ -670,8 +595,8 @@ formData.append('supervisor_signature', supervisorSig);
                                     </Button>
                                 </div>
                             ) : (
-                                <button type="button" onClick={() => setPhotoSheet('dokumen')} className="flex flex-col items-center gap-2 border-2 border-dashed rounded-lg p-6 w-full cursor-pointer hover:border-primary transition-colors">
-                                    <BookOpen size={28} className="text-muted-foreground" />
+                                <button type="button" onClick={() => setPhotoSheet('dokumen')} className="flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border bg-card p-6 text-sm font-bold transition-colors hover:bg-muted">
+                                    <span className="flex size-11 items-center justify-center rounded-full bg-accent text-accent-foreground"><BookOpen size={20} /></span>
                                     <span className="text-sm text-muted-foreground">Ketuk untuk ambil/pilih foto dokumen JSA/SOP/IK</span>
                                 </button>
                             )}
@@ -685,7 +610,7 @@ formData.append('supervisor_signature', supervisorSig);
                     <>
                         <Separator />
                         <div className="flex flex-col gap-3">
-                            <Label className="text-base font-bold">Tanda Tangan Supervisor <span className="text-destructive">*</span></Label>
+                            <Label className="text-[13px] font-semibold">Tanda Tangan Supervisor <span className="text-destructive">*</span></Label>
                             <p className="text-sm text-muted-foreground -mt-1">{user.name}{user.jabatan ? ` — ${user.jabatan}` : ''}</p>
                             {supervisorSig ? (
                                 <div className="flex items-center gap-3">
@@ -704,10 +629,11 @@ formData.append('supervisor_signature', supervisorSig);
                     </>
                 )}
 
-                <Button type="submit" disabled={processing} className="h-12 text-base font-bold gap-2 mt-2">
-                    <BookOpen size={18} />
-                    {processing ? 'Menyimpan...' : teamLeaderId ? 'Kirim untuk Dikonfirmasi' : 'Simpan Lembar Komunikasi'}
-                </Button>
+                <div className="sticky bottom-0 -mx-4 bg-gradient-to-t from-background via-background to-background/0 px-4 pt-6 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:mx-0 lg:px-0">
+                    <Button type="submit" size="lg" className="w-full" loading={processing}>
+                        {teamLeaderId ? 'Kirim untuk dikonfirmasi' : 'Simpan lembar komunikasi'}
+                    </Button>
+                </div>
             </form>
 
             {/* Dialog TTD Peserta */}

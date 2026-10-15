@@ -34,18 +34,18 @@ type Props = { record: Record; isTeamLeader: boolean };
 
 function StatusBadge({ status }: { status: Record['status'] }) {
     if (status === 'selesai') {
-return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-400">Selesai</Badge>;
+return <Badge className="bg-success-soft text-success border-success/60 hover:bg-success-soft">Selesai</Badge>;
 }
 
     if (status === 'dikonfirmasi') {
-return <Badge className="bg-green-100 text-green-700 border-green-300 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-400">Dikonfirmasi</Badge>;
+return <Badge className="bg-success-soft text-success border-success/60 hover:bg-success-soft">Dikonfirmasi</Badge>;
 }
 
     if (status === 'ditolak') {
-return <Badge className="bg-red-100 text-red-700 border-red-300 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400">Ditolak</Badge>;
+return <Badge className="bg-destructive-soft text-destructive border-destructive/60 hover:bg-destructive-soft">Ditolak</Badge>;
 }
 
-    return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-100 dark:bg-yellow-950/40 dark:text-yellow-400">Menunggu Konfirmasi</Badge>;
+    return <Badge className="bg-warning-soft text-warning border-warning/60 hover:bg-warning-soft">Menunggu Konfirmasi</Badge>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

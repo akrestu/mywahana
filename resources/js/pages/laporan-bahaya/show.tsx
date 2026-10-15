@@ -56,10 +56,10 @@ type Props = {
 };
 
 const RISK_CONFIG = {
-    AA: { bg: 'bg-red-50 border-red-300 dark:bg-red-950/30', text: 'text-red-700', desc: 'Sangat Berbahaya — Hentikan pekerjaan segera!' },
-    A:  { bg: 'bg-orange-50 border-orange-300 dark:bg-orange-950/30', text: 'text-orange-700', desc: 'Berbahaya — Perlu tindakan segera' },
-    B:  { bg: 'bg-yellow-50 border-yellow-300 dark:bg-yellow-950/30', text: 'text-yellow-700', desc: 'Sedang — Perlu dipantau & ditangani' },
-    C:  { bg: 'bg-green-50 border-green-300 dark:bg-green-950/30', text: 'text-green-700', desc: 'Rendah — Aman terkendali' },
+    AA: { bg: 'bg-destructive-soft border-destructive/60', text: 'text-destructive', desc: 'Sangat Berbahaya — Hentikan pekerjaan segera!' },
+    A:  { bg: 'bg-warning-soft border-warning/60', text: 'text-warning', desc: 'Berbahaya — Perlu tindakan segera' },
+    B:  { bg: 'bg-warning-soft border-warning/60', text: 'text-warning', desc: 'Sedang — Perlu dipantau & ditangani' },
+    C:  { bg: 'bg-success-soft border-success/60', text: 'text-success', desc: 'Rendah — Aman terkendali' },
 } as const;
 
 const P_LABELS: Record<number, string> = { 1: 'Hampir tidak mungkin', 2: 'Kecil kemungkinannya', 3: 'Kadang-kadang', 4: 'Sering terjadi', 5: 'Hampir pasti' };
@@ -68,9 +68,9 @@ const S_LABELS: Record<number, string> = { 1: 'Sangat Ringan', 2: 'Ringan', 3: '
 
 const STATUS_OPTIONS = [
     { value: 'pending',  label: '⏳ Pending',  cls: 'border-gray-300 data-[active=true]:bg-gray-100 data-[active=true]:border-gray-500' },
-    { value: 'continue', label: '🔁 Continue', cls: 'border-blue-300 data-[active=true]:bg-blue-50 data-[active=true]:border-blue-500' },
-    { value: 'progress', label: '🔧 Progress', cls: 'border-yellow-300 data-[active=true]:bg-yellow-50 data-[active=true]:border-yellow-500' },
-    { value: 'close',    label: '✅ Close',    cls: 'border-green-300 data-[active=true]:bg-green-50 data-[active=true]:border-green-500' },
+    { value: 'continue', label: '🔁 Continue', cls: 'border-info/60 data-[active=true]:bg-info-soft data-[active=true]:border-info/60' },
+    { value: 'progress', label: '🔧 Progress', cls: 'border-warning/60 data-[active=true]:bg-warning-soft data-[active=true]:border-warning/60' },
+    { value: 'close',    label: '✅ Close',    cls: 'border-success/60 data-[active=true]:bg-success-soft data-[active=true]:border-success/60' },
 ] as const;
 
 function SignaturePad({ onSave, onClear }: { onSave: (dataUrl: string) => void; onClear: () => void }) {
@@ -276,7 +276,7 @@ data.append('tanda_tangan', signature);
                         {record.waktu_pengamatan && ` · ${record.waktu_pengamatan.slice(0, 5)} WIB`}
                     </p>
                     {record.kategori && (
-                        <span className={cn('mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold', record.kategori === 'KTA' ? 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200' : 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200')}>
+                        <span className={cn('mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold', record.kategori === 'KTA' ? 'bg-warning-soft text-warning' : 'bg-destructive-soft text-destructive')}>
                             {record.kategori === 'KTA' ? '⚠️' : '🚷'} {record.kategori} — {record.kategori === 'KTA' ? 'Kondisi Tidak Aman' : 'Tindakan Tidak Aman'}
                         </span>
                     )}

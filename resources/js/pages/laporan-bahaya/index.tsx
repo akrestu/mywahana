@@ -31,17 +31,17 @@ type Props = {
 };
 
 const riskStripe: Record<string, string> = {
-    AA: 'bg-red-500',
-    A:  'bg-orange-500',
-    B:  'bg-yellow-500',
-    C:  'bg-green-500',
+    AA: 'bg-destructive',
+    A:  'bg-warning',
+    B:  'bg-warning',
+    C:  'bg-success',
 };
 
 const riskBg: Record<string, string> = {
-    AA: 'bg-red-50 dark:bg-red-950/20',
-    A:  'bg-orange-50 dark:bg-orange-950/20',
-    B:  'bg-yellow-50 dark:bg-yellow-950/20',
-    C:  'bg-green-50 dark:bg-green-950/20',
+    AA: 'bg-destructive-soft',
+    A:  'bg-warning-soft',
+    B:  'bg-warning-soft',
+    C:  'bg-success-soft',
 };
 
 function groupByMonth(records: LaporanRecord[]) {
@@ -68,8 +68,8 @@ function RecordList({ records, showReporter = false, emptyMessage, emptyDesc }: 
             <div className="flex flex-col items-center gap-5 rounded-2xl border-2 border-dashed py-16 text-center px-6">
                 <div className="flex size-20 items-center justify-center rounded-full bg-muted">
                     {showReporter
-                        ? <ShieldCheck size={36} className="text-green-500" />
-                        : <AlertTriangle size={36} className="text-orange-500" />}
+                        ? <ShieldCheck size={36} className="text-success" />
+                        : <AlertTriangle size={36} className="text-warning" />}
                 </div>
                 <div className="space-y-2">
                     <p className="text-lg font-bold">{emptyMessage}</p>

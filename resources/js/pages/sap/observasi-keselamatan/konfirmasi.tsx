@@ -122,13 +122,13 @@ return null;
     return (
         <div className={cn(
             'flex items-center justify-between gap-3 px-4 py-3',
-            value === 'beresiko' && 'bg-red-50/50 dark:bg-red-950/10',
-            value === 'aman' && 'bg-green-50/50 dark:bg-green-950/10',
+            value === 'beresiko' && 'bg-destructive-soft',
+            value === 'aman' && 'bg-success-soft',
         )}>
             <span className="text-sm flex-1">{label}</span>
             <Badge variant="outline" className={cn(
                 'text-xs font-bold',
-                value === 'aman' ? 'border-green-400 text-green-700 bg-green-50' : 'border-red-400 text-red-700 bg-red-50',
+                value === 'aman' ? 'border-success/60 text-success bg-success-soft' : 'border-destructive/60 text-destructive bg-destructive-soft',
             )}>
                 {value === 'aman' ? <><Check size={12} className="mr-1" />Aman</> : <><X size={12} className="mr-1" />Beresiko</>}
             </Badge>
@@ -388,8 +388,8 @@ return null;
                             { key: 'tindakan_segera',               label: 'Tindakan yang Diambil Segera' },
                             { key: 'tindakan_mencegah_terulang',    label: 'Tindakan untuk Mencegah Terulang Kembali' },
                         ].filter(({ key }) => record[key]).map(({ key, label }) => (
-                            <Card key={key} className={cn('p-0 overflow-hidden', key === 'tindakan_kondisi_tidak_aman' && 'border-red-200 dark:border-red-800')}>
-                                <div className={cn('px-4 py-3 border-b font-bold text-sm', key === 'tindakan_kondisi_tidak_aman' ? 'bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400' : 'bg-muted/50')}>
+                            <Card key={key} className={cn('p-0 overflow-hidden', key === 'tindakan_kondisi_tidak_aman' && 'border-destructive/30')}>
+                                <div className={cn('px-4 py-3 border-b font-bold text-sm', key === 'tindakan_kondisi_tidak_aman' ? 'bg-destructive-soft border-destructive/30 text-destructive' : 'bg-muted/50')}>
                                     {label}
                                 </div>
                                 <CardContent className="px-4 py-4 text-sm leading-relaxed">
@@ -430,7 +430,7 @@ return null;
                                     <XCircle size={20} /> Tolak
                                 </Button>
                                 <Button
-                                    className="h-14 text-base font-bold gap-2 bg-green-600 hover:bg-green-700"
+                                    className="h-14 text-base font-bold gap-2 bg-success hover:bg-success"
                                     onClick={() => setStep('sign')}
                                 >
                                     <CheckCircle2 size={20} /> Konfirmasi
@@ -453,8 +453,8 @@ return null;
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border bg-green-50/50 dark:bg-green-950/10 border-green-200 dark:border-green-800 px-4 py-4">
-                            <p className="text-sm leading-relaxed text-green-800 dark:text-green-300">
+                        <div className="rounded-2xl border bg-success-soft border-success/30 px-4 py-4">
+                            <p className="text-sm leading-relaxed text-success">
                                 Dengan memberikan tanda tangan, Anda menyatakan telah mengetahui isi form Observasi Keselamatan ini
                                 dan akan menindaklanjuti temuan yang ada.
                             </p>
@@ -474,7 +474,7 @@ return null;
                             </Button>
                             <Button
                                 type="submit"
-                                className="h-14 text-base font-bold gap-2 bg-green-600 hover:bg-green-700"
+                                className="h-14 text-base font-bold gap-2 bg-success hover:bg-success"
                                 disabled={signForm.processing || !hasSig}
                             >
                                 <Check size={20} /> Kirim Konfirmasi
@@ -496,8 +496,8 @@ return null;
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border bg-red-50/50 dark:bg-red-950/10 border-red-200 dark:border-red-800 px-4 py-4">
-                            <p className="text-sm leading-relaxed text-red-800 dark:text-red-300">
+                        <div className="rounded-2xl border bg-destructive-soft border-destructive/30 px-4 py-4">
+                            <p className="text-sm leading-relaxed text-destructive">
                                 Jelaskan alasan penolakan agar observer dapat memperbaiki form atau tindakan yang diperlukan.
                             </p>
                         </div>

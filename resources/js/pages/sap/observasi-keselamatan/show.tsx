@@ -128,13 +128,13 @@ return null;
     return (
         <div className={cn(
             'flex items-center justify-between gap-3 px-4 py-3',
-            value === 'beresiko' && 'bg-red-50/50 dark:bg-red-950/10',
-            value === 'aman' && 'bg-green-50/50 dark:bg-green-950/10',
+            value === 'beresiko' && 'bg-destructive-soft',
+            value === 'aman' && 'bg-success-soft',
         )}>
             <span className="text-sm flex-1">{label}</span>
             <Badge variant="outline" className={cn(
                 'text-xs font-bold',
-                value === 'aman' ? 'border-green-400 text-green-700 bg-green-50' : 'border-red-400 text-red-700 bg-red-50',
+                value === 'aman' ? 'border-success/60 text-success bg-success-soft' : 'border-destructive/60 text-destructive bg-destructive-soft',
             )}>
                 {value === 'aman' ? <><Check size={12} className="mr-1" />Aman</> : <><X size={12} className="mr-1" />Beresiko</>}
             </Badge>
@@ -167,15 +167,15 @@ export default function ObservasiKeselamatanShow({ record, is_pj }: Props) {
                 {/* Status */}
                 <div className={cn(
                     'flex items-center gap-3 rounded-2xl border-2 px-4 py-4',
-                    record.status === 'dikonfirmasi' ? 'border-green-300 bg-green-50 dark:bg-green-950/20' :
-                    record.status === 'ditolak' ? 'border-red-300 bg-red-50 dark:bg-red-950/20' :
-                    'border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20',
+                    record.status === 'dikonfirmasi' ? 'border-success/60 bg-success-soft' :
+                    record.status === 'ditolak' ? 'border-destructive/60 bg-destructive-soft' :
+                    'border-warning/60 bg-warning-soft',
                 )}>
                     {record.status === 'dikonfirmasi'
-                        ? <CheckCircle2 size={22} className="text-green-600 shrink-0" />
+                        ? <CheckCircle2 size={22} className="text-success shrink-0" />
                         : record.status === 'ditolak'
-                            ? <XCircle size={22} className="text-red-600 shrink-0" />
-                            : <Clock size={22} className="text-yellow-600 shrink-0" />}
+                            ? <XCircle size={22} className="text-destructive shrink-0" />
+                            : <Clock size={22} className="text-warning shrink-0" />}
                     <div>
                         <p className="font-bold">
                             {record.status === 'dikonfirmasi' ? 'Dikonfirmasi' :
@@ -195,15 +195,15 @@ export default function ObservasiKeselamatanShow({ record, is_pj }: Props) {
                     </div>
                     {record.status === 'menunggu_konfirmasi' && is_pj && (
                         <Link href={`/sap/observasi-keselamatan/${record.id}/konfirmasi`} className="ml-auto">
-                            <Button size="sm" variant="outline" className="border-yellow-400 text-yellow-700">Konfirmasi Sekarang</Button>
+                            <Button size="sm" variant="outline" className="border-warning/60 text-warning">Konfirmasi Sekarang</Button>
                         </Link>
                     )}
                 </div>
 
                 {/* Alasan tolak */}
                 {record.status === 'ditolak' && record.pj_tolak_alasan && (
-                    <Card className="p-0 overflow-hidden border-red-200 dark:border-red-800">
-                        <div className="bg-red-50/50 dark:bg-red-950/20 px-4 py-3 border-b border-red-200 dark:border-red-800 font-bold text-sm text-red-700 dark:text-red-400">
+                    <Card className="p-0 overflow-hidden border-destructive/30">
+                        <div className="bg-destructive-soft px-4 py-3 border-b border-destructive/30 font-bold text-sm text-destructive">
                             Alasan Penolakan
                         </div>
                         <CardContent className="px-4 py-4 text-sm leading-relaxed">{record.pj_tolak_alasan}</CardContent>

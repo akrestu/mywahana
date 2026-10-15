@@ -25,17 +25,17 @@ type Paginated = { data: Rec[]; next_page_url: string | null; prev_page_url: str
 type Props = { myRecords: Paginated; pendingReInspeksi: Paginated; selesaiAsRI: Paginated };
 
 const JENIS: Record<Jenis, { label: string; emoji: string; badge: string }> = {
-    kantor: { label: 'Kantor', emoji: '🏢', badge: 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950 dark:text-sky-200 dark:border-sky-800' },
-    tambang: { label: 'Tambang', emoji: '⛏️', badge: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800' },
+    kantor: { label: 'Kantor', emoji: '🏢', badge: 'bg-info-soft text-info border-info/60' },
+    tambang: { label: 'Tambang', emoji: '⛏️', badge: 'bg-warning-soft text-warning border-warning/60' },
     workshop: { label: 'Workshop', emoji: '🔧', badge: 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700' },
-    mess: { label: 'Mess', emoji: '🏠', badge: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-800' },
+    mess: { label: 'Mess', emoji: '🏠', badge: 'bg-success-soft text-success border-success/60' },
 };
 
 const RISK = {
-    L: { l: 'Baik', c: 'bg-green-100 text-green-700 border-green-300' },
-    M: { l: 'Cukup', c: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
-    H: { l: 'Perhatian', c: 'bg-orange-100 text-orange-700 border-orange-300' },
-    VH: { l: 'Perlu Tindakan', c: 'bg-red-100 text-red-700 border-red-300' },
+    L: { l: 'Baik', c: 'bg-success-soft text-success border-success/60' },
+    M: { l: 'Cukup', c: 'bg-warning-soft text-warning border-warning/60' },
+    H: { l: 'Perhatian', c: 'bg-warning-soft text-warning border-warning/60' },
+    VH: { l: 'Perlu Tindakan', c: 'bg-destructive-soft text-destructive border-destructive/60' },
 };
 
 function groupByMonth(records: Rec[]) {
@@ -51,14 +51,14 @@ function groupByMonth(records: Rec[]) {
 
 function StatusBadge({ s }: { s: Rec['status'] }) {
     if (s === 'selesai') {
-        return <Badge className="border-green-300 bg-green-100 text-green-700 hover:bg-green-100">Selesai</Badge>;
+        return <Badge className="border-success/60 bg-success-soft text-success hover:bg-success-soft">Selesai</Badge>;
     }
 
     if (s === 'ditolak') {
-        return <Badge className="border-red-300 bg-red-100 text-red-700 hover:bg-red-100">Ditolak</Badge>;
+        return <Badge className="border-destructive/60 bg-destructive-soft text-destructive hover:bg-destructive-soft">Ditolak</Badge>;
     }
 
-    return <Badge className="border-yellow-300 bg-yellow-100 text-yellow-700 hover:bg-yellow-100">Menunggu Re-Inspeksi</Badge>;
+    return <Badge className="border-warning/60 bg-warning-soft text-warning hover:bg-warning-soft">Menunggu Re-Inspeksi</Badge>;
 }
 
 function RecordList({ records, asRI = false }: { records: Paginated; asRI?: boolean }) {
@@ -89,7 +89,7 @@ function RecordList({ records, asRI = false }: { records: Paginated; asRI?: bool
                                         <div
                                             className={cn(
                                                 'h-14 w-1.5 shrink-0 rounded-full',
-                                                rec.status === 'selesai' ? 'bg-green-500' : rec.status === 'ditolak' ? 'bg-red-500' : 'bg-yellow-500',
+                                                rec.status === 'selesai' ? 'bg-success' : rec.status === 'ditolak' ? 'bg-destructive' : 'bg-warning',
                                             )}
                                         />
                                         <div className="min-w-0 flex-1">
