@@ -1,8 +1,8 @@
 # MyWahana HSE
 
-![Laravel](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white)
+![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
-![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?logo=php&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-8.3+-777BB4?logo=php&logoColor=white)
 
 Aplikasi Health, Safety & Environment (K3) PT Wahana Baratama Mining. MyWahana HSE menggantikan formulir K3 berbasis kertas dengan aplikasi web yang dapat diinstal di ponsel (PWA), sehingga pekerja dapat melapor langsung dari lapangan dan tim HSE dapat memantau serta menindaklanjuti data dari semua site.
 
@@ -25,7 +25,7 @@ Pendaftaran mandiri dinonaktifkan. Akun hanya dibuat oleh admin IT melalui **Adm
 
 | Layer      | Teknologi |
 |------------|-----------|
-| Backend    | Laravel 13 (PHP 8.4), Laravel Fortify (login, 2FA, passkey) |
+| Backend    | Laravel 12 (PHP 8.3+), Laravel Fortify (login, 2FA, passkey) |
 | Frontend   | React 19 + Inertia.js v3 + TypeScript |
 | Styling    | Tailwind CSS v4 |
 | Database   | MySQL 8.0 |
@@ -47,7 +47,7 @@ tests/          Pest test suite
 
 ### Prasyarat
 
-- PHP 8.4 dan Composer
+- PHP 8.3+ dan Composer
 - Node.js & npm
 - MySQL 8.0
 
