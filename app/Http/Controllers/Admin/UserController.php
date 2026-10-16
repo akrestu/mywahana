@@ -94,7 +94,6 @@ class UserController extends Controller
         ]);
     }
 
-
     public function storeUser(Request $request)
     {
         $request->validate([
@@ -132,7 +131,6 @@ class UserController extends Controller
 
         return redirect()->route('admin.users');
     }
-
 
     public function updateUser(Request $request, User $user)
     {
@@ -285,7 +283,6 @@ class UserController extends Controller
         abort_if($user->is_admin && ! $user->site, 403);
         abort_unless(User::whereKey($user->id)->assignedToSite($adminSite)->exists(), 403);
     }
-
 
     private function adminSite(Request $request): ?string
     {

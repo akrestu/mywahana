@@ -2,11 +2,9 @@
 
 namespace App\Providers;
 
-use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\LoginResponse;
 use App\Http\Responses\PasskeyLoginResponse;
-use App\Http\Responses\RegisterResponse;
 use App\Http\Responses\TwoFactorLoginResponse;
 use App\Http\Responses\VerifyEmailResponse;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -16,7 +14,6 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
-use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
 use Laravel\Fortify\Contracts\TwoFactorLoginResponse as TwoFactorLoginResponseContract;
 use Laravel\Fortify\Contracts\VerifyEmailResponse as VerifyEmailResponseContract;
 use Laravel\Fortify\Features;
@@ -32,7 +29,6 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $this->app->singleton(LoginResponseContract::class, LoginResponse::class);
         $this->app->singleton(PasskeyLoginResponseContract::class, PasskeyLoginResponse::class);
-        $this->app->singleton(RegisterResponseContract::class, RegisterResponse::class);
         $this->app->singleton(TwoFactorLoginResponseContract::class, TwoFactorLoginResponse::class);
         $this->app->singleton(VerifyEmailResponseContract::class, VerifyEmailResponse::class);
     }
@@ -53,7 +49,6 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureActions(): void
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::createUsersUsing(CreateNewUser::class);
     }
 
     /**
@@ -78,8 +73,6 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/verify-email', [
             'status' => $request->session()->get('status'),
         ]));
-
-        Fortify::registerView(fn () => Inertia::render('auth/register'));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 
