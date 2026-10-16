@@ -1,7 +1,18 @@
 <?php
 
+use App\Http\Controllers\Admin\Assessment\HrAssessmentController as AdminHrAssessmentController;
+use App\Http\Controllers\Admin\Assessment\SafetyAssessmentController as AdminSafetyAssessmentController;
+use App\Http\Controllers\Admin\BugarSelamatController as AdminBugarSelamatController;
+use App\Http\Controllers\Admin\InductionAttendanceController as AdminInductionAttendanceController;
+use App\Http\Controllers\Admin\Inspeksi\InspeksiKantorController as AdminInspeksiKantorController;
+use App\Http\Controllers\Admin\Inspeksi\InspeksiMessController as AdminInspeksiMessController;
+use App\Http\Controllers\Admin\Inspeksi\InspeksiTambangController as AdminInspeksiTambangController;
+use App\Http\Controllers\Admin\Inspeksi\InspeksiWorkshopController as AdminInspeksiWorkshopController;
+use App\Http\Controllers\Admin\KomunikasiJsaController as AdminKomunikasiJsaController;
+use App\Http\Controllers\Admin\LaporanBahayaController as AdminLaporanBahayaController;
+use App\Http\Controllers\Admin\ObservasiKeselamatanController as AdminObservasiKeselamatanController;
+use App\Http\Controllers\Admin\TargetController as AdminTargetController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AssessmentFeedbackController;
 use App\Http\Controllers\AssessmentQuestionController;
@@ -137,67 +148,38 @@ Route::middleware(['auth'])->group(function () {
 
     // Admin
     Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/', [AdminController::class, 'index'])->name('index');
+        Route::get('/', fn () => redirect()->route('app.home'))->name('index');
 
-        // Bugar Selamat monitoring
-        Route::get('/bugar-selamat/export', [AdminController::class, 'exportBugarSelamat'])->name('bugar-selamat.export');
-        Route::get('/bugar-selamat', [AdminController::class, 'bugarSelamat'])->name('bugar-selamat');
-        Route::delete('/bugar-selamat/batch', [AdminController::class, 'batchDestroyBugarSelamat'])->name('bugar-selamat.batch-destroy');
-        Route::post('/bugar-selamat/delete-range', [AdminController::class, 'deleteRangeBugarSelamat'])->name('bugar-selamat.delete-range');
-        Route::delete('/bugar-selamat/{bugarSelamat}', [AdminController::class, 'destroyBugarSelamat'])->name('bugar-selamat.destroy');
+        // Monitoring data per site: daftar, export, hapus satu/batch/rentang
+        $siteRecords = [
+            'bugar-selamat' => ['bugar-selamat', AdminBugarSelamatController::class],
+            'laporan-bahaya' => ['laporan-bahaya', AdminLaporanBahayaController::class],
+            'observasi-keselamatan' => ['ok', AdminObservasiKeselamatanController::class],
+            'komunikasi-jsa' => ['komunikasi-jsa', AdminKomunikasiJsaController::class],
+            'inspeksi-kantor' => ['inspeksi-kantor', AdminInspeksiKantorController::class],
+            'inspeksi-tambang' => ['inspeksi-tambang', AdminInspeksiTambangController::class],
+            'inspeksi-workshop' => ['inspeksi-workshop', AdminInspeksiWorkshopController::class],
+            'inspeksi-mess' => ['inspeksi-mess', AdminInspeksiMessController::class],
+        ];
 
-        // Laporan Bahaya monitoring
-        Route::get('/laporan-bahaya/export', [AdminController::class, 'exportLaporanBahaya'])->name('laporan-bahaya.export');
-        Route::get('/laporan-bahaya', [AdminController::class, 'laporanBahaya'])->name('laporan-bahaya');
-        Route::delete('/laporan-bahaya/batch', [AdminController::class, 'batchDestroyLaporanBahaya'])->name('laporan-bahaya.batch-destroy');
-        Route::post('/laporan-bahaya/delete-range', [AdminController::class, 'deleteRangeLaporanBahaya'])->name('laporan-bahaya.delete-range');
-        Route::delete('/laporan-bahaya/{laporanBahaya}', [AdminController::class, 'destroyLaporanBahaya'])->name('laporan-bahaya.destroy');
-        Route::patch('/laporan-bahaya/{laporanBahaya}/status', [AdminController::class, 'updateStatus'])->name('laporan-bahaya.update-status');
+        foreach ($siteRecords as $path => [$name, $controller]) {
+            Route::get("/{$path}/export", [$controller, 'export'])->name("{$name}.export");
+            Route::get("/{$path}", [$controller, 'index'])->name($name);
+            Route::delete("/{$path}/batch", [$controller, 'batchDestroy'])->name("{$name}.batch-destroy");
+            Route::post("/{$path}/delete-range", [$controller, 'destroyRange'])->name("{$name}.delete-range");
+            Route::delete("/{$path}/{record}", [$controller, 'destroy'])->whereNumber('record')->name("{$name}.destroy");
+        }
 
-        // Observasi Keselamatan monitoring
-        Route::get('/observasi-keselamatan/export', [AdminController::class, 'exportObservasiKeselamatan'])->name('ok.export');
-        Route::get('/observasi-keselamatan', [AdminController::class, 'observasiKeselamatan'])->name('ok');
-        Route::delete('/observasi-keselamatan/batch', [AdminController::class, 'batchDestroyObservasiKeselamatan'])->name('ok.batch-destroy');
-        Route::post('/observasi-keselamatan/delete-range', [AdminController::class, 'deleteRangeObservasiKeselamatan'])->name('ok.delete-range');
-        Route::delete('/observasi-keselamatan/{observasiKeselamatan}', [AdminController::class, 'destroyObservasiKeselamatan'])->name('ok.destroy');
-
-        // Komunikasi JSA monitoring
-        Route::get('/komunikasi-jsa/export', [AdminController::class, 'exportKomunikasiJsa'])->name('komunikasi-jsa.export');
-        Route::get('/komunikasi-jsa', [AdminController::class, 'komunikasiJsa'])->name('komunikasi-jsa');
-        Route::delete('/komunikasi-jsa/batch', [AdminController::class, 'batchDestroyKomunikasiJsa'])->name('komunikasi-jsa.batch-destroy');
-        Route::post('/komunikasi-jsa/delete-range', [AdminController::class, 'deleteRangeKomunikasiJsa'])->name('komunikasi-jsa.delete-range');
-        Route::delete('/komunikasi-jsa/{komunikasiJsa}', [AdminController::class, 'destroyKomunikasiJsa'])->name('komunikasi-jsa.destroy');
-
-        // Inspeksi monitoring
-        Route::get('/inspeksi-kantor/export', [AdminController::class, 'exportInspeksiKantor'])->name('inspeksi-kantor.export');
-        Route::get('/inspeksi-kantor', [AdminController::class, 'inspeksiKantor'])->name('inspeksi-kantor');
-        Route::delete('/inspeksi-kantor/batch', [AdminController::class, 'batchDestroyInspeksiKantor'])->name('inspeksi-kantor.batch-destroy');
-        Route::post('/inspeksi-kantor/delete-range', [AdminController::class, 'deleteRangeInspeksiKantor'])->name('inspeksi-kantor.delete-range');
-        Route::delete('/inspeksi-kantor/{inspeksiKantor}', [AdminController::class, 'destroyInspeksiKantor'])->name('inspeksi-kantor.destroy');
-        Route::get('/inspeksi-tambang/export', [AdminController::class, 'exportInspeksiTambang'])->name('inspeksi-tambang.export');
-        Route::get('/inspeksi-tambang', [AdminController::class, 'inspeksiTambang'])->name('inspeksi-tambang');
-        Route::delete('/inspeksi-tambang/batch', [AdminController::class, 'batchDestroyInspeksiTambang'])->name('inspeksi-tambang.batch-destroy');
-        Route::post('/inspeksi-tambang/delete-range', [AdminController::class, 'deleteRangeInspeksiTambang'])->name('inspeksi-tambang.delete-range');
-        Route::delete('/inspeksi-tambang/{inspeksiTambang}', [AdminController::class, 'destroyInspeksiTambang'])->name('inspeksi-tambang.destroy');
-        Route::get('/inspeksi-workshop/export', [AdminController::class, 'exportInspeksiWorkshop'])->name('inspeksi-workshop.export');
-        Route::get('/inspeksi-workshop', [AdminController::class, 'inspeksiWorkshop'])->name('inspeksi-workshop');
-        Route::delete('/inspeksi-workshop/batch', [AdminController::class, 'batchDestroyInspeksiWorkshop'])->name('inspeksi-workshop.batch-destroy');
-        Route::post('/inspeksi-workshop/delete-range', [AdminController::class, 'deleteRangeInspeksiWorkshop'])->name('inspeksi-workshop.delete-range');
-        Route::delete('/inspeksi-workshop/{inspeksiWorkshop}', [AdminController::class, 'destroyInspeksiWorkshop'])->name('inspeksi-workshop.destroy');
-        Route::get('/inspeksi-mess/export', [AdminController::class, 'exportInspeksiMess'])->name('inspeksi-mess.export');
-        Route::get('/inspeksi-mess', [AdminController::class, 'inspeksiMess'])->name('inspeksi-mess');
-        Route::delete('/inspeksi-mess/batch', [AdminController::class, 'batchDestroyInspeksiMess'])->name('inspeksi-mess.batch-destroy');
-        Route::post('/inspeksi-mess/delete-range', [AdminController::class, 'deleteRangeInspeksiMess'])->name('inspeksi-mess.delete-range');
-        Route::delete('/inspeksi-mess/{inspeksiMess}', [AdminController::class, 'destroyInspeksiMess'])->name('inspeksi-mess.destroy');
+        Route::patch('/laporan-bahaya/{laporanBahaya}/status', [AdminLaporanBahayaController::class, 'updateStatus'])->name('laporan-bahaya.update-status');
 
         // Assessment monitoring
-        Route::get('/assessment', [AdminController::class, 'assessment'])->name('assessment');
-        Route::get('/assessment/export', [AdminController::class, 'exportAssessment'])->name('assessment.export');
+        Route::get('/assessment', [AdminSafetyAssessmentController::class, 'index'])->name('assessment');
+        Route::get('/assessment/export', [AdminSafetyAssessmentController::class, 'export'])->name('assessment.export');
         Route::get('/assessment/feedback', [AssessmentFeedbackController::class, 'adminIndex'])->name('assessment.feedback');
         Route::get('/assessment/feedback/export', [AssessmentFeedbackController::class, 'export'])->name('assessment.feedback.export');
-        Route::get('/assessment/export-soal', [AdminController::class, 'exportAssessmentQuestionStats'])->name('assessment.export-soal');
-        Route::delete('/assessment/batch', [AdminController::class, 'batchDestroyAssessmentSession'])->name('assessment.batch-destroy');
-        Route::post('/assessment/delete-range', [AdminController::class, 'deleteRangeAssessment'])->name('assessment.delete-range');
+        Route::get('/assessment/export-soal', [AdminSafetyAssessmentController::class, 'exportQuestionStats'])->name('assessment.export-soal');
+        Route::delete('/assessment/batch', [AdminSafetyAssessmentController::class, 'batchDestroy'])->name('assessment.batch-destroy');
+        Route::post('/assessment/delete-range', [AdminSafetyAssessmentController::class, 'destroyRange'])->name('assessment.delete-range');
 
         // Bank soal - Assessment Safety
         Route::get('/assessment/questions', [AssessmentQuestionController::class, 'index'])->name('assessment.questions.index');
@@ -209,12 +191,12 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/assessment/questions/{assessmentQuestion}', [AssessmentQuestionController::class, 'update'])->name('assessment.questions.update');
         Route::delete('/assessment/questions/{assessmentQuestion}', [AssessmentQuestionController::class, 'destroy'])->name('assessment.questions.destroy');
 
-        Route::delete('/assessment/{session}', [AdminController::class, 'destroyAssessmentSession'])->name('assessment.destroy');
-        Route::get('/hr-assessment', [AdminController::class, 'hrAssessment'])->name('hr-assessment');
-        Route::get('/hr-assessment/export', [AdminController::class, 'exportHrAssessment'])->name('hr-assessment.export');
-        Route::get('/hr-assessment/export-soal', [AdminController::class, 'exportHrAssessmentQuestionStats'])->name('hr-assessment.export-soal');
-        Route::delete('/hr-assessment/batch', [AdminController::class, 'batchDestroyHrAssessmentSession'])->name('hr-assessment.batch-destroy');
-        Route::post('/hr-assessment/delete-range', [AdminController::class, 'deleteRangeHrAssessment'])->name('hr-assessment.delete-range');
+        Route::delete('/assessment/{session}', [AdminSafetyAssessmentController::class, 'destroy'])->whereNumber('session')->name('assessment.destroy');
+        Route::get('/hr-assessment', [AdminHrAssessmentController::class, 'index'])->name('hr-assessment');
+        Route::get('/hr-assessment/export', [AdminHrAssessmentController::class, 'export'])->name('hr-assessment.export');
+        Route::get('/hr-assessment/export-soal', [AdminHrAssessmentController::class, 'exportQuestionStats'])->name('hr-assessment.export-soal');
+        Route::delete('/hr-assessment/batch', [AdminHrAssessmentController::class, 'batchDestroy'])->name('hr-assessment.batch-destroy');
+        Route::post('/hr-assessment/delete-range', [AdminHrAssessmentController::class, 'destroyRange'])->name('hr-assessment.delete-range');
 
         // Bank soal - HR Assessment
         Route::get('/hr-assessment/questions', [HrAssessmentQuestionController::class, 'index'])->name('hr-assessment.questions.index');
@@ -225,14 +207,14 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/hr-assessment/questions/batch', [HrAssessmentQuestionController::class, 'batchDestroy'])->name('hr-assessment.questions.batch-destroy');
         Route::put('/hr-assessment/questions/{hrAssessmentQuestion}', [HrAssessmentQuestionController::class, 'update'])->name('hr-assessment.questions.update');
         Route::delete('/hr-assessment/questions/{hrAssessmentQuestion}', [HrAssessmentQuestionController::class, 'destroy'])->name('hr-assessment.questions.destroy');
-        Route::delete('/hr-assessment/{session}', [AdminController::class, 'destroyHrAssessmentSession'])->name('hr-assessment.destroy');
-        Route::get('/induction-attendance/export/{type}', [AdminController::class, 'exportInductionAttendance'])
+        Route::delete('/hr-assessment/{session}', [AdminHrAssessmentController::class, 'destroy'])->whereNumber('session')->name('hr-assessment.destroy');
+        Route::get('/induction-attendance/export/{type}', [AdminInductionAttendanceController::class, 'export'])
             ->name('induction-attendance.export')
             ->where('type', 'safety|hr');
 
         // Targets
-        Route::get('/targets', [AdminController::class, 'targets'])->name('targets');
-        Route::patch('/targets/{level}', [AdminController::class, 'updateTarget'])->name('targets.update');
+        Route::get('/targets', [AdminTargetController::class, 'index'])->name('targets');
+        Route::patch('/targets/{level}', [AdminTargetController::class, 'update'])->name('targets.update');
 
         // User management
         Route::get('/users/export', [AdminUserController::class, 'exportUsers'])->name('users.export');
