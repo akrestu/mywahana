@@ -394,7 +394,7 @@ export default function ResponsiveLayout({ children, title, showBack, backHref }
                 />}
 
                 {/* Page content */}
-                <main className={cn('min-w-0 flex-1 px-4 py-4 lg:p-6 lg:pb-6', !isAdmin && isFocusedFlow(url) ? 'pb-0' : 'pb-[calc(7rem+env(safe-area-inset-bottom))]')}>
+                <main className={cn('min-w-0 flex-1 px-4 py-4 lg:p-6 lg:pb-6', !isAdmin && isFocusedFlow(url) ? 'pb-0' : 'pb-[calc(6rem+env(safe-area-inset-bottom))]')}>
                     {/* Mobile: constrain to phone-width; Desktop: full width */}
                     <div className="mx-auto w-full min-w-0 max-w-lg lg:max-w-none">
                         {navigatingTo ? (
