@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\UserBadge;
 use App\Services\InboxService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -58,6 +59,20 @@ class HandleInertiaRequests extends Middleware
                     'created_at' => $n->created_at,
                 ])
                 : [],
+            // Kartu profil di halaman Settings: streak Bugar Selamat dan badge yang diraih.
+            'profile_stats' => fn () => $user && ! $user->is_admin && $request->is('settings', 'settings/*')
+                ? [
+                    'streak' => $user->currentStreak(),
+                    'badges' => $user->badges()->oldest('earned_at')->pluck('badge_key')
+                        ->filter(fn ($key) => isset(UserBadge::$definitions[$key]))
+                        ->map(fn ($key) => [
+                            'key' => $key,
+                            'nama' => UserBadge::$definitions[$key]['nama'],
+                            'icon' => UserBadge::$definitions[$key]['icon'],
+                        ])
+                        ->values(),
+                ]
+                : null,
             'inbox_count' => fn () => $user && ! $user->is_admin
                 ? app(InboxService::class)->countForMe($user)
                 : 0,

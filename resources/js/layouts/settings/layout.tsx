@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { LogOut } from 'lucide-react';
+import { Flame, LogOut } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
@@ -17,6 +17,11 @@ const navItems: NavItem[] = [
     { title: 'Tampilan', href: editAppearance(), icon: null },
 ];
 
+type ProfileStats = {
+    streak: number;
+    badges: { key: string; nama: string; icon: string }[];
+};
+
 function initials(name: string) {
     return name
         .split(' ')
@@ -28,7 +33,10 @@ function initials(name: string) {
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
-    const { auth } = usePage<{ auth: Auth }>().props;
+    const { auth, profile_stats: profileStats } = usePage<{
+        auth: Auth;
+        profile_stats?: ProfileStats | null;
+    }>().props;
     const user = auth.user;
     const role = [user.jabatan, user.departemen].filter(Boolean).join(' · ');
     const meta = [
@@ -40,31 +48,20 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
     return (
         <div className="flex flex-col gap-4 pt-2 pb-4 lg:mx-auto lg:max-w-[760px]">
-            <section className="relative isolate overflow-hidden rounded-[22px] bg-card">
-                <div className="relative h-24">
-                    <img
-                        src="/images/mountain.jpg"
-                        alt=""
-                        className="absolute inset-0 size-full object-cover object-[60%_65%]"
-                    />
-                    <div
-                        aria-hidden
-                        className="absolute inset-0 bg-gradient-to-b from-black/30 to-transparent"
-                    />
-                </div>
-                <div className="flex items-end gap-3.5 px-[18px] pb-[18px]">
+            <section className="rounded-[22px] bg-card">
+                <div className="flex items-center gap-3.5 p-[18px]">
                     {user.avatar_url ? (
                         <img
                             src={user.avatar_url}
                             alt=""
-                            className="-mt-9 size-[72px] shrink-0 rounded-full object-cover ring-4 ring-card"
+                            className="size-14 shrink-0 rounded-full object-cover"
                         />
                     ) : (
-                        <span className="-mt-9 flex size-[72px] shrink-0 items-center justify-center rounded-full bg-accent text-xl font-extrabold text-accent-foreground ring-4 ring-card">
+                        <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent text-lg font-extrabold text-accent-foreground">
                             {initials(user.name ?? '')}
                         </span>
                     )}
-                    <div className="min-w-0 pt-2">
+                    <div className="min-w-0">
                         <h1 className="truncate text-lg font-extrabold tracking-tight">
                             {user.name}
                         </h1>
@@ -80,6 +77,38 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                         )}
                     </div>
                 </div>
+                {profileStats && (
+                    <div className="flex items-center gap-3 border-t border-border px-[18px] py-3.5">
+                        <div className="flex shrink-0 items-center gap-2 rounded-full bg-accent-soft px-3 py-1.5">
+                            <Flame className="size-4 text-accent-foreground" aria-hidden />
+                            <span className="tabular text-[13px] font-bold">
+                                {profileStats.streak} hari
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">streak</span>
+                        </div>
+                        {profileStats.badges.length > 0 ? (
+                            <ul
+                                aria-label={`${profileStats.badges.length} badge diraih`}
+                                className="flex min-w-0 flex-1 [scrollbar-width:none] gap-1.5 overflow-x-auto"
+                            >
+                                {profileStats.badges.map((badge) => (
+                                    <li
+                                        key={badge.key}
+                                        title={badge.nama}
+                                        aria-label={badge.nama}
+                                        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-lg"
+                                    >
+                                        <span aria-hidden>{badge.icon}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-xs text-muted-foreground">
+                                Belum ada badge. Isi Bugar Selamat setiap hari untuk meraihnya.
+                            </p>
+                        )}
+                    </div>
+                )}
             </section>
 
             <nav
