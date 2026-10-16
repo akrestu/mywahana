@@ -75,29 +75,29 @@ Route::middleware(['auth'])->group(function () {
         // Inspeksi Kantor
         Route::resource('inspeksi-kantor', InspeksiKantorController::class)
             ->only(['index', 'create', 'store', 'show'])
-            ->parameters(['inspeksi-kantor' => 'inspeksiKantor']);
-        Route::get('inspeksi-kantor/{inspeksiKantor}/pdf', [InspeksiKantorController::class, 'exportPdf'])->name('inspeksi-kantor.pdf');
-        Route::get('inspeksi-kantor/{inspeksiKantor}/re-inspeksi', [InspeksiKantorController::class, 'reInspeksi'])->name('inspeksi-kantor.re-inspeksi');
-        Route::post('inspeksi-kantor/{inspeksiKantor}/re-inspeksi', [InspeksiKantorController::class, 'storeReInspeksi'])->name('inspeksi-kantor.re-inspeksi.store');
-        Route::post('inspeksi-kantor/{inspeksiKantor}/tolak', [InspeksiKantorController::class, 'tolak'])->name('inspeksi-kantor.tolak');
+            ->parameters(['inspeksi-kantor' => 'record']);
+        Route::get('inspeksi-kantor/{record}/pdf', [InspeksiKantorController::class, 'exportPdf'])->name('inspeksi-kantor.pdf');
+        Route::get('inspeksi-kantor/{record}/re-inspeksi', [InspeksiKantorController::class, 'reInspeksi'])->name('inspeksi-kantor.re-inspeksi');
+        Route::post('inspeksi-kantor/{record}/re-inspeksi', [InspeksiKantorController::class, 'storeReInspeksi'])->name('inspeksi-kantor.re-inspeksi.store');
+        Route::post('inspeksi-kantor/{record}/tolak', [InspeksiKantorController::class, 'tolak'])->name('inspeksi-kantor.tolak');
 
         // Inspeksi Tambang
         Route::resource('inspeksi-tambang', InspeksiTambangController::class)
             ->only(['index', 'create', 'store', 'show'])
-            ->parameters(['inspeksi-tambang' => 'inspeksiTambang']);
-        Route::get('inspeksi-tambang/{inspeksiTambang}/pdf', [InspeksiTambangController::class, 'exportPdf'])->name('inspeksi-tambang.pdf');
-        Route::get('inspeksi-tambang/{inspeksiTambang}/re-inspeksi', [InspeksiTambangController::class, 'reInspeksi'])->name('inspeksi-tambang.re-inspeksi');
-        Route::post('inspeksi-tambang/{inspeksiTambang}/re-inspeksi', [InspeksiTambangController::class, 'storeReInspeksi'])->name('inspeksi-tambang.re-inspeksi.store');
-        Route::post('inspeksi-tambang/{inspeksiTambang}/tolak', [InspeksiTambangController::class, 'tolak'])->name('inspeksi-tambang.tolak');
+            ->parameters(['inspeksi-tambang' => 'record']);
+        Route::get('inspeksi-tambang/{record}/pdf', [InspeksiTambangController::class, 'exportPdf'])->name('inspeksi-tambang.pdf');
+        Route::get('inspeksi-tambang/{record}/re-inspeksi', [InspeksiTambangController::class, 'reInspeksi'])->name('inspeksi-tambang.re-inspeksi');
+        Route::post('inspeksi-tambang/{record}/re-inspeksi', [InspeksiTambangController::class, 'storeReInspeksi'])->name('inspeksi-tambang.re-inspeksi.store');
+        Route::post('inspeksi-tambang/{record}/tolak', [InspeksiTambangController::class, 'tolak'])->name('inspeksi-tambang.tolak');
 
         // Inspeksi Workshop
         Route::resource('inspeksi-workshop', InspeksiWorkshopController::class)
             ->only(['index', 'create', 'store', 'show'])
-            ->parameters(['inspeksi-workshop' => 'inspeksiWorkshop']);
-        Route::get('inspeksi-workshop/{inspeksiWorkshop}/pdf', [InspeksiWorkshopController::class, 'exportPdf'])->name('inspeksi-workshop.pdf');
-        Route::get('inspeksi-workshop/{inspeksiWorkshop}/re-inspeksi', [InspeksiWorkshopController::class, 'reInspeksi'])->name('inspeksi-workshop.re-inspeksi');
-        Route::post('inspeksi-workshop/{inspeksiWorkshop}/re-inspeksi', [InspeksiWorkshopController::class, 'storeReInspeksi'])->name('inspeksi-workshop.re-inspeksi.store');
-        Route::post('inspeksi-workshop/{inspeksiWorkshop}/tolak', [InspeksiWorkshopController::class, 'tolak'])->name('inspeksi-workshop.tolak');
+            ->parameters(['inspeksi-workshop' => 'record']);
+        Route::get('inspeksi-workshop/{record}/pdf', [InspeksiWorkshopController::class, 'exportPdf'])->name('inspeksi-workshop.pdf');
+        Route::get('inspeksi-workshop/{record}/re-inspeksi', [InspeksiWorkshopController::class, 'reInspeksi'])->name('inspeksi-workshop.re-inspeksi');
+        Route::post('inspeksi-workshop/{record}/re-inspeksi', [InspeksiWorkshopController::class, 'storeReInspeksi'])->name('inspeksi-workshop.re-inspeksi.store');
+        Route::post('inspeksi-workshop/{record}/tolak', [InspeksiWorkshopController::class, 'tolak'])->name('inspeksi-workshop.tolak');
 
         // Komunikasi JSA
         Route::resource('komunikasi-jsa', KomunikasiJsaController::class)
@@ -110,11 +110,11 @@ Route::middleware(['auth'])->group(function () {
         // Inspeksi Mess
         Route::resource('inspeksi-mess', InspeksiMessController::class)
             ->only(['index', 'create', 'store', 'show'])
-            ->parameters(['inspeksi-mess' => 'inspeksiMess']);
-        Route::get('inspeksi-mess/{inspeksiMess}/pdf', [InspeksiMessController::class, 'exportPdf'])->name('inspeksi-mess.pdf');
-        Route::get('inspeksi-mess/{inspeksiMess}/re-inspeksi', [InspeksiMessController::class, 'reInspeksi'])->name('inspeksi-mess.re-inspeksi');
-        Route::post('inspeksi-mess/{inspeksiMess}/re-inspeksi', [InspeksiMessController::class, 'storeReInspeksi'])->name('inspeksi-mess.re-inspeksi.store');
-        Route::post('inspeksi-mess/{inspeksiMess}/tolak', [InspeksiMessController::class, 'tolak'])->name('inspeksi-mess.tolak');
+            ->parameters(['inspeksi-mess' => 'record']);
+        Route::get('inspeksi-mess/{record}/pdf', [InspeksiMessController::class, 'exportPdf'])->name('inspeksi-mess.pdf');
+        Route::get('inspeksi-mess/{record}/re-inspeksi', [InspeksiMessController::class, 'reInspeksi'])->name('inspeksi-mess.re-inspeksi');
+        Route::post('inspeksi-mess/{record}/re-inspeksi', [InspeksiMessController::class, 'storeReInspeksi'])->name('inspeksi-mess.re-inspeksi.store');
+        Route::post('inspeksi-mess/{record}/tolak', [InspeksiMessController::class, 'tolak'])->name('inspeksi-mess.tolak');
     });
 
     // Assessment
