@@ -27,7 +27,7 @@ class AssessmentQuestionStatsExport implements WithMultipleSheets
             ->get()
             ->keyBy('assessment_question_id');
 
-        return AssessmentQuestion::orderBy('departemen')->orderBy('id')->get()
+        $sheets = AssessmentQuestion::orderBy('departemen')->orderBy('id')->get()
             ->groupBy(fn ($q) => $q->departemen ?: 'Tanpa Departemen')
             ->map(fn (Collection $questions, string $departemen) => new QuestionStatsSheet(
                 $departemen,
@@ -36,6 +36,9 @@ class AssessmentQuestionStatsExport implements WithMultipleSheets
             ))
             ->values()
             ->all();
+
+        // Workbook tanpa sheet tidak bisa ditulis; bank soal kosong tetap menghasilkan file.
+        return $sheets ?: [new QuestionStatsSheet('Semua Soal', [], withTags: true)];
     }
 
     /** Soal HR tidak ber-departemen — satu sheet saja. */
