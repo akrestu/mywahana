@@ -1,0 +1,1 @@
+import{a as e,o as t}from"./createLucideIcon-CiD0N09W.js";import{t as n}from"./checklists-Cb-OEZJ6.js";import{t as r}from"./inspeksi-form-Dwtl-qRq.js";var i=t(),a=e();function o(e){let t=(0,i.c)(2),o;return t[0]===e?o=t[1]:(o=(0,a.jsx)(r,{config:n.tambang,...e}),t[0]=e,t[1]=o),o}export{o as default};
