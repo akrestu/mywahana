@@ -1,10 +1,8 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { Download, FileText } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { useState } from 'react';
 import type { Overview } from '@/components/admin/admin-overview';
 import { AdminOverview } from '@/components/admin/admin-overview';
 import { chipClass } from '@/components/admin/data-table';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -174,102 +172,6 @@ function FilterBar({ filter, sites, jabatanOptions, adminSite }: {
     );
 }
 
-// ─── ExportButtons ────────────────────────────────────────────────────────────
-
-function ExportButtons({ targetRef, filename }: { targetRef: React.RefObject<HTMLDivElement | null>; filename: string }) {
-    const [loading, setLoading] = useState<'png' | 'pdf' | null>(null);
-
-    const exportPng = useCallback(async () => {
-        const el = targetRef.current;
-
-        if (!el) {
-return;
-}
-
-        setLoading('png');
-
-        try {
-            const { toPng } = await import('html-to-image');
-            // Expand overflow agar seluruh tabel tertangkap
-            const prevOverflow = el.style.overflow;
-            el.style.overflow = 'visible';
-            const dataUrl = await toPng(el, {
-                cacheBust: true,
-                pixelRatio: 2,
-                backgroundColor: getComputedStyle(document.body).backgroundColor,
-                width: el.scrollWidth,
-                height: el.scrollHeight,
-            });
-            el.style.overflow = prevOverflow;
-            const link = document.createElement('a');
-            link.download = `${filename}.png`;
-            link.href = dataUrl;
-            link.click();
-        } catch (e) {
-            console.error('Export PNG gagal:', e);
-        } finally {
-            setLoading(null);
-        }
-    }, [targetRef, filename]);
-
-    const exportPdf = useCallback(() => {
-        setLoading('pdf');
-        // Buka print dialog — browser render ke PDF langsung
-        const style = document.createElement('style');
-        style.id = '__print_override';
-        style.innerHTML = `
-            @media print {
-                body > * { display: none !important; }
-                body > #print-target { display: block !important; }
-                @page { size: A4 landscape; margin: 12mm; }
-            }
-        `;
-        const wrap = document.createElement('div');
-        wrap.id = 'print-target';
-        wrap.style.cssText = 'position:fixed;top:0;left:0;width:100%;z-index:9999;background:#fff;';
-        const clone = targetRef.current?.cloneNode(true) as HTMLElement | undefined;
-
-        if (clone) {
-            clone.style.cssText = 'overflow:visible;max-height:none;';
-            wrap.appendChild(clone);
-        }
-
-        document.head.appendChild(style);
-        document.body.appendChild(wrap);
-        window.print();
-        setTimeout(() => {
-            document.getElementById('print-target')?.remove();
-            document.getElementById('__print_override')?.remove();
-            setLoading(null);
-        }, 1000);
-    }, [targetRef]);
-
-    return (
-        <div className="flex gap-2">
-            <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={exportPng}
-                disabled={loading !== null}
-            >
-                <Download className="h-3.5 w-3.5" />
-                {loading === 'png' ? 'Menyimpan…' : 'Simpan PNG'}
-            </Button>
-            <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                onClick={exportPdf}
-                disabled={loading !== null}
-            >
-                <FileText className="h-3.5 w-3.5" />
-                {loading === 'pdf' ? 'Membuka…' : 'Cetak PDF'}
-            </Button>
-        </div>
-    );
-}
-
 // ─── Stat Cards (ringkasan) ─────────────────────────────────────────────────────
 
 function StatTile({ label, value, sub, tone, onClick }: {
@@ -365,9 +267,6 @@ export default function AdminIndex({
     const [dilarangExpanded, setDilarangExpanded] = useState(false);
     const compliance   = rawCompliance ?? DEFAULT_COMPLIANCE;
     const dilarangList = compliance.dilarang_list ?? [];
-    const exportRef    = useRef<HTMLDivElement>(null);
-
-    const exportFilename = `monitoring-sap-${BULAN_NAMES[filter.bulan - 1].toLowerCase()}-${filter.tahun}`;
 
     return (
         <>
@@ -375,7 +274,7 @@ export default function AdminIndex({
 
             <div className="space-y-4 pb-10">
 
-                {/* ① PAGE TITLE + EXPORT */}
+                {/* ① PAGE TITLE */}
                 <div className="flex items-start justify-between gap-2">
                     <div>
                         <p className="text-[13px] text-muted-foreground capitalize">{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}{overview ? ` · ${overview.employees.toLocaleString('id-ID')} karyawan` : ''}</p>
@@ -385,12 +284,11 @@ export default function AdminIndex({
                             {filter.site !== 'all' && <span> · {sites.find(s => s.value === filter.site)?.label ?? filter.site}</span>}
                         </p>
                     </div>
-                    <ExportButtons targetRef={exportRef} filename={exportFilename} />
                 </div>
 
                 <FilterBar filter={filter} sites={sites} jabatanOptions={jabatan_options} adminSite={admin_site} />
 
-                <div ref={exportRef} className="space-y-4 bg-background">
+                <div className="space-y-4 bg-background">
                 {/* ② RINGKASAN — stat cards */}
                 <StatCardsRow
                     compliance={compliance}
