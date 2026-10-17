@@ -235,6 +235,23 @@
     }
 }
 
+/* While a bottom drawer is open the glass behind it is hidden by the scrim,
+   but re-blurring it every frame of the slide makes the animation stutter on
+   phones, so it falls back to a solid fill. Unlayered, so it beats utilities. */
+html[data-drawer-open] [data-glass],
+html[data-drawer-open] .nav-glass {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+html[data-drawer-open] [data-glass] {
+    background-color: var(--background);
+}
+
+html[data-drawer-open] .nav-glass {
+    background-color: var(--ink);
+}
+
 /* Skeleton shimmer (DSKomponen: 1.2 s sweep over muted placeholders). */
 @keyframes skeleton-shimmer {
     from { background-position: 100% 0; }

@@ -117,6 +117,7 @@ export function BottomNav() {
     return (
         <>
             <nav
+                data-glass
                 aria-label="Navigasi utama"
                 className={cn(
                     'fixed inset-x-3 z-50 mx-auto grid h-[72px] max-w-md grid-cols-5 items-stretch rounded-[28px] px-1 lg:hidden',

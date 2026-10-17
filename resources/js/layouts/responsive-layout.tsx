@@ -11,8 +11,8 @@ import { NavUser } from '@/components/nav-user';
 import { NotificationBell } from '@/components/notification-bell';
 import { OfflineBanner } from '@/components/offline-banner';
 import { AdminTableSkeleton, ModuleSkeleton } from '@/components/patterns/skeletons';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Separator } from '@/components/ui/separator';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
     Sidebar,
     SidebarContent,
@@ -104,7 +104,7 @@ const adminMobileNavItems = [
 
 function MobileHeader({ title, showBack, backHref, isAdmin }: { title?: string; showBack?: boolean; backHref?: string; isAdmin?: boolean }) {
     return (
-        <header className="sticky top-0 z-10 bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/70 lg:hidden">
+        <header data-glass className="sticky top-0 z-10 bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/70 lg:hidden">
             <div className="mx-auto flex h-14 max-w-lg items-center gap-3 px-4">
                 {showBack && backHref ? (
                     <Link
@@ -165,48 +165,78 @@ function AdminBottomNav({ url, groups }: { url: string; groups: AdminMenuGroup[]
     const menuGroups = adminMenuGroups(groups);
     const isMenuActive = !adminMobileNavItems.some((item) => isActive(item.href));
 
-    // Same shell as BottomNav: ink pill, icon-only slots, accent circle on the active one.
-    const slotClass = 'relative flex h-full items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-[-6px] focus-visible:outline-accent';
-    const iconClass = (active: boolean) =>
-        cn('flex size-11 items-center justify-center rounded-full transition-colors duration-200', active ? 'bg-accent text-accent-foreground' : 'text-ink-muted');
     const rowClass = (active: boolean) =>
         cn('flex min-h-12 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors', active ? 'bg-accent-soft text-foreground' : 'text-foreground hover:bg-muted');
 
-    const NavLink = ({ item }: { item: (typeof adminMobileNavItems)[number] }) => {
+    // Same E1 bar as BottomNav: glass, labels always shown, raised round button
+    // in the middle — for admins it opens the full menu instead of "Buat".
+    const renderLink = (item: (typeof adminMobileNavItems)[number]) => {
         const Icon = item.icon;
         const active = isActive(item.href);
 
         return (
-            <Link href={item.href} aria-label={item.label} aria-current={active ? 'page' : undefined} className={slotClass}>
-                <span className={iconClass(active)}>
-                    <Icon className="size-[22px]" strokeWidth={active ? 1.9 : 1.6} />
+            <Link
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                    'relative flex min-h-11 min-w-11 flex-col items-center justify-center gap-1 rounded-2xl',
+                    'transition-transform duration-75 active:scale-[0.92] motion-reduce:transition-none',
+                    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+                    active ? 'text-[#141414] dark:text-white' : 'text-[#3A3833] dark:text-[#D9D4C9]',
+                )}
+            >
+                <span className="flex h-[30px] min-w-11 items-center justify-center">
+                    <Icon className="size-[22px]" strokeWidth={1.8} aria-hidden />
                 </span>
+                <span className={cn('text-[11px] leading-none', active ? 'font-bold' : 'font-medium')}>{item.label}</span>
             </Link>
         );
     };
 
     return (
         <nav
+            data-glass
             aria-label="Navigasi admin"
             className={cn(
-                'fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 mx-auto grid h-16 max-w-md grid-cols-5 items-center nav-glass rounded-full transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] lg:hidden',
-                navVisible ? 'translate-y-0' : 'translate-y-[calc(100%+2rem)]',
+                'fixed inset-x-3 z-50 mx-auto grid h-[72px] max-w-md grid-cols-5 items-stretch rounded-[28px] px-1 lg:hidden',
+                'bottom-[calc(12px+env(safe-area-inset-bottom))]',
+                'border border-white/70 bg-white/55 shadow-[0_10px_30px_rgba(20,20,20,0.18)]',
+                'backdrop-blur-[18px] backdrop-saturate-[1.4]',
+                'dark:border-white/15 dark:bg-[#181816]/55',
+                'supports-[not(backdrop-filter:blur(1px))]:bg-white/92 dark:supports-[not(backdrop-filter:blur(1px))]:bg-[#181816]/92',
+                'transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
+                navVisible ? 'translate-y-0' : 'translate-y-[calc(100%+3rem)]',
             )}
         >
-            {adminMobileNavItems.map((item) => (
-                <NavLink key={item.href} item={item} />
-            ))}
-            <button type="button" onClick={() => setMenuOpen(true)} aria-label="Semua menu admin" aria-haspopup="dialog" className={slotClass}>
-                <span className={iconClass(isMenuActive)}>
-                    <LayoutGrid className="size-[22px]" strokeWidth={isMenuActive ? 1.9 : 1.6} />
-                </span>
-            </button>
+            {renderLink(adminMobileNavItems[0])}
+            {renderLink(adminMobileNavItems[1])}
+            <div className="flex items-start justify-center">
+                <button
+                    type="button"
+                    onClick={() => setMenuOpen(true)}
+                    aria-label="Semua menu admin"
+                    aria-haspopup="dialog"
+                    aria-current={isMenuActive ? 'page' : undefined}
+                    className={cn(
+                        '-mt-[13px] flex size-[60px] items-center justify-center rounded-full',
+                        'bg-[#141414] text-accent dark:bg-accent dark:text-[#141414]',
+                        'shadow-[0_0_0_5px_rgba(255,255,255,0.75),0_10px_24px_rgba(20,20,20,0.28)]',
+                        'dark:shadow-[0_0_0_5px_rgba(255,255,255,0.18),0_10px_24px_rgba(20,20,20,0.28)]',
+                        'transition-transform duration-75 active:scale-[0.92] motion-reduce:transition-none',
+                        'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent',
+                    )}
+                >
+                    <LayoutGrid className="size-[24px]" strokeWidth={2} aria-hidden />
+                </button>
+            </div>
+            {renderLink(adminMobileNavItems[2])}
+            {renderLink(adminMobileNavItems[3])}
 
-            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-                <SheetContent side="bottom" className="mx-auto max-w-lg gap-0">
-                    <SheetHeader className="pb-2">
-                        <SheetTitle className="text-left text-xl font-extrabold">Menu admin</SheetTitle>
-                    </SheetHeader>
+            <Drawer open={menuOpen} onOpenChange={setMenuOpen}>
+                <DrawerContent>
+                    <DrawerHeader className="pb-2">
+                        <DrawerTitle className="text-left text-xl font-extrabold">Menu admin</DrawerTitle>
+                    </DrawerHeader>
                     <div className="flex flex-col gap-4 overflow-y-auto px-4 pb-6">
                         {menuGroups.map((group, gi) => (
                             <div key={group.label ?? gi} className="flex flex-col gap-0.5">
@@ -259,8 +289,8 @@ function AdminBottomNav({ url, groups }: { url: string; groups: AdminMenuGroup[]
                             </Link>
                         </div>
                     </div>
-                </SheetContent>
-            </Sheet>
+                </DrawerContent>
+            </Drawer>
         </nav>
     );
 }

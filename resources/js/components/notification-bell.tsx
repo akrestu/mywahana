@@ -2,17 +2,22 @@ import { router, usePage } from '@inertiajs/react';
 import { formatDistanceToNow, isToday } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Bell, BellOff } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { SectionLabel } from '@/components/patterns/module-header';
 import { Button } from '@/components/ui/button';
 import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from '@/components/ui/sheet';
+    Drawer,
+    DrawerContent,
+    DrawerDescription,
+    DrawerHeader,
+    DrawerTitle,
+} from '@/components/ui/drawer';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import * as notificationRoutes from '@/routes/notifications';
 
@@ -24,7 +29,29 @@ type Notif = {
     created_at: string;
 };
 
-/** Bell button with unread count; opens the notification panel as a sheet. */
+// Same breakpoint as the layout's sidebar: below it the panel is a bottom drawer.
+const DESKTOP_QUERY = '(min-width: 1024px)';
+
+function subscribeDesktop(onChange: () => void) {
+    const query = window.matchMedia(DESKTOP_QUERY);
+    query.addEventListener('change', onChange);
+
+    return () => query.removeEventListener('change', onChange);
+}
+
+function useIsDesktop(): boolean {
+    return useSyncExternalStore(
+        subscribeDesktop,
+        () => window.matchMedia(DESKTOP_QUERY).matches,
+        () => false,
+    );
+}
+
+/**
+ * Bell button with unread count. The panel is a bottom drawer on phones
+ * (vaul, follows the finger) and a popover under the bell on desktop; both
+ * skip the full-screen overlay and body scroll lock a side sheet needs.
+ */
 export function NotificationBell({ className }: { className?: string } = {}) {
     const { notifications, unread_notifications_count } = usePage<{
         notifications: Notif[];
@@ -32,6 +59,7 @@ export function NotificationBell({ className }: { className?: string } = {}) {
     }>().props;
     const [open, setOpen] = useState(false);
     const [confirmClear, setConfirmClear] = useState(false);
+    const isDesktop = useIsDesktop();
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -65,152 +93,168 @@ export function NotificationBell({ className }: { className?: string } = {}) {
         },
     ].filter((g) => g.items.length > 0);
 
+    const summary =
+        unread_notifications_count > 0
+            ? `${unread_notifications_count} belum dibaca`
+            : 'Semua sudah dibaca';
+
+    const markAllRead = unread_notifications_count > 0 && (
+        <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.post(notificationRoutes.markAllRead.url())}
+        >
+            Tandai dibaca
+        </Button>
+    );
+
+    const list = (
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-4 pb-4">
+            {notifications.length === 0 ? (
+                <div className="flex flex-col items-center gap-3 py-12 text-center">
+                    <span className="flex size-12 items-center justify-center rounded-full bg-muted">
+                        <BellOff className="size-5 text-muted-foreground" />
+                    </span>
+                    <p className="font-bold">Belum ada notifikasi</p>
+                    <p className="text-sm text-muted-foreground">
+                        Persetujuan dan pengingat akan muncul di sini.
+                    </p>
+                </div>
+            ) : (
+                <>
+                    {groups.map((g) => (
+                        <section key={g.label} className="flex flex-col gap-2">
+                            <SectionLabel>{g.label}</SectionLabel>
+                            <ul className="overflow-hidden rounded-lg bg-muted/40">
+                                {g.items.map((n) => (
+                                    <li
+                                        key={n.id}
+                                        className="border-b border-border/60 last:border-0"
+                                    >
+                                        <button
+                                            type="button"
+                                            onClick={() => read(n)}
+                                            className={cn(
+                                                'flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted',
+                                                !n.read_at && 'bg-accent-soft/50',
+                                            )}
+                                        >
+                                            <span
+                                                aria-hidden
+                                                className={cn(
+                                                    'mt-1.5 size-2 shrink-0 rounded-full',
+                                                    n.read_at
+                                                        ? 'bg-transparent'
+                                                        : 'bg-accent ring-2 ring-accent/30',
+                                                )}
+                                            />
+                                            <span className="min-w-0 flex-1">
+                                                <span
+                                                    className={cn(
+                                                        'block text-sm leading-snug',
+                                                        !n.read_at && 'font-semibold',
+                                                    )}
+                                                >
+                                                    {n.message}
+                                                </span>
+                                                <span className="mt-0.5 block text-xs text-muted-foreground">
+                                                    {formatDistanceToNow(
+                                                        new Date(n.created_at),
+                                                        { addSuffix: true, locale: id },
+                                                    )}
+                                                </span>
+                                            </span>
+                                            {!n.read_at && (
+                                                <span className="sr-only">
+                                                    Belum dibaca
+                                                </span>
+                                            )}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    ))}
+                    <Button
+                        variant="ghost"
+                        className="self-center text-destructive hover:text-destructive"
+                        onClick={() => setConfirmClear(true)}
+                    >
+                        Hapus semua notifikasi
+                    </Button>
+                </>
+            )}
+        </div>
+    );
+
+    const bell = (
+        <Button
+            aria-label={
+                unread_notifications_count > 0
+                    ? `Notifikasi, ${unread_notifications_count} belum dibaca`
+                    : 'Notifikasi'
+            }
+            variant="ghost"
+            size="icon"
+            className={cn('relative', className)}
+            onClick={isDesktop ? undefined : () => setOpen(true)}
+        >
+            <Bell className="size-5" strokeWidth={1.8} />
+            {unread_notifications_count > 0 && (
+                <span className="tabular absolute top-2 right-2 flex h-[18px] min-w-[18px] translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-extrabold text-accent-foreground ring-2 ring-background">
+                    {unread_notifications_count > 99
+                        ? '99+'
+                        : unread_notifications_count}
+                </span>
+            )}
+        </Button>
+    );
+
     return (
         <>
-            <Button
-                aria-label={
-                    unread_notifications_count > 0
-                        ? `Notifikasi, ${unread_notifications_count} belum dibaca`
-                        : 'Notifikasi'
-                }
-                variant="ghost"
-                size="icon"
-                className={cn('relative', className)}
-                onClick={() => setOpen(true)}
-            >
-                <Bell className="size-5" strokeWidth={1.8} />
-                {unread_notifications_count > 0 && (
-                    <span className="tabular absolute top-2 right-2 flex h-[18px] min-w-[18px] translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-extrabold text-accent-foreground ring-2 ring-background">
-                        {unread_notifications_count > 99
-                            ? '99+'
-                            : unread_notifications_count}
-                    </span>
-                )}
-            </Button>
-
-            <Sheet open={open} onOpenChange={setOpen}>
-                <SheetContent
-                    side="right"
-                    className="w-full gap-0 border-0 p-0 sm:max-w-md"
-                >
-                    <SheetHeader className="flex-row items-center justify-between gap-3 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-3">
-                        <div>
-                            <SheetTitle className="text-left text-2xl font-extrabold tracking-tight">
-                                Notifikasi
-                            </SheetTitle>
-                            <SheetDescription className="text-left">
-                                {unread_notifications_count > 0
-                                    ? `${unread_notifications_count} belum dibaca`
-                                    : 'Semua sudah dibaca'}
-                            </SheetDescription>
-                        </div>
-                        {unread_notifications_count > 0 && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="mr-8"
-                                onClick={() =>
-                                    router.post(
-                                        notificationRoutes.markAllRead.url(),
-                                    )
-                                }
-                            >
-                                Tandai dibaca
-                            </Button>
-                        )}
-                    </SheetHeader>
-
-                    <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-                        {notifications.length === 0 ? (
-                            <div className="flex flex-col items-center gap-3 py-16 text-center">
-                                <span className="flex size-12 items-center justify-center rounded-full bg-muted">
-                                    <BellOff className="size-5 text-muted-foreground" />
-                                </span>
-                                <p className="font-bold">
-                                    Belum ada notifikasi
-                                </p>
+            {isDesktop ? (
+                <Popover open={open} onOpenChange={setOpen}>
+                    <PopoverTrigger asChild>{bell}</PopoverTrigger>
+                    <PopoverContent
+                        align="end"
+                        sideOffset={8}
+                        className="flex max-h-[70vh] w-[380px] flex-col gap-0 overflow-hidden p-0"
+                    >
+                        <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3">
+                            <div>
+                                <h2 className="text-lg font-extrabold tracking-tight">
+                                    Notifikasi
+                                </h2>
                                 <p className="text-sm text-muted-foreground">
-                                    Persetujuan dan pengingat akan muncul di
-                                    sini.
+                                    {summary}
                                 </p>
                             </div>
-                        ) : (
-                            <>
-                                {groups.map((g) => (
-                                    <section
-                                        key={g.label}
-                                        className="flex flex-col gap-2"
-                                    >
-                                        <SectionLabel>{g.label}</SectionLabel>
-                                        <ul className="overflow-hidden rounded-lg bg-card">
-                                            {g.items.map((n) => (
-                                                <li
-                                                    key={n.id}
-                                                    className="border-b border-border/60 last:border-0"
-                                                >
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => read(n)}
-                                                        className={cn(
-                                                            'flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted',
-                                                            !n.read_at &&
-                                                                'bg-accent-soft/50',
-                                                        )}
-                                                    >
-                                                        <span
-                                                            aria-hidden
-                                                            className={cn(
-                                                                'mt-1.5 size-2 shrink-0 rounded-full',
-                                                                n.read_at
-                                                                    ? 'bg-transparent'
-                                                                    : 'bg-accent ring-2 ring-accent/30',
-                                                            )}
-                                                        />
-                                                        <span className="min-w-0 flex-1">
-                                                            <span
-                                                                className={cn(
-                                                                    'block text-sm leading-snug',
-                                                                    !n.read_at &&
-                                                                        'font-semibold',
-                                                                )}
-                                                            >
-                                                                {n.message}
-                                                            </span>
-                                                            <span className="mt-0.5 block text-xs text-muted-foreground">
-                                                                {formatDistanceToNow(
-                                                                    new Date(
-                                                                        n.created_at,
-                                                                    ),
-                                                                    {
-                                                                        addSuffix: true,
-                                                                        locale: id,
-                                                                    },
-                                                                )}
-                                                            </span>
-                                                        </span>
-                                                        {!n.read_at && (
-                                                            <span className="sr-only">
-                                                                Belum dibaca
-                                                            </span>
-                                                        )}
-                                                    </button>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </section>
-                                ))}
-                                <Button
-                                    variant="ghost"
-                                    className="self-center text-destructive hover:text-destructive"
-                                    onClick={() => setConfirmClear(true)}
-                                >
-                                    Hapus semua notifikasi
-                                </Button>
-                            </>
-                        )}
-                    </div>
-                </SheetContent>
-            </Sheet>
+                            {markAllRead}
+                        </div>
+                        {list}
+                    </PopoverContent>
+                </Popover>
+            ) : (
+                <>
+                    {bell}
+                    <Drawer open={open} onOpenChange={setOpen}>
+                        <DrawerContent className="h-[85dvh]">
+                            <DrawerHeader className="flex-row items-center justify-between gap-3 px-4 pt-3 pb-3">
+                                <div>
+                                    <DrawerTitle className="text-left text-2xl font-extrabold tracking-tight">
+                                        Notifikasi
+                                    </DrawerTitle>
+                                    <DrawerDescription className="text-left">
+                                        {summary}
+                                    </DrawerDescription>
+                                </div>
+                                {markAllRead}
+                            </DrawerHeader>
+                            {list}
+                        </DrawerContent>
+                    </Drawer>
+                </>
+            )}
 
             <ConfirmDialog
                 open={confirmClear}
