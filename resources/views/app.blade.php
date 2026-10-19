@@ -31,8 +31,9 @@
             }
         </style>
 
-        <link rel="icon" href="/logo.png" type="image/png">
-        <link rel="apple-touch-icon" href="/logo.png">
+        <link rel="icon" href="/favicon.ico" sizes="any">
+        <link rel="icon" href="/icons/icon-192.png" type="image/png">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
         <link rel="manifest" href="/manifest.json">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
