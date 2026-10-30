@@ -9,7 +9,7 @@ use Maatwebsite\Excel\Facades\Excel;
 function bugarSubmittedAt(User $user, string $tanggal, string $submittedAt): BugarSelamat
 {
     $record = BugarSelamat::create([
-        'user_id' => $user->id, 'tanggal' => $tanggal, 'shift' => 'Pagi', 'hari_ke' => 1,
+        'user_id' => $user->id, 'tanggal' => $tanggal, 'shift' => 'Siang', 'hari_ke' => 1,
         'jam_tidur' => '>6', 'status_kelayakan' => 'layak',
     ]);
     $record->forceFill(['created_at' => Carbon::parse($submittedAt)])->saveQuietly();

@@ -37,7 +37,7 @@ test('dashboard user tidak lagi memuat papan peringkat dan statistik lama', func
 test('target bugar menyertakan tanggal yang terisi untuk kalender', function () {
     $user = User::factory()->create(['participation_level' => 'nonstaff']);
     BugarSelamat::create([
-        'user_id' => $user->id, 'tanggal' => today()->toDateString(), 'shift' => 'Pagi', 'hari_ke' => 1,
+        'user_id' => $user->id, 'tanggal' => today()->toDateString(), 'shift' => 'Siang', 'hari_ke' => 1,
         'jam_tidur' => '>6', 'status_kelayakan' => 'layak',
     ]);
 

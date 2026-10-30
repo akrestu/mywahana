@@ -36,6 +36,16 @@ test('submitting bugar selamat opens the result screen', function () {
             ->where('hasil', true));
 });
 
+test('bugar selamat only accepts the siang and malam shifts', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post('/bugar-selamat', bugarPayload(['shift' => 'Pagi']))
+        ->assertSessionHasErrors('shift');
+
+    expect(BugarSelamat::count())->toBe(0);
+});
+
 test('result screen is only shown to the owner', function () {
     $owner = User::factory()->create();
     $admin = User::factory()->create(['is_admin' => true]);
