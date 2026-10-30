@@ -35,6 +35,7 @@ type LaporanRecord = {
     id: number;
     tanggal: string;
     waktu_pengamatan?: string | null;
+    shift?: 'siang' | 'malam' | null;
     kategori?: 'KTA' | 'TTA' | null;
     klasifikasi_bahaya?: string | null;
     site?: string | null;
@@ -428,6 +429,8 @@ function LaporanDetail({
                         {record.waktu_pengamatan && (
                             <p className="text-xs text-muted-foreground">
                                 Pukul {record.waktu_pengamatan.slice(0, 5)} WIB
+                                {record.shift &&
+                                    ` · Shift ${record.shift === 'siang' ? 'Siang' : 'Malam'}`}
                             </p>
                         )}
                     </div>

@@ -22,7 +22,7 @@ class LaporanBahayaExport implements FromQuery, ShouldAutoSize, WithHeadings, Wi
     public function headings(): array
     {
         return [
-            'No', 'Nama', 'NIK', 'Jabatan', 'Departemen', 'Site', 'Tanggal', 'Waktu Submit', 'Waktu Pengamatan',
+            'No', 'Nama', 'NIK', 'Jabatan', 'Departemen', 'Site', 'Tanggal', 'Waktu Submit', 'Waktu Pengamatan', 'Shift',
             'Kategori', 'Klasifikasi Bahaya', 'Lokasi', 'Detail Lokasi',
             'Deskripsi Bahaya', 'Tindakan Perbaikan',
             'Probabilitas', 'Frekuensi', 'Severity', 'Nilai Risiko',
@@ -51,6 +51,7 @@ class LaporanBahayaExport implements FromQuery, ShouldAutoSize, WithHeadings, Wi
             $row->tanggal?->format('d/m/Y') ?? '',
             $row->created_at?->format('d/m/Y H:i') ?? '',
             $row->waktu_pengamatan ?? '',
+            $row->shift ? ucfirst($row->shift) : '',
             $row->kategori ?? '',
             $row->klasifikasi_bahaya ?? '',
             $row->lokasi,

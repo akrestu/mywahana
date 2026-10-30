@@ -36,7 +36,7 @@
         <td class="info-label">NIK / NRPP</td>
         <td>: {{ $record->user->nik ?? '-' }}</td>
         <td class="info-label">Waktu Pengamatan</td>
-        <td>: {{ $record->waktu_pengamatan ? \Carbon\Carbon::parse($record->waktu_pengamatan)->format('H:i') . ' WIB' : '-' }}</td>
+        <td>: {{ $record->waktu_pengamatan ? \Carbon\Carbon::parse($record->waktu_pengamatan)->format('H:i') . ' WIB' : '-' }}{{ $record->shift ? ' (Shift ' . ucfirst($record->shift) . ')' : '' }}</td>
     </tr>
     <tr>
         <td class="info-label">Jabatan</td>

@@ -1,5 +1,12 @@
 import { Head, useForm } from '@inertiajs/react';
-import { CheckCircle2, CircleDot, Clock, Loader } from 'lucide-react';
+import {
+    CheckCircle2,
+    CircleDot,
+    Clock,
+    Loader,
+    Moon,
+    Sun,
+} from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -153,7 +160,12 @@ const STATUS_OPTIONS: { value: StatusTindakan; Icon: typeof Clock }[] = [
     { value: 'close', Icon: CheckCircle2 },
 ];
 
-const STEP_LABELS = ['Lokasi & foto', 'Tingkat bahaya', 'Tindakan'];
+const SHIFT_OPTIONS = [
+    { value: 'siang', label: 'Siang', Icon: Sun },
+    { value: 'malam', label: 'Malam', Icon: Moon },
+];
+
+const STEP_LABELS =['Lokasi & foto', 'Tingkat bahaya', 'Tindakan'];
 
 // Step each field lives on, so a server error jumps to the right place.
 const FIELD_STEP: Record<string, number> = {
@@ -166,6 +178,7 @@ const FIELD_STEP: Record<string, number> = {
     detail_lokasi: 1,
     tanggal: 1,
     waktu_pengamatan: 1,
+    shift: 1,
     probabilitas: 2,
     frekuensi: 2,
     severity: 2,
@@ -178,6 +191,7 @@ type FormData = {
     site: string;
     tanggal: string;
     waktu_pengamatan: string;
+    shift: string;
     kategori: string;
     klasifikasi_bahaya: string;
     lokasi: string;
@@ -208,6 +222,7 @@ export default function LaporanBahayaCreate({ user, sites, pics }: Props) {
                     : (sites[0]?.value ?? ''),
             tanggal: today,
             waktu_pengamatan: '',
+            shift: '',
             kategori: '',
             klasifikasi_bahaya: '',
             lokasi: '',
@@ -263,9 +278,11 @@ export default function LaporanBahayaCreate({ user, sites, pics }: Props) {
             : null;
 
     const step1OK = !!(
+        fotos.length > 0 &&
         data.site &&
         data.tanggal &&
         data.waktu_pengamatan &&
+        data.shift &&
         data.kategori &&
         data.klasifikasi_bahaya &&
         data.lokasi
@@ -409,7 +426,18 @@ export default function LaporanBahayaCreate({ user, sites, pics }: Props) {
                 >
                     {step === 1 && (
                         <>
-                            <PhotoPicker value={fotos} onChange={setFotos} />
+                            <PhotoPicker
+                                value={fotos}
+                                onChange={setFotos}
+                                label={
+                                    <>
+                                        Foto temuan{' '}
+                                        <span className="font-normal text-muted-foreground">
+                                            (wajib, min. 1)
+                                        </span>
+                                    </>
+                                }
+                            />
                             <InputError
                                 message={
                                     (
@@ -577,6 +605,46 @@ export default function LaporanBahayaCreate({ user, sites, pics }: Props) {
                                         message={errors.waktu_pengamatan}
                                     />
                                 </div>
+                            </div>
+
+                            <div
+                                role="radiogroup"
+                                aria-labelledby="shift-label"
+                                className="flex flex-col gap-2"
+                            >
+                                <span
+                                    id="shift-label"
+                                    className="text-[13px] font-semibold"
+                                >
+                                    Shift
+                                </span>
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    {SHIFT_OPTIONS.map(
+                                        ({ value, label, Icon }) => {
+                                            const on = data.shift === value;
+
+                                            return (
+                                                <button
+                                                    key={value}
+                                                    type="button"
+                                                    role="radio"
+                                                    aria-checked={on}
+                                                    onClick={() =>
+                                                        setData('shift', value)
+                                                    }
+                                                    className={cn(
+                                                        'flex h-[52px] items-center justify-center gap-2 rounded-lg text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                                                        choiceSurface(on),
+                                                    )}
+                                                >
+                                                    <Icon className="size-4" />
+                                                    {label}
+                                                </button>
+                                            );
+                                        },
+                                    )}
+                                </div>
+                                <InputError message={errors.shift} />
                             </div>
                         </>
                     )}

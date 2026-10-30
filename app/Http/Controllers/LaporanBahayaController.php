@@ -75,6 +75,7 @@ class LaporanBahayaController extends Controller
             'tanggal' => ['required', 'date', 'before_or_equal:today'],
             'site' => ['required', 'string', Rule::exists('sites', 'value')],
             'waktu_pengamatan' => ['required', 'date_format:H:i'],
+            'shift' => ['required', 'in:siang,malam'],
             'kategori' => ['required', 'in:KTA,TTA'],
             'klasifikasi_bahaya' => ['required', 'string', 'max:255'],
             'lokasi' => ['required', 'string', 'max:255'],
@@ -86,8 +87,11 @@ class LaporanBahayaController extends Controller
             'severity' => ['required', 'integer', 'in:1,2,3,25,30'],
             'status_tindakan' => ['required', 'in:pending,continue,progress,close'],
             'pic_user_id' => ['required', 'exists:users,id'],
-            'foto' => ['nullable', 'image', 'max:5120'],
+            // Minimal satu foto temuan wajib, di slot mana pun.
+            'foto' => ['required_without:foto_2', 'nullable', 'image', 'max:5120'],
             'foto_2' => ['nullable', 'image', 'max:5120'],
+        ], [
+            'foto.required_without' => 'Foto temuan wajib diunggah, minimal satu foto.',
         ]);
 
         $reporter = $request->user()->load('sites:id,value');
