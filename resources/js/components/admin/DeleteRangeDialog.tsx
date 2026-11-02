@@ -4,6 +4,7 @@ import {
     Dialog, DialogContent, DialogDescription,
     DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -46,11 +47,11 @@ export default function DeleteRangeDialog({ open, onOpenChange, endpoint, title,
                         <div className="grid grid-cols-2 gap-2">
                             <div className="space-y-1">
                                 <Label className="text-xs">Dari Tanggal</Label>
-                                <Input
-                                    type="date"
-                                    required
+                                <DatePickerInput
                                     value={form.data.date_from}
-                                    onChange={(e) => form.setData('date_from', e.target.value)}
+                                    onChange={(v) => form.setData('date_from', v)}
+                                    placeholder="Pilih tanggal"
+                                    error={!!form.errors.date_from}
                                 />
                                 {form.errors.date_from && (
                                     <p className="text-xs text-destructive">{form.errors.date_from}</p>
@@ -58,11 +59,11 @@ export default function DeleteRangeDialog({ open, onOpenChange, endpoint, title,
                             </div>
                             <div className="space-y-1">
                                 <Label className="text-xs">Sampai Tanggal</Label>
-                                <Input
-                                    type="date"
-                                    required
+                                <DatePickerInput
                                     value={form.data.date_to}
-                                    onChange={(e) => form.setData('date_to', e.target.value)}
+                                    onChange={(v) => form.setData('date_to', v)}
+                                    placeholder="Pilih tanggal"
+                                    error={!!form.errors.date_to}
                                 />
                                 {form.errors.date_to && (
                                     <p className="text-xs text-destructive">{form.errors.date_to}</p>
@@ -87,7 +88,11 @@ export default function DeleteRangeDialog({ open, onOpenChange, endpoint, title,
                         <Button type="button" variant="outline" onClick={close} disabled={form.processing}>
                             Batal
                         </Button>
-                        <Button type="submit" variant="destructive" disabled={form.processing}>
+                        <Button
+                            type="submit"
+                            variant="destructive"
+                            disabled={form.processing || !form.data.date_from || !form.data.date_to}
+                        >
                             {form.processing ? 'Menghapus...' : 'Ya, Hapus'}
                         </Button>
                     </DialogFooter>
